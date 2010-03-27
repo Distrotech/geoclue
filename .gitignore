@@ -29,13 +29,22 @@ missing
 *-bindings.h
 
 doxygen.conf
+gtk-doc.make
 
-example/geoclue-find-example
-example/geoclue-geocode-example
-example/geoclue-map-example
-example/geoclue-map-example-moving
-example/geoclue-map-layout-example
-example/geoclue-position-example
-geoclue/geoclue-master
+example/*-example
+src/geoclue-master
 geoclue/geoclue-enum-types.h
 geoclue/geoclue-enum-types.c
+interfaces/gc-iface-*.xml
+
+providers/example/geoclue-example
+providers/geonames/geoclue-geonames
+providers/gsmloc/geoclue-gsmloc
+providers/hostip/geoclue-hostip
+providers/localnet/geoclue-localnet
+providers/manual/geoclue-manual
+providers/nominatim/geoclue-nominatim
+providers/plazes/geoclue-plazes
+providers/yahoo/geoclue-yahoo
+
+test/geoclue-test-gui

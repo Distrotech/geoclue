@@ -44,31 +44,94 @@ static GcMaster *master;
 #define GEOCLUE_GCONF_TOP "/apps/geoclue/master"
 #define GEOCLUE_MASTER_NAME "org.freedesktop.Geoclue.Master"
 
+static GValue *
+gconf_value_to_value (GConfValue *value)
+{
+	GValue *gvalue;
+
+	g_return_val_if_fail (value != NULL, NULL);
+	g_return_val_if_fail (value->type == GCONF_VALUE_STRING ||
+			      value->type == GCONF_VALUE_INT, NULL);
+
+	if (value->type == GCONF_VALUE_STRING) {
+		const char *str;
+
+		gvalue = g_new0 (GValue, 1);
+		str = gconf_value_get_string (value);
+
+		/* Don't add empty strings in the hashtable */
+		if (str != NULL && str[0] == '\0')
+			str = NULL;
+
+		g_value_init (gvalue, G_TYPE_STRING);
+		g_value_set_string (gvalue, str);
+	} else if (value->type == GCONF_VALUE_INT) {
+		int i;
+
+		gvalue = g_new0 (GValue, 1);
+		i = gconf_value_get_int (value);
+		g_value_init (gvalue, G_TYPE_INT);
+		g_value_set_int (gvalue, i);
+	}
+
+	return gvalue;
+}
+
+static void
+debug_print_key (gboolean init,
+		 const char *key,
+		 GValue     *gvalue)
+{
+	const char *message;
+	char *string;
+
+	if (init)
+		message = "GConf key '%s' initialised to '%s'";
+	else
+		message = "GConf key '%s' changed to '%s'";
+
+	if (G_VALUE_TYPE (gvalue) == G_TYPE_STRING) {
+		string = g_value_dup_string (gvalue);
+	} else if (G_VALUE_TYPE (gvalue) == G_TYPE_INT) {
+		string = g_strdup_printf ("%d", g_value_get_int (gvalue));
+	} else {
+		return;
+	}
+
+	g_message (message, key, string);
+	g_free (string);
+}
+
 static void
 gconf_key_changed (GConfClient *client,
 		   guint cnxn_id,
 		   GConfEntry *entry,
 		   gpointer user_data)
 {
-	const char *key, *value;
+	const char *key;
 	GConfValue *v;
+	GValue *gvalue;
 
 	key = gconf_entry_get_key (entry);
 	v = gconf_entry_get_value (entry);
-	if (v->type != GCONF_VALUE_STRING)
+	gvalue = gconf_value_to_value (v);
+	if (gvalue == NULL)
 		return;
-	value = gconf_value_get_string (v);
 
-	g_message ("gconf key changed %s", key);
+	debug_print_key (FALSE, key, gvalue);
 
-	/* Don't add empty strings in the hashtable */
-	if (value != NULL && value[0] == '\0')
-		value = NULL;
-
-	g_hash_table_insert (options, g_path_get_basename (key),
-			     g_strdup (value));
+	g_hash_table_insert (options, g_path_get_basename (key), gvalue);
 
 	g_signal_emit_by_name (G_OBJECT (master), "options-changed", options);
+}
+
+static void
+free_gvalue (GValue *value)
+{
+	if (value == NULL)
+		return;
+	g_value_unset (value);
+	g_free (value);
 }
 
 static GHashTable *
@@ -94,26 +157,25 @@ load_options (void)
 				 (GConfClientNotifyFunc) gconf_key_changed,
 				 NULL, NULL, NULL);
 
-        ht = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+        ht = g_hash_table_new_full (g_str_hash, g_str_equal,
+				    g_free, (GDestroyNotify) free_gvalue);
         g_print ("Master options:\n");
         for (e = entries; e; e = e->next) {
                 GConfEntry *entry = e->data;
-                const char *key, *value;
+                const char *key;
                 GConfValue *v;
+                GValue *gvalue;
 
                 key = gconf_entry_get_key (entry);
                 v = gconf_entry_get_value (entry);
-                if (v->type != GCONF_VALUE_STRING)
-                	continue;
-                value = gconf_value_get_string (v);
+                gvalue = gconf_value_to_value (v);
+                if (gvalue == NULL)
+			continue;
 
-                if (value != NULL && value[0] == '\0')
-                	value = NULL;
+		debug_print_key (TRUE, key, gvalue);
 
-                g_print ("  %s = %s\n", key, value);
-                g_hash_table_insert (ht, g_path_get_basename (key), 
-                                     g_strdup (value));
-                 gconf_entry_free (entry);
+                g_hash_table_insert (ht, g_path_get_basename (key), gvalue);
+		gconf_entry_free (entry);
          }
          g_slist_free (entries);
 

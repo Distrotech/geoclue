@@ -378,15 +378,16 @@ set_options (GcIfaceGeoclue *gc,
              GError        **error)
 {
         GeoclueGypsy *gypsy = GEOCLUE_GYPSY (gc);
+        GValue *device_value;
         const char *device_name;
         char *path;
 
-        device_name = g_hash_table_lookup (options, 
-                                           "org.freedesktop.Geoclue.GPSDevice");
+	device_value = g_hash_table_lookup (options,
+					    "org.freedesktop.Geoclue.GPSDevice");
+	device_name = device_value ? g_value_get_string (device_value) : NULL;
 
-        if (g_strcmp0 (gypsy->device_name, device_name) == 0) {
-        	return TRUE;
-	}
+        if (g_strcmp0 (gypsy->device_name, device_name) == 0)
+		return TRUE;
 
 	g_free (gypsy->device_name);
 	gypsy->device_name = NULL;

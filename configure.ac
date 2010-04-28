@@ -149,6 +149,7 @@ PROVIDER_SUBDIRS="example hostip geonames nominatim manual plazes localnet yahoo
 # gypsy / gpsd / skyhook
 # -----------------------------------------------------------
 
+GYPSY_REQUIRED=0.7.1
 AC_ARG_ENABLE(gypsy,
               AS_HELP_STRING([--enable-gypsy=@<:@no/yes/auto@:>@],
                              [build with gypsy support]), ,
@@ -157,7 +158,7 @@ AC_ARG_ENABLE(gypsy,
 if test "x$enable_gypsy" != "xno"; then
    PKG_CHECK_MODULES(GYPSY,
    [
-      gypsy
+      gypsy >= $GYPSY_REQUIRED
    ], have_gypsy="yes", have_gypsy="no")
 
    if test "x$have_gypsy" = "xyes"; then

@@ -70,8 +70,16 @@ service_DATA = $(service_in_files:.service.in=.service)
 $(service_DATA): $(service_in_files) Makefile
 	$(AM_V_GEN) sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
+convertdir = $(datadir)/GConf/gsettings
+convert_DATA = geoclue
+
+gsettings_SCHEMAS = org.freedesktop.Geoclue.gschema.xml
+@GSETTINGS_RULES@
+
 EXTRA_DIST =			\
-	$(service_in_files)
+	$(service_in_files)	\
+	$(gsettings_SCHEMAS)	\
+	$(convert_DATA)
 
 CLEANFILES = 				\
 	$(BUILT_SOURCES) 		\

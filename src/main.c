@@ -27,8 +27,7 @@
 #endif
 
 #include <glib.h>
-
-#include <gconf/gconf-client.h>
+#include <gio/gsettings.h>
 
 #include <dbus/dbus-protocol.h>
 #include <dbus/dbus-glib.h>
@@ -38,26 +37,27 @@
 
 static GMainLoop *mainloop;
 static GHashTable *options;
+static GSettings *settings;
 static GcMaster *master;
 
 
-#define GEOCLUE_GCONF_TOP "/apps/geoclue/master"
+#define GEOCLUE_SCHEMA_NAME "org.freedesktop.Geoclue"
 #define GEOCLUE_MASTER_NAME "org.freedesktop.Geoclue.Master"
 
 static GValue *
-gconf_value_to_value (GConfValue *value)
+gvariant_value_to_value (GVariant *value)
 {
 	GValue *gvalue;
+	const GVariantType *type;
 
 	g_return_val_if_fail (value != NULL, NULL);
-	g_return_val_if_fail (value->type == GCONF_VALUE_STRING ||
-			      value->type == GCONF_VALUE_INT, NULL);
+	type = g_variant_get_type (value);
 
-	if (value->type == GCONF_VALUE_STRING) {
+	if (g_variant_type_is_subtype_of (type, G_VARIANT_TYPE_STRING)) {
 		const char *str;
 
 		gvalue = g_new0 (GValue, 1);
-		str = gconf_value_get_string (value);
+		str = g_variant_get_string (value, NULL);
 
 		/* Don't add empty strings in the hashtable */
 		if (str != NULL && str[0] == '\0')
@@ -65,13 +65,16 @@ gconf_value_to_value (GConfValue *value)
 
 		g_value_init (gvalue, G_TYPE_STRING);
 		g_value_set_string (gvalue, str);
-	} else if (value->type == GCONF_VALUE_INT) {
+	} else if (g_variant_type_is_subtype_of (type, G_VARIANT_TYPE_UINT32)) {
 		int i;
 
 		gvalue = g_new0 (GValue, 1);
-		i = gconf_value_get_int (value);
+		i = g_variant_get_uint32 (value);
 		g_value_init (gvalue, G_TYPE_INT);
 		g_value_set_int (gvalue, i);
+	} else {
+		gvalue = NULL;
+		g_warning ("Value is of unknown type");
 	}
 
 	return gvalue;
@@ -86,9 +89,9 @@ debug_print_key (gboolean init,
 	char *string;
 
 	if (init)
-		message = "GConf key '%s' initialised to '%s'";
+		message = "GSettings key '%s' initialised to '%s'";
 	else
-		message = "GConf key '%s' changed to '%s'";
+		message = "GSettings key '%s' changed to '%s'";
 
 	if (G_VALUE_TYPE (gvalue) == G_TYPE_STRING) {
 		string = g_value_dup_string (gvalue);
@@ -103,24 +106,23 @@ debug_print_key (gboolean init,
 }
 
 static void
-gconf_key_changed (GConfClient *client,
-		   guint cnxn_id,
-		   GConfEntry *entry,
-		   gpointer user_data)
+gsettings_key_changed (GSettings *settings,
+		       char *key,
+		       gpointer user_data)
 {
-	const char *key;
-	GConfValue *v;
+	GVariant *v;
 	GValue *gvalue;
 
-	key = gconf_entry_get_key (entry);
-	v = gconf_entry_get_value (entry);
-	gvalue = gconf_value_to_value (v);
-	if (gvalue == NULL)
+	v = g_settings_get_value (settings, key);
+	gvalue = gvariant_value_to_value (v);
+	if (gvalue == NULL) {
+		g_variant_unref (v);
 		return;
+	}
 
 	debug_print_key (FALSE, key, gvalue);
 
-	g_hash_table_insert (options, g_path_get_basename (key), gvalue);
+	g_hash_table_insert (options, g_strdup (key), gvalue);
 
 	g_signal_emit_by_name (G_OBJECT (master), "options-changed", options);
 }
@@ -138,46 +140,38 @@ static GHashTable *
 load_options (void)
 {
         GHashTable *ht = NULL;
-        GConfClient *client = gconf_client_get_default ();
-        GSList *entries, *e;
-        GError *error = NULL;
-
-        gconf_client_add_dir (client, GEOCLUE_GCONF_TOP,
-        		      GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
-
-        entries = gconf_client_all_entries (client, GEOCLUE_GCONF_TOP, &error);
-        if (error != NULL) {
-                g_warning ("Error loading master options: %s", error->message);
-                g_error_free (error);
-                return NULL;
-        }
+        guint i;
+        const char const * keys[] = {
+		"gps-baudrate",
+		"gps-device"
+	};
 
         /* Setup keys monitoring */
-	gconf_client_notify_add (client, GEOCLUE_GCONF_TOP,
-				 (GConfClientNotifyFunc) gconf_key_changed,
-				 NULL, NULL, NULL);
+        g_signal_connect (G_OBJECT (settings), "changed",
+			  G_CALLBACK (gsettings_key_changed), NULL);
 
         ht = g_hash_table_new_full (g_str_hash, g_str_equal,
 				    g_free, (GDestroyNotify) free_gvalue);
-        g_print ("Master options:\n");
-        for (e = entries; e; e = e->next) {
-                GConfEntry *entry = e->data;
-                const char *key;
-                GConfValue *v;
-                GValue *gvalue;
 
-                key = gconf_entry_get_key (entry);
-                v = gconf_entry_get_value (entry);
-                gvalue = gconf_value_to_value (v);
-                if (gvalue == NULL)
+        g_print ("Master options:\n");
+        for (i = 0; i < G_N_ELEMENTS (keys); i++) {
+		GVariant *v;
+		GValue *gvalue;
+		const char *key = keys[i];
+
+		v = g_settings_get_value (settings, key);
+		gvalue = gvariant_value_to_value (v);
+
+		if (gvalue == NULL) {
+			g_variant_unref (v);
 			continue;
+		}
 
 		debug_print_key (TRUE, key, gvalue);
 
-                g_hash_table_insert (ht, g_path_get_basename (key), gvalue);
-		gconf_entry_free (entry);
+                g_hash_table_insert (ht, g_strdup (key), gvalue);
+                g_variant_unref (v);
          }
-         g_slist_free (entries);
 
          return ht;
  }
@@ -224,6 +218,7 @@ main (int    argc,
 	}
 
         /* Load options */
+        settings = g_settings_new (GEOCLUE_SCHEMA_NAME);
         options = load_options ();
 
 	master = g_object_new (GC_TYPE_MASTER, NULL);

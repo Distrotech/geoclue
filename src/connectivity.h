@@ -50,6 +50,7 @@ struct _GeoclueConnectivityInterface {
 	int (*get_status) (GeoclueConnectivity *self);
 	GHashTable * (*get_aps) (GeoclueConnectivity *self);
 	char * (*get_ap_mac) (GeoclueConnectivity *self);
+	char * (*get_router_mac) (GeoclueConnectivity *self);
 };
 
 GType geoclue_connectivity_get_type (void);
@@ -59,6 +60,7 @@ GeoclueConnectivity *geoclue_connectivity_new (void);
 GeoclueNetworkStatus geoclue_connectivity_get_status (GeoclueConnectivity *self);
 
 char *geoclue_connectivity_get_ap_mac (GeoclueConnectivity *self);
+char *geoclue_connectivity_get_router_mac (GeoclueConnectivity *self);
 
 GHashTable *geoclue_connectivity_get_aps (GeoclueConnectivity *self);
 

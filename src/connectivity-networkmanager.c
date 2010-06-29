@@ -60,6 +60,46 @@ get_ap_mac (GeoclueConnectivity *iface)
 	return self->cache_ap_mac;
 }
 
+static GHashTable *
+get_aps (GeoclueConnectivity *iface)
+{
+	GeoclueNetworkManager *self = GEOCLUE_NETWORKMANAGER (iface);
+	const GPtrArray *devices;
+	GHashTable *ht;
+	guint i;
+
+	devices = nm_client_get_devices (self->client);
+	if (devices == NULL)
+		return NULL;
+
+	ht = g_hash_table_new_full (g_str_hash, g_str_equal,
+				    (GDestroyNotify) g_free, NULL);
+
+	for (i = 0; i < devices->len; i++) {
+		NMDevice *device = g_ptr_array_index (devices, i);
+		if (NM_IS_DEVICE_WIFI (device)) {
+			const GPtrArray *aps;
+			guint j;
+
+			aps = nm_device_wifi_get_access_points (NM_DEVICE_WIFI (device));
+			if (aps == NULL || aps->len == 0)
+				continue;
+			for (j = 0; j < aps->len; j++) {
+				NMAccessPoint *ap = NM_ACCESS_POINT (g_ptr_array_index (aps, j));
+				char *ap;
+				int strength;
+
+				ap = g_strdup (nm_access_point_get_hw_address (ap));
+				strength = nm_access_point_get_strength (ap);
+				/* Do some hackish percentage to dBm */
+				g_hash_table_insert (ht, ap, G_INT_TO_POINTER (strength)); //FIXME
+			}
+		}
+	}
+
+	return ht;
+}
+
 static void
 get_best_ap (GeoclueNetworkManager *self, NMDevice *device)
 {
@@ -222,6 +262,7 @@ geoclue_networkmanager_connectivity_init (GeoclueConnectivityInterface *iface)
 {
 	iface->get_status = get_status;
 	iface->get_ap_mac = get_ap_mac;
+	iface->get_aps    = get_aps;
 }
 
 #endif /* HAVE_NETWORK_MANAGER */

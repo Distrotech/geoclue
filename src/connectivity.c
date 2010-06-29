@@ -110,6 +110,25 @@ geoclue_connectivity_get_ap_mac (GeoclueConnectivity *self)
 	return NULL;
 }
 
+GHashTable *
+geoclue_connectivity_get_aps (GeoclueConnectivity *self)
+{
+	char *ap;
+	GHashTable *ht;
+
+	if (GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps != NULL)
+		return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps (self);
+
+	ap = geoclue_connectivity_get_ap_mac (self);
+	if (ap == NULL)
+		return NULL;
+	ht = g_hash_table_new_full (g_str_hash, g_str_equal,
+				    (GDestroyNotify) g_free, NULL);
+	/* FIXME, remove hard-coded dBm value */
+	g_hash_table_insert (ht, ap, GINT_TO_POINTER (-50));
+	return NULL;
+}
+
 void
 geoclue_connectivity_emit_status_changed (GeoclueConnectivity *self,
                                           GeoclueNetworkStatus status)

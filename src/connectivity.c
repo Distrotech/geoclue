@@ -34,6 +34,8 @@
 #endif
 #endif
 
+#define DEFAULT_DBM -50
+
 enum {
 	STATUS_CHANGED,
 	LAST_SIGNAL
@@ -119,13 +121,13 @@ geoclue_connectivity_get_aps (GeoclueConnectivity *self)
 	if (GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps != NULL)
 		return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps (self);
 
+	/* Fallback if the backend does not support get_aps */
 	ap = geoclue_connectivity_get_ap_mac (self);
 	if (ap == NULL)
 		return NULL;
 	ht = g_hash_table_new_full (g_str_hash, g_str_equal,
 				    (GDestroyNotify) g_free, NULL);
-	/* FIXME, remove hard-coded dBm value */
-	g_hash_table_insert (ht, ap, GINT_TO_POINTER (-50));
+	g_hash_table_insert (ht, ap, GINT_TO_POINTER (DEFAULT_DBM));
 	return NULL;
 }
 

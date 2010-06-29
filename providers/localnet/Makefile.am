@@ -15,10 +15,12 @@ geoclue_localnet_SOURCES = 	\
 geoclue_localnet_CFLAGS = \
 	-I$(top_srcdir)     \
 	-I$(top_builddir)   \
+	-I$(top_srcdir)/src \
 	$(GEOCLUE_CFLAGS)
 
 geoclue_localnet_LDADD = \
 	$(GEOCLUE_LIBS)    \
+	$(top_builddir)/src/libconnectivity.la \
 	$(top_builddir)/geoclue/libgeoclue.la
 
 

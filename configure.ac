@@ -37,7 +37,7 @@ fi
 PKG_CHECK_MODULES(GEOCLUE, [
 		  glib-2.0
 		  gobject-2.0
-		  dbus-glib-1 >= 0.60
+		  dbus-glib-1 >= 0.86
 		  libxml-2.0
 ])
 AC_SUBST(GEOCLUE_LIBS)

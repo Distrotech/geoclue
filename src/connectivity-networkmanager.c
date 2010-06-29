@@ -86,13 +86,13 @@ get_aps (GeoclueConnectivity *iface)
 				continue;
 			for (j = 0; j < aps->len; j++) {
 				NMAccessPoint *ap = NM_ACCESS_POINT (g_ptr_array_index (aps, j));
-				char *ap;
+				char *ap_mac;
 				int strength;
 
-				ap = g_strdup (nm_access_point_get_hw_address (ap));
+				ap_mac = g_strdup (nm_access_point_get_hw_address (ap));
 				strength = nm_access_point_get_strength (ap);
 				/* Do some hackish percentage to dBm */
-				g_hash_table_insert (ht, ap, G_INT_TO_POINTER (strength)); //FIXME
+				g_hash_table_insert (ht, ap_mac, GINT_TO_POINTER (strength)); //FIXME
 			}
 		}
 	}

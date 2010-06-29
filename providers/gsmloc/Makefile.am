@@ -36,7 +36,7 @@ service_in_files = org.freedesktop.Geoclue.Providers.Gsmloc.service.in
 service_DATA = $(service_in_files:.service.in=.service)
 
 $(service_DATA): $(service_in_files) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
+	$(AM_V_GEN) sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
 EXTRA_DIST = 			\
 	ofono-marshal.list	\
@@ -56,7 +56,7 @@ DISTCLEANFILES = \
 %-bindings.h: stamp-%-bindings.h
 	@true
 stamp-%-bindings.h: %.xml
-	$(DBUS_BINDING_TOOL) --mode=glib-client $< > xgen-$(@F) \
+	$(AM_V_GEN) $(DBUS_BINDING_TOOL) --mode=glib-client $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
 	&& echo timestamp > $(@F)
@@ -64,5 +64,4 @@ stamp-%-bindings.h: %.xml
 ofono-marshal.h: ofono-marshal.list $(GLIB_GENMARSHAL)
 	$(GLIB_GENMARSHAL) $< --header --prefix=ofono_marshal > $@
 ofono-marshal.c: ofono-marshal.list ofono-marshal.h $(GLIB_GENMARSHAL)
-	echo "#include \"ofono-marshal.h\"" > $@ \
-	&& $(GLIB_GENMARSHAL) --prefix=ofono_marshal $(srcdir)/ofono-marshal.list --body >> $@
+	$(AM_V_GEN) $(GLIB_GENMARSHAL) --prefix=ofono_marshal $(srcdir)/ofono-marshal.list --header --body >> $@

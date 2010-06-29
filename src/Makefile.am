@@ -41,13 +41,13 @@ BUILT_SOURCES =			\
 %-glue.h: stamp-%-glue.h
 	@true
 stamp-gc-iface-master-glue.h: ../interfaces/gc-iface-master.xml
-	$(DBUS_BINDING_TOOL) --prefix=gc_iface_master --mode=glib-server $< > xgen-$(@F) \
+	$(AM_V_GEN) $(DBUS_BINDING_TOOL) --prefix=gc_iface_master --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F)	\
 	&& echo timestamp > $(@F)
 
 stamp-gc-iface-master-client-glue.h: ../interfaces/gc-iface-master-client.xml
-	$(DBUS_BINDING_TOOL) --prefix=gc_iface_master_client --mode=glib-server $< > xgen-$(@F) \
+	$(AM_V_GEN) $(DBUS_BINDING_TOOL) --prefix=gc_iface_master_client --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F)	\
 	&& echo timestamp > $(@F)
@@ -57,7 +57,7 @@ service_in_files = org.freedesktop.Geoclue.Master.service.in
 service_DATA = $(service_in_files:.service.in=.service)
 
 $(service_DATA): $(service_in_files) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
+	$(AM_V_GEN) sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
 EXTRA_DIST =			\
 	$(service_in_files)

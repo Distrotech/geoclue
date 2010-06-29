@@ -30,7 +30,7 @@ service_in_files = org.freedesktop.Geoclue.Providers.Localnet.service.in
 service_DATA = $(service_in_files:.service.in=.service)
 
 $(service_DATA): $(service_in_files) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
+	$(AM_V_GEN) sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
 CLEANFILES = \
 	stamp-geoclue-localnet-glue.h
@@ -48,7 +48,7 @@ DISTCLEANFILES = \
 	@true
 
 stamp-geoclue-localnet-glue.h: geoclue-localnet.xml
-	$(DBUS_BINDING_TOOL) --prefix=geoclue_localnet --mode=glib-server $< > xgen-$(@F) \
+	$(AM_V_GEN) $(DBUS_BINDING_TOOL) --prefix=geoclue_localnet --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
 	&& echo timestamp > $(@F)

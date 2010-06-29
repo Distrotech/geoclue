@@ -6,6 +6,9 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([1.9 foreign])
 GEOCLUE_VERSION=0.12.0
 
+# Enable silent build when available (Automake 1.11)
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+
 AC_PROG_CC
 AC_ISC_POSIX
 

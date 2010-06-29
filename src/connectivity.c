@@ -21,8 +21,18 @@
  * Boston, MA 02111-1307, USA.
  *
  */
+#include <config.h>
+
 #include <glib.h>
 #include "connectivity.h"
+
+#ifdef HAVE_NETWORK_MANAGER
+#include "connectivity-networkmanager.h"
+#else
+#ifdef HAVE_CONIC
+#include "connectivity-conic.h"
+#endif
+#endif
 
 enum {
 	STATUS_CHANGED,
@@ -69,6 +79,21 @@ geoclue_connectivity_get_type (void)
 	}
 	
 	return type;
+}
+
+GeoclueConnectivity *
+geoclue_connectivity_new (void)
+{
+	GeoclueConnectivity *connectivity = NULL;
+
+#ifdef HAVE_NETWORK_MANAGER
+	connectivity = GEOCLUE_CONNECTIVITY (g_object_new (GEOCLUE_TYPE_NETWORKMANAGER, NULL));
+#else
+#ifdef HAVE_CONIC
+	connectivity = GEOCLUE_CONNECTIVITY (g_object_new (GEOCLUE_TYPE_CONIC, NULL));
+#endif
+#endif
+	return connectivity;
 }
 
 GeoclueNetworkStatus

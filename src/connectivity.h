@@ -53,6 +53,7 @@ struct _GeoclueConnectivityInterface {
 
 GType geoclue_connectivity_get_type (void);
 
+GeoclueConnectivity *geoclue_connectivity_new (void);
 
 GeoclueNetworkStatus geoclue_connectivity_get_status (GeoclueConnectivity *self);
 

@@ -26,7 +26,7 @@ print_if_avail (GeoclueConnectivity *self,
 		GeoclueNetworkStatus status)
 {
 	char *router, *ap;
-	if (status != GEOCLUE_STATUS_AVAILABLE)
+	if (status != GEOCLUE_CONNECTIVITY_ONLINE)
 		return;
 	print_aps (self);
 	ap = geoclue_connectivity_get_ap_mac (self);
@@ -46,17 +46,17 @@ status_changed_cb (GeoclueConnectivity *self,
 	const char *str;
 
 	switch (status) {
-	case GEOCLUE_STATUS_ERROR:
-		str = "GEOCLUE_STATUS_ERROR";
+	case GEOCLUE_CONNECTIVITY_UNKNOWN:
+		str = "GEOCLUE_CONNECTIVITY_UNKNOWN";
 		break;
-	case GEOCLUE_STATUS_UNAVAILABLE:
-		str = "GEOCLUE_STATUS_UNAVAILABLE";
+	case GEOCLUE_CONNECTIVITY_OFFLINE:
+		str = "GEOCLUE_CONNECTIVITY_OFFLINE";
 		break;
-	case GEOCLUE_STATUS_ACQUIRING:
-		str = "GEOCLUE_STATUS_ACQUIRING";
+	case GEOCLUE_CONNECTIVITY_ACQUIRING:
+		str = "GEOCLUE_CONNECTIVITY_ACQUIRING";
 		break;
-	case GEOCLUE_STATUS_AVAILABLE:
-		str = "GEOCLUE_STATUS_AVAILABLE";
+	case GEOCLUE_CONNECTIVITY_ONLINE:
+		str = "GEOCLUE_CONNECTIVITY_ONLINE";
 		break;
 	default:
 		g_assert_not_reached ();

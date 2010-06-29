@@ -27,12 +27,16 @@
 
 
 #include <dbus/dbus-glib.h>
+#include <string.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include <NetworkManager.h> /*for DBus strings */
 
-#ifdef HAVE_NETWORK_MANAGER
 #include <nm-client.h>
 #include <nm-device-wifi.h>
-#endif
+#include <nm-setting-ip4-config.h>
 
 #include "connectivity-networkmanager.h"
 
@@ -110,6 +114,109 @@ get_aps (GeoclueConnectivity *iface)
 	}
 
 	return ht;
+}
+
+static char *
+mac_strup (char *mac)
+{
+	guint i;
+	for (i = 0; mac[i] != '\0' ; i++) {
+		if (g_ascii_isalpha (mac[i]))
+			mac[i] = g_ascii_toupper (mac[i]);
+	}
+	return mac;
+}
+
+static char *
+get_mac_for_gateway (const char *gateway)
+{
+	char *cmd, *out, *mac, **split;
+
+	cmd = g_strdup_printf ("ip neigh show %s", gateway);
+
+	if (g_spawn_command_line_sync (cmd, &out, NULL, NULL, NULL) == FALSE) {
+		g_free (out);
+		g_free (cmd);
+		return NULL;
+	}
+	g_free (cmd);
+
+	/* 192.168.1.1 dev eth0 lladdr 00:00:00:00:00:00 STALE */
+	split = g_strsplit (out, " ", -1);
+	g_free (out);
+
+	if (split == NULL)
+		return NULL;
+	if (g_strv_length (split) != 6) {
+		g_strfreev (split);
+		return NULL;
+	}
+	mac = g_strdup (split[4]);
+	g_strfreev (split);
+
+	return mac_strup (mac);
+}
+
+static gchar *
+ip4_address_as_string (guint32 ip)
+{
+	struct in_addr tmp_addr;
+	char buf[INET_ADDRSTRLEN+1];
+
+	memset (&buf, '\0', sizeof (buf));
+	tmp_addr.s_addr = ip;
+
+	if (inet_ntop (AF_INET, &tmp_addr, buf, INET_ADDRSTRLEN))
+		return g_strdup (buf);
+
+	return NULL;
+}
+
+static char *
+get_router_mac (GeoclueConnectivity *iface)
+{
+	GeoclueNetworkManager *self = GEOCLUE_NETWORKMANAGER (iface);
+	const GPtrArray *devices;
+	char *gateway, *mac;
+	guint i;
+
+	devices = nm_client_get_devices (self->client);
+	if (devices == NULL)
+		return NULL;
+
+	gateway = NULL;
+
+	for (i = 0; i < devices->len; i++) {
+		NMDevice *device = g_ptr_array_index (devices, i);
+		NMIP4Config *cfg4;
+		GSList *iter;
+
+		if (nm_device_get_state (device) != NM_DEVICE_STATE_ACTIVATED) {
+			/* FIXME:
+			 * NM seems to tell us that the device is actually in
+			 * NM_DEVICE_STATE_IP_CONFIG state
+			continue; */
+		}
+
+		cfg4 = nm_device_get_ip4_config (device);
+		if (cfg4 == NULL)
+			continue;
+
+		for (iter = (GSList *) nm_ip4_config_get_addresses (cfg4); iter; iter = g_slist_next (iter)) {
+			NMIP4Address *addr = (NMIP4Address *) iter->data;
+
+			gateway = ip4_address_as_string (nm_ip4_address_get_gateway (addr));
+			if (gateway != NULL)
+				break;
+		}
+	}
+	if (gateway == NULL)
+		return NULL;
+
+	mac = get_mac_for_gateway (gateway);
+	g_free (gateway);
+
+	return mac;
 }
 
 static void
@@ -268,12 +375,12 @@ geoclue_networkmanager_init (GeoclueNetworkManager *self)
 	cache_ap_mac (self);
 }
 
-
 static void
 geoclue_networkmanager_connectivity_init (GeoclueConnectivityInterface *iface)
 {
 	iface->get_status = get_status;
 	iface->get_ap_mac = get_ap_mac;
+	iface->get_router_mac = get_router_mac;
 	iface->get_aps    = get_aps;
 }
 

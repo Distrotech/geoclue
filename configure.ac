@@ -126,7 +126,7 @@ AC_ARG_ENABLE(networkmanager,
 if test "x$enable_networkmanager" != "xno"; then
    PKG_CHECK_MODULES(NETWORK_MANAGER,
    [
-      NetworkManager libnm-glib
+      NetworkManager libnm-glib libnm-util
    ], have_networkmanager="yes", have_networkmanager="no")
 
    if test "x$have_networkmanager" = "xyes"; then

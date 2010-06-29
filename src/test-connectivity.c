@@ -22,6 +22,23 @@ print_aps (GeoclueConnectivity *conn)
 }
 
 static void
+print_if_avail (GeoclueConnectivity *self,
+		GeoclueNetworkStatus status)
+{
+	char *router, *ap;
+	if (status != GEOCLUE_STATUS_AVAILABLE)
+		return;
+	print_aps (self);
+	ap = geoclue_connectivity_get_ap_mac (self);
+	g_message ("AP is '%s'", ap);
+	g_free (ap);
+
+	router = geoclue_connectivity_get_router_mac (self);
+	g_message ("Router is '%s'", router);
+	g_free (router);
+}
+
+static void
 status_changed_cb (GeoclueConnectivity *self,
 		   GeoclueNetworkStatus status,
 		   gpointer data)
@@ -45,10 +62,9 @@ status_changed_cb (GeoclueConnectivity *self,
 		g_assert_not_reached ();
 	}
 
-	if (status == GEOCLUE_STATUS_AVAILABLE)
-		print_aps (self);
-
 	g_message ("Connectivity status switch to '%s'", str);
+
+	print_if_avail (self, status);
 }
 
 int main (int argc, char **argv)
@@ -61,15 +77,13 @@ int main (int argc, char **argv)
 	mainloop = g_main_loop_new (NULL, FALSE);
 	conn = geoclue_connectivity_new ();
 
-	router = geoclue_connectivity_get_router_mac (conn);
-	g_message ("Router MAC is detected as '%s'", router ? router : "empty");
-
 	if (conn == NULL) {
-		g_message ("No connectivity object");
+		router = geoclue_connectivity_get_router_mac (conn);
+		g_message ("Router MAC is detected as '%s'", router ? router : "empty");
+
 		return 1;
 	}
-	if (geoclue_connectivity_get_status (conn) == GEOCLUE_STATUS_AVAILABLE)
-		print_aps (conn);
+	print_if_avail (conn, geoclue_connectivity_get_status (conn));
 	g_signal_connect (conn, "status-changed",
 			  G_CALLBACK (status_changed_cb), NULL);
 

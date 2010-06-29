@@ -107,14 +107,6 @@ geoclue_connectivity_get_status (GeoclueConnectivity *self)
 	return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_status (self);
 }
 
-char *
-geoclue_connectivity_get_ap_mac (GeoclueConnectivity *self)
-{
-	if (GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_ap_mac != NULL)
-		return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_ap_mac (self);
-	return NULL;
-}
-
 /* Parse /proc/net/route to get default gateway address and then parse
  * /proc/net/arp to find matching mac address.
  *
@@ -237,13 +229,25 @@ geoclue_connectivity_get_router_mac (GeoclueConnectivity *self)
 	return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_router_mac (self);
 }
 
+char *
+geoclue_connectivity_get_ap_mac (GeoclueConnectivity *self)
+{
+	if (self != NULL &&
+	    GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_ap_mac != NULL)
+		return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_ap_mac (self);
+
+	/* Hack when not using NetworkManager */
+	return geoclue_connectivity_get_router_mac (self);
+}
+
 GHashTable *
 geoclue_connectivity_get_aps (GeoclueConnectivity *self)
 {
 	char *ap;
 	GHashTable *ht;
 
-	if (GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps != NULL)
+	if (self != NULL &&
+	    GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps != NULL)
 		return GEOCLUE_CONNECTIVITY_GET_INTERFACE (self)->get_aps (self);
 
 	/* Fallback if the backend does not support get_aps */

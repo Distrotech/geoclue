@@ -248,16 +248,12 @@ cache_ap_mac (GeoclueNetworkManager *self)
 	guint i;
 
 	devices = nm_client_get_devices (self->client);
-	if (devices == NULL) {
-		g_free (self->cache_ap_mac);
-		self->cache_ap_mac = NULL;
-	}
 
 	g_free (self->cache_ap_mac);
 	self->cache_ap_mac = NULL;
 	self->ap_strength = 0;
 
-	for (i = 0; i < devices->len; i++) {
+	for (i = 0; devices != NULL && i < devices->len; i++) {
 		NMDevice *device = g_ptr_array_index (devices, i);
 		if (NM_IS_DEVICE_WIFI (device)) {
 			get_best_ap (self, device);

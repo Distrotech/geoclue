@@ -104,6 +104,10 @@ get_aps (GeoclueConnectivity *iface)
 			}
 		}
 	}
+	if (g_hash_table_size (ht) == 0) {
+		g_hash_table_destroy (ht);
+		return NULL;
+	}
 
 	return ht;
 }

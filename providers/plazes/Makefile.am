@@ -7,10 +7,12 @@ geoclue_plazes_SOURCES = \
 geoclue_plazes_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
+	-I$(top_srcdir)/src \
 	$(GEOCLUE_CFLAGS)
 
 geoclue_plazes_LDADD = \
 	$(GEOCLUE_LIBS) \
+	$(top_builddir)/src/libconnectivity.la \
 	$(top_builddir)/geoclue/libgeoclue.la 
 
 providersdir = $(datadir)/geoclue-providers

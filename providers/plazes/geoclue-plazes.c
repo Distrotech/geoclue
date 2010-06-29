@@ -38,6 +38,8 @@
 #include <geoclue/gc-iface-position.h>
 #include <geoclue/gc-iface-address.h>
 
+#include "connectivity.h"
+
 #define GEOCLUE_DBUS_SERVICE_PLAZES "org.freedesktop.Geoclue.Providers.Plazes"
 #define GEOCLUE_DBUS_PATH_PLAZES "/org/freedesktop/Geoclue/Providers/Plazes"
 #define PLAZES_URL "http://plazes.com/suggestions.xml"
@@ -51,6 +53,7 @@
 typedef struct _GeocluePlazes {
 	GcProvider parent;
 	GMainLoop *loop;
+	GeoclueConnectivity *conn;
 	GcWebService *web_service;
 	GeoclueStatus last_status;
 } GeocluePlazes;
@@ -98,95 +101,6 @@ geoclue_plazes_set_status (GeocluePlazes *self, GeoclueStatus status)
 		gc_iface_geoclue_emit_status_changed (GC_IFACE_GEOCLUE (self), status);
     }
 }
-		
-/* Parse /proc/net/route to get default gateway address and then parse
- * /proc/net/arp to find matching mac address. 
- *
- * There are some problems with this. First, it's IPv4 only.
- * Second, there must be a way to do this with ioctl, but that seemed really
- * complicated... even /usr/sbin/arp parses /proc/net/arp 
- * 
- * returns:
- *   1 : on success
- *   0 : no success, no errors
- *  <0 : error
- */
-int
-get_mac_address (char **mac)
-{
-	char *content;
-	char **lines, **entry;
-	GError *error = NULL;
-	char *route_gateway = NULL;
-
-	g_assert (*mac == NULL);
-
-	if (!g_file_get_contents ("/proc/net/route", &content, NULL, &error)) {
-		g_warning ("Failed to read /proc/net/route: %s", error->message);
-		g_error_free (error);
-		return -1;
-	}
-
-	lines = g_strsplit (content, "\n", 0);
-	g_free (content);
-	entry = lines + 1;
-
-	while (*entry && strlen (*entry) > 0) {
-		char dest[9];
-		char gateway[9];
-		if (sscanf (*entry, 
-			        "%*s %8[0-9A-Fa-f] %8[0-9A-Fa-f] %*s", 
-			        dest, gateway) != 2) {
-			g_warning ("Failed to parse /proc/net/route entry '%s'", *entry);
-		} else if (strcmp (dest, "00000000") == 0) {
-			route_gateway = g_strdup (gateway);
-			break;
-		}
-		entry++;
-	}
-	g_strfreev (lines);	
-
-	if (!route_gateway) {
-		g_warning ("Failed to find default route in /proc/net/route");
-		return -1;
-	}
-
-	if (!g_file_get_contents ("/proc/net/arp", &content, NULL, &error)) {
-		g_warning ("Failed to read /proc/net/arp: %s", error->message);
-		g_error_free (error);
-		return -1;
-	}
-	
-	lines = g_strsplit (content, "\n", 0);
-	g_free (content);
-	entry = lines+1;
-	while (*entry && strlen (*entry) > 0) {
-		char hwa[100];
-		char *arp_gateway;
-		int ip[4];
-		
-		if (sscanf(*entry, 
-		           "%d.%d.%d.%d 0x%*x 0x%*x %100s %*s %*s\n", 
-		           &ip[0], &ip[1], &ip[2], &ip[3], hwa) != 5) {
-			g_warning ("Failed to parse /proc/net/arp entry '%s'", *entry);
-		} else {
-			arp_gateway = g_strdup_printf ("%02X%02X%02X%02X", ip[3], ip[2], ip[1], ip[0]);
-			if (strcmp (arp_gateway, route_gateway) == 0) {
-				g_free (arp_gateway);
-				*mac = g_strdup (hwa);
-				break;
-			}
-			g_free (arp_gateway);
-			
-		}
-		entry++;
-	}
-	g_free (route_gateway);
-	g_strfreev (lines);
-
-	return *mac ? 1 : 0;
-}
-
 
 /* Position interface implementation */
 
@@ -201,8 +115,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
                              GError                **error)
 {
 	GeocluePlazes *plazes;
-	int i, ret_val;
-	char *mac = NULL;
+	char *mac;
 	
 	plazes = (GEOCLUE_PLAZES (iface));
 	
@@ -213,14 +126,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 
 	/* we may be trying to read /proc/net/arp right after network connection. 
 	 * It's sometimes not up yet, try a couple of times */
-	for (i = 0; i < 5; i++) {
-		ret_val = get_mac_address (&mac);
-		if (ret_val < 0)
-			return FALSE;
-		else if (ret_val == 1)
-			break;
-		usleep (200);
-	}
+	mac = geoclue_connectivity_get_ap_mac (plazes->conn);
 
 	if (mac == NULL) {
 		g_set_error (error, GEOCLUE_ERROR, 
@@ -288,8 +194,7 @@ geoclue_plazes_get_address (GcIfaceAddress   *iface,
 {
 	
 	GeocluePlazes *plazes = GEOCLUE_PLAZES (iface);
-	int i, ret_val;
-	char *mac = NULL;
+	char *mac;
 
 	GeoclueAccuracyLevel level = GEOCLUE_ACCURACY_LEVEL_NONE;
 	
@@ -299,14 +204,7 @@ geoclue_plazes_get_address (GcIfaceAddress   *iface,
 
 	/* we may be trying to read /proc/net/arp right after network connection. 
 	 * It's sometimes not up yet, try a couple of times */
-	for (i = 0; i < 5; i++) {
-		ret_val = get_mac_address (&mac);
-		if (ret_val < 0)
-			return FALSE;
-		else if (ret_val == 1)
-			break;
-		usleep (200);
-	}
+	mac = geoclue_connectivity_get_ap_mac (plazes->conn);
 
 	if (mac == NULL) {
 		g_set_error (error, GEOCLUE_ERROR, 
@@ -397,7 +295,11 @@ static void
 geoclue_plazes_finalize (GObject *obj)
 {
 	GeocluePlazes *plazes = GEOCLUE_PLAZES (obj);
-	
+
+	if (plazes->conn != NULL) {
+		g_object_unref (plazes->conn);
+		plazes->conn = NULL;
+	}
 	g_object_unref (plazes->web_service);
 	
 	((GObjectClass *) geoclue_plazes_parent_class)->finalize (obj);
@@ -425,7 +327,8 @@ geoclue_plazes_init (GeocluePlazes *plazes)
 	                         GEOCLUE_DBUS_SERVICE_PLAZES,
 	                         GEOCLUE_DBUS_PATH_PLAZES,
 	                         "Plazes", "Plazes.com based provider, uses gateway mac address to locate");
-	
+
+	plazes->conn = geoclue_connectivity_new ();
 	plazes->web_service = g_object_new (GC_TYPE_WEB_SERVICE, NULL);
 	gc_web_service_set_base_url (plazes->web_service, PLAZES_URL);
     geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_AVAILABLE);

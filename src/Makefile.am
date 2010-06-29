@@ -1,6 +1,7 @@
 libexec_PROGRAMS = geoclue-master
+noinst_LTLIBRARIES = libconnectivity.la
 
-geoclue_master_CFLAGS =		\
+AM_CFLAGS =			\
 	-I$(top_srcdir)		\
 	-I$(srcdir)		\
 	-I$(top_builddir)	\
@@ -9,30 +10,34 @@ geoclue_master_CFLAGS =		\
 	$(MASTER_CFLAGS) \
 	$(CONNECTIVITY_CFLAGS)
 
-geoclue_master_LDADD =		\
+geoclue_master_LDADD =				\
 	$(top_builddir)/geoclue/libgeoclue.la	\
-	$(GEOCLUE_LIBS) \
-	$(MASTER_LIBS)  \
-	$(CONNECTIVITY_LIBS)
+	libconnectivity.la			\
+	$(GEOCLUE_LIBS)				\
+	$(MASTER_LIBS)
 
 NOINST_H_FILES =		\
 	main.h			\
 	master.h		\
-	master-provider.h		\
-	client.h		\
-	connectivity.h		\
+	master-provider.h	\
+	client.h
+
+libconnectivity_la_SOURCES =		\
+	connectivity.h			\
 	connectivity-networkmanager.h	\
-	connectivity-conic.h
+	connectivity-conic.h		\
+	connectivity.c			\
+	connectivity-networkmanager.c	\
+	connectivity-conic.c
+
+libconnectivity_la_LIBADD = $(CONNECTIVITY_LIBS)
 
 geoclue_master_SOURCES =	\
 	$(NOINST_H_FILES)	\
 	client.c		\
 	main.c			\
 	master.c		\
-	master-provider.c	\
-	connectivity.c		\
-	connectivity-networkmanager.c	\
-	connectivity-conic.c
+	master-provider.c
 
 BUILT_SOURCES =			\
 	gc-iface-master-glue.h	\

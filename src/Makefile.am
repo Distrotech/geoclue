@@ -1,5 +1,6 @@
 libexec_PROGRAMS = geoclue-master
 noinst_LTLIBRARIES = libconnectivity.la
+noinst_PROGRAMS = test-connectivity
 
 AM_CFLAGS =			\
 	-I$(top_srcdir)		\
@@ -31,6 +32,9 @@ libconnectivity_la_SOURCES =		\
 	connectivity-conic.c
 
 libconnectivity_la_LIBADD = $(CONNECTIVITY_LIBS)
+
+test_connectivity_SOURCES = test-connectivity.c
+test_connectivity_LDADD = libconnectivity.la $(GEOCLUE_LIBS)
 
 geoclue_master_SOURCES =	\
 	$(NOINST_H_FILES)	\

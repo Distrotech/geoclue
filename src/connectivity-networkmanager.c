@@ -60,6 +60,15 @@ get_ap_mac (GeoclueConnectivity *iface)
 	return self->cache_ap_mac;
 }
 
+static int
+strength_to_dbm (int strength)
+{
+	/* Hackish linear strength to dBm conversion.
+	 * 0% is -90 dBm
+	 * 100% is -20 dBm */
+	return (strength * 0.7) - 90;
+}
+
 static GHashTable *
 get_aps (GeoclueConnectivity *iface)
 {
@@ -91,8 +100,7 @@ get_aps (GeoclueConnectivity *iface)
 
 				ap_mac = g_strdup (nm_access_point_get_hw_address (ap));
 				strength = nm_access_point_get_strength (ap);
-				/* Do some hackish percentage to dBm */
-				g_hash_table_insert (ht, ap_mac, GINT_TO_POINTER (strength)); //FIXME
+				g_hash_table_insert (ht, ap_mac, GINT_TO_POINTER (strength_to_dbm (strength)));
 			}
 		}
 	}

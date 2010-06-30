@@ -191,12 +191,8 @@ get_router_mac (GeoclueConnectivity *iface)
 		NMIP4Config *cfg4;
 		GSList *iter;
 
-		if (nm_device_get_state (device) != NM_DEVICE_STATE_ACTIVATED) {
-			/* FIXME:
-			 * NM seems to tell us that the device is actually in
-			 * NM_DEVICE_STATE_IP_CONFIG state
-			continue; */
-		}
+		if (nm_device_get_state (device) != NM_DEVICE_STATE_ACTIVATED)
+			continue;
 
 		cfg4 = nm_device_get_ip4_config (device);
 		if (cfg4 == NULL)
@@ -262,19 +258,10 @@ cache_ap_mac (GeoclueNetworkManager *self)
 }
 
 static void
-finalize (GObject *object)
-{
-	/* free everything */
-	
-	((GObjectClass *) geoclue_networkmanager_parent_class)->finalize (object);
-}
-
-static void
 dispose (GObject *object)
 {
 	GeoclueNetworkManager *self = GEOCLUE_NETWORKMANAGER (object);
 	
-	dbus_g_connection_unref (self->connection);
 	g_free (self->cache_ap_mac);
 	self->cache_ap_mac = NULL;
 	g_object_unref (self->client);
@@ -287,7 +274,6 @@ geoclue_networkmanager_class_init (GeoclueNetworkManagerClass *klass)
 {
 	GObjectClass *o_class = (GObjectClass *) klass;
 	
-	o_class->finalize = finalize;
 	o_class->dispose = dispose;
 }
 
@@ -311,64 +297,51 @@ nmstate_to_geocluenetworkstatus (NMState status)
 }
 
 static void
-geoclue_networkmanager_state_changed (DBusGProxy *proxy, 
-                                      NMState status, 
-                                      gpointer userdata)
+update_status (GeoclueNetworkManager *self, gboolean do_signal)
 {
-	GeoclueNetworkManager *self = GEOCLUE_NETWORKMANAGER (userdata);
-	GeoclueNetworkStatus gc_status;
-	
-	gc_status = nmstate_to_geocluenetworkstatus (status);
-	
-	if (gc_status != self->status) {
+	GeoclueNetworkStatus old_status;
+	NMState state;
+
+	old_status = self->status;
+
+	if (nm_client_get_manager_running (self->client)) {
+		state = nm_client_get_state (self->client);
+		self->status = nmstate_to_geocluenetworkstatus (state);
 		cache_ap_mac (self);
-		self->status = gc_status;
+	} else {
+		self->status = GEOCLUE_CONNECTIVITY_OFFLINE;
+	}
+
+	if ((self->status != old_status) && do_signal) {
 		geoclue_connectivity_emit_status_changed (GEOCLUE_CONNECTIVITY (self),
 		                                          self->status);
 	}
 }
 
-
-#define NM_DBUS_SIGNAL_STATE_CHANGE "StateChange"
+static void
+nm_update_status_cb (GObject *obj, GParamSpec *spec, gpointer userdata)
+{
+	update_status (GEOCLUE_NETWORKMANAGER (userdata), TRUE);
+}
 
 static void
 geoclue_networkmanager_init (GeoclueNetworkManager *self)
 {
-	GError *error = NULL;
-	DBusGProxy *proxy;
-	NMState state;
-	
 	self->status = GEOCLUE_CONNECTIVITY_UNKNOWN;
-	
-	self->connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
-	if (self->connection == NULL) {
-		g_warning ("%s was unable to create a connection to D-Bus: %s",
-			   G_OBJECT_TYPE_NAME (self), error->message);
-		g_error_free (error);
+	self->client = nm_client_new ();
+	if (self->client == NULL) {
+		g_warning ("%s was unable to create a connection to NetworkManager",
+			   G_OBJECT_TYPE_NAME (self));
 		return;
 	}
-	
-	proxy = dbus_g_proxy_new_for_name (self->connection, 
-	                                   NM_DBUS_SERVICE,
-	                                   NM_DBUS_PATH, 
-	                                   NM_DBUS_INTERFACE);
-	dbus_g_proxy_add_signal (proxy, NM_DBUS_SIGNAL_STATE_CHANGE, 
-	                         G_TYPE_UINT, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (proxy, NM_DBUS_SIGNAL_STATE_CHANGE, 
-	                             G_CALLBACK (geoclue_networkmanager_state_changed), 
-	                             self, NULL);
-	
-	if (dbus_g_proxy_call (proxy, "state", &error, 
-	                       G_TYPE_INVALID, 
-	                       G_TYPE_UINT, &state, G_TYPE_INVALID)){
-		self->status = nmstate_to_geocluenetworkstatus (state);
-	} else {
-		g_warning ("Could not get connectivity state from NetworkManager: %s", error->message);
-		g_error_free (error);
-	}
 
-	self->client = nm_client_new ();
-	cache_ap_mac (self);
+	g_signal_connect (G_OBJECT (self->client), "notify::running",
+	                  G_CALLBACK (nm_update_status_cb), self);
+	g_signal_connect (G_OBJECT (self->client), "notify::state",
+	                  G_CALLBACK (nm_update_status_cb), self);
+
+	/* get initial status */
+	update_status (self, FALSE);
 }
 
 static void

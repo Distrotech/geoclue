@@ -52,7 +52,7 @@ static int
 get_status (GeoclueConnectivity *iface)
 {
 	GeoclueNetworkManager *nm = GEOCLUE_NETWORKMANAGER (iface);
-	
+
 	return nm->status;
 }
 
@@ -61,7 +61,7 @@ get_ap_mac (GeoclueConnectivity *iface)
 {
 	GeoclueNetworkManager *self = GEOCLUE_NETWORKMANAGER (iface);
 
-	return self->cache_ap_mac;
+	return g_strdup (self->cache_ap_mac);
 }
 
 static int

@@ -32,6 +32,7 @@ doxygen.conf
 gtk-doc.make
 
 example/*-example
+src/test-connectivity
 src/geoclue-master
 geoclue/geoclue-enum-types.h
 geoclue/geoclue-enum-types.c
@@ -46,5 +47,7 @@ providers/manual/geoclue-manual
 providers/nominatim/geoclue-nominatim
 providers/plazes/geoclue-plazes
 providers/yahoo/geoclue-yahoo
+providers/gypsy/geoclue-gypsy
+providers/skyhook/geoclue-skyhook
 
 test/geoclue-test-gui

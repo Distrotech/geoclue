@@ -149,6 +149,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		             "Did not get reply from server");
 		return FALSE;
 	}
+	g_free (mac);
 	
 	if (latitude && gc_web_service_get_double (plazes->web_service, 
 	                                           latitude, PLAZES_LAT_XPATH)) {

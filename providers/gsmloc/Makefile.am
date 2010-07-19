@@ -7,7 +7,9 @@ nodist_geoclue_gsmloc_SOURCES = \
 	ofono-manager-bindings.h \
 	ofono-modem-bindings.h \
 	ofono-network-registration-bindings.h \
-	ofono-network-operator-bindings.h
+	ofono-network-operator-bindings.h \
+	mm-marshal.c \
+	mm-marshal.h
 
 BUILT_SOURCES = \
 	$(nodist_geoclue_gsmloc_SOURCES)
@@ -16,7 +18,9 @@ geoclue_gsmloc_SOURCES = \
 	mcc.h \
 	geoclue-gsmloc.c \
 	geoclue-gsmloc-ofono.c \
-	geoclue-gsmloc-ofono.h
+	geoclue-gsmloc-ofono.h \
+	geoclue-gsmloc-mm.c \
+	geoclue-gsmloc-mm.h
 
 
 geoclue_gsmloc_CFLAGS = \
@@ -44,6 +48,7 @@ EXTRA_DIST = 			\
 	ofono-modem.xml \
 	ofono-network-operator.xml \
 	ofono-network-registration.xml \
+	mm-marshal.list \
 	$(service_in_files)	\
 	$(providers_DATA)
 
@@ -65,3 +70,8 @@ ofono-marshal.h: ofono-marshal.list $(GLIB_GENMARSHAL)
 	$(GLIB_GENMARSHAL) $< --header --prefix=ofono_marshal > $@
 ofono-marshal.c: ofono-marshal.list ofono-marshal.h $(GLIB_GENMARSHAL)
 	$(AM_V_GEN) $(GLIB_GENMARSHAL) --prefix=ofono_marshal $(srcdir)/ofono-marshal.list --header --body >> $@
+
+mm-marshal.h: mm-marshal.list $(GLIB_GENMARSHAL)
+	$(AM_V_GEN) $(GLIB_GENMARSHAL) $< --header --prefix=mm_marshal > $@
+mm-marshal.c: mm-marshal.list mm-marshal.h $(GLIB_GENMARSHAL)
+	$(AM_V_GEN) $(GLIB_GENMARSHAL) --prefix=mm_marshal $(srcdir)/mm-marshal.list --header --body >> $@

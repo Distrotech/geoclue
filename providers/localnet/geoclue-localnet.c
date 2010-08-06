@@ -239,7 +239,7 @@ geoclue_localnet_find_gateway (GeoclueLocalnet *localnet, char *mac)
 	while (l) {
 		Gateway *gw = l->data;
 		
-		if (strcmp (gw->mac, mac) == 0) {
+		if (g_ascii_strcasecmp (gw->mac, mac) == 0) {
 			return gw;
 		}
 		

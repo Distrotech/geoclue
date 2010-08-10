@@ -118,6 +118,31 @@ if test "x$enable_conic" = "xyes" -a "x$have_conic" != "xyes"; then
    AC_MSG_ERROR([Couldn't find conic dependencies.])
 fi
 
+AC_ARG_ENABLE(connman,
+              AS_HELP_STRING([--enable-connman=@<:@no/yes/auto@:>@],
+                             [build with connman support]), ,
+                             enable_connman=auto)
+
+if test "x$enable_connman" != "xno"; then
+   PKG_CHECK_MODULES(CONNMAN,
+   [
+      connman
+   ], have_connman="yes", have_connman="no")
+
+   if test "x$have_connman" = "xyes"; then
+      CONNECTIVITY="Meego LibConnMan"
+      CONNECTIVITY_LIBS=${CONNMAN_LIBS}
+      CONNECTIVITY_CFLAGS=${CONNMAN_CFLAGS}
+      AC_DEFINE(HAVE_CONNMAN, 1, [define if libconmann is installed])
+   fi
+else
+   have_connman=no
+fi
+
+if test "x$enable_connman" = "xyes" -a "x$have_connman" != "xyes"; then
+   AC_MSG_ERROR([Couldn't find connman dependencies.])
+fi
+
 AC_ARG_ENABLE(networkmanager,
               AS_HELP_STRING([--enable-networkmanager=@<:@no/yes/auto@:>@],
                              [build with NetworkManager support]), ,

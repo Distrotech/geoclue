@@ -27,9 +27,11 @@ libconnectivity_la_SOURCES =		\
 	connectivity.h			\
 	connectivity-networkmanager.h	\
 	connectivity-conic.h		\
+	connectivity-connman.h		\
 	connectivity.c			\
 	connectivity-networkmanager.c	\
-	connectivity-conic.c
+	connectivity-conic.c		\
+	connectivity-connman.c
 
 libconnectivity_la_LIBADD = $(CONNECTIVITY_LIBS)
 

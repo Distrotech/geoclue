@@ -37,6 +37,10 @@
 #else
 #ifdef HAVE_CONIC
 #include "connectivity-conic.h"
+#else
+#ifdef HAVE_CONNMAN
+#include "connectivity-connman.h"
+#endif
 #endif
 #endif
 

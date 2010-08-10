@@ -34,6 +34,10 @@
 #else
 #ifdef HAVE_CONIC
 #include "connectivity-conic.h"
+#else
+#ifdef HAVE_CONNMAN
+#include "connectivity-connman.h"
+#endif
 #endif
 #endif
 
@@ -96,6 +100,10 @@ geoclue_connectivity_new (void)
 #else
 #ifdef HAVE_CONIC
 	connectivity = GEOCLUE_CONNECTIVITY (g_object_new (GEOCLUE_TYPE_CONIC, NULL));
+#else
+#ifdef HAVE_CONNMAN
+	connectivity = GEOCLUE_CONNECTIVITY (g_object_new (GEOCLUE_TYPE_CONNMAN, NULL));
+#endif
 #endif
 #endif
 	return connectivity;

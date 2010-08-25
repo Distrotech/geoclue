@@ -102,6 +102,16 @@ geoclue_plazes_set_status (GeocluePlazes *self, GeoclueStatus status)
     }
 }
 
+static char *
+mac_strdown (char *mac)
+{
+	guint i;
+	for (i = 0; mac[i] != '\0' ; i++) {
+		if (g_ascii_isalpha (mac[i]))
+			mac[i] = g_ascii_tolower (mac[i]);
+	}
+	return mac;
+}
 /* Position interface implementation */
 
 static gboolean 
@@ -132,24 +142,27 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ERROR);
 		return FALSE;
 	}
-	
-  geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
+
+	mac = mac_strdown (mac);
+
+	geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
 
 	mac_lc = g_ascii_strdown (mac, -1);
 	g_free (mac);
 	if (!gc_web_service_query (plazes->web_service, error,
-	                           PLAZES_KEY_MAC, mac_lc, 
+	                           PLAZES_KEY_MAC, mac,
 	                           (char *)0)) {
 		g_free (mac_lc);
         // did not get a reply; we can try again later
 		geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_AVAILABLE);
-		g_set_error (error, GEOCLUE_ERROR, 
-		             GEOCLUE_ERROR_NOT_AVAILABLE, 
+		g_set_error (error, GEOCLUE_ERROR,
+		             GEOCLUE_ERROR_NOT_AVAILABLE,
 		             "Did not get reply from server");
 		return FALSE;
 	}
-	g_free (mac_lc);
-	
+
+	g_free (mac);
+
 	if (latitude && gc_web_service_get_double (plazes->web_service, 
 	                                           latitude, PLAZES_LAT_XPATH)) {
 		*fields |= GEOCLUE_POSITION_FIELDS_LATITUDE;

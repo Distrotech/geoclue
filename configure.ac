@@ -124,23 +124,10 @@ AC_ARG_ENABLE(connman,
                              enable_connman=auto)
 
 if test "x$enable_connman" != "xno"; then
-   PKG_CHECK_MODULES(CONNMAN,
-   [
-      connman
-   ], have_connman="yes", have_connman="no")
-
-   if test "x$have_connman" = "xyes"; then
-      CONNECTIVITY="Meego LibConnMan"
-      CONNECTIVITY_LIBS=${CONNMAN_LIBS}
-      CONNECTIVITY_CFLAGS=${CONNMAN_CFLAGS}
-      AC_DEFINE(HAVE_CONNMAN, 1, [define if libconmann is installed])
-   fi
+    CONNECTIVITY="ConnMan"
+    AC_DEFINE(HAVE_CONNMAN, 1, [define if libconmann is installed])
 else
    have_connman=no
-fi
-
-if test "x$enable_connman" = "xyes" -a "x$have_connman" != "xyes"; then
-   AC_MSG_ERROR([Couldn't find connman dependencies.])
 fi
 
 AC_ARG_ENABLE(networkmanager,

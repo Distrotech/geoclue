@@ -346,7 +346,7 @@ gc_web_service_query (GcWebService *self, GError **error, ...)
 	key = va_arg (list, char*);
 	while (key) {
 		value = va_arg (list, char*);
-		esc_value = (gchar *)xmlURIEscapeStr ((xmlChar *)value, NULL);
+		esc_value = (gchar *)xmlURIEscapeStr ((xmlChar *)value, (xmlChar *)":");
 		
 		if (first_pair) {
 			tmp = g_strdup_printf ("%s?%s=%s",  url, key, esc_value);

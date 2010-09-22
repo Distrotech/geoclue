@@ -109,7 +109,7 @@ main (int    argc,
 	/* We want provider that has detailed accuracy and emits signals.
 	 * The provider is allowed to use any resources available. */
 	if (!geoclue_master_client_set_requirements (client, 
-	                                             GEOCLUE_ACCURACY_LEVEL_DETAILED,
+	                                             GEOCLUE_ACCURACY_LEVEL_LOCALITY,
 	                                             0, TRUE,
 	                                             GEOCLUE_RESOURCE_ALL,
 	                                             NULL)){

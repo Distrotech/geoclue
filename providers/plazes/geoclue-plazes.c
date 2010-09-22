@@ -124,7 +124,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		*timestamp = time (NULL);
 	}
 
-	mac = geoclue_connectivity_get_ap_mac (plazes->conn);
+	mac = geoclue_connectivity_get_router_mac (plazes->conn);
 	if (mac == NULL) {
 		g_set_error (error, GEOCLUE_ERROR, 
 		             GEOCLUE_ERROR_NOT_AVAILABLE, 
@@ -202,9 +202,7 @@ geoclue_plazes_get_address (GcIfaceAddress   *iface,
 		*timestamp = time (NULL);
 	}
 
-	/* we may be trying to read /proc/net/arp right after network connection. 
-	 * It's sometimes not up yet, try a couple of times */
-	mac = geoclue_connectivity_get_ap_mac (plazes->conn);
+	mac = geoclue_connectivity_get_router_mac (plazes->conn);
 
 	if (mac == NULL) {
 		g_set_error (error, GEOCLUE_ERROR, 

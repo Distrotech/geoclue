@@ -115,7 +115,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
                              GError                **error)
 {
 	GeocluePlazes *plazes;
-	char *mac;
+	char *mac, *mac_lc;
 	
 	plazes = (GEOCLUE_PLAZES (iface));
 	
@@ -124,10 +124,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		*timestamp = time (NULL);
 	}
 
-	/* we may be trying to read /proc/net/arp right after network connection. 
-	 * It's sometimes not up yet, try a couple of times */
 	mac = geoclue_connectivity_get_ap_mac (plazes->conn);
-
 	if (mac == NULL) {
 		g_set_error (error, GEOCLUE_ERROR, 
 		             GEOCLUE_ERROR_NOT_AVAILABLE, 
@@ -136,12 +133,14 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		return FALSE;
 	}
 	
-    geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
+  geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
 
+	mac_lc = g_ascii_strdown (mac, -1);
+	g_free (mac);
 	if (!gc_web_service_query (plazes->web_service, error,
-	                           PLAZES_KEY_MAC, mac, 
+	                           PLAZES_KEY_MAC, mac_lc, 
 	                           (char *)0)) {
-		g_free (mac);
+		g_free (mac_lc);
         // did not get a reply; we can try again later
 		geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_AVAILABLE);
 		g_set_error (error, GEOCLUE_ERROR, 
@@ -149,7 +148,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 		             "Did not get reply from server");
 		return FALSE;
 	}
-	g_free (mac);
+	g_free (mac_lc);
 	
 	if (latitude && gc_web_service_get_double (plazes->web_service, 
 	                                           latitude, PLAZES_LAT_XPATH)) {
@@ -195,7 +194,7 @@ geoclue_plazes_get_address (GcIfaceAddress   *iface,
 {
 	
 	GeocluePlazes *plazes = GEOCLUE_PLAZES (iface);
-	char *mac;
+	char *mac, *mac_lc;
 
 	GeoclueAccuracyLevel level = GEOCLUE_ACCURACY_LEVEL_NONE;
 	
@@ -217,17 +216,20 @@ geoclue_plazes_get_address (GcIfaceAddress   *iface,
 	
     geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
 
+	mac_lc = g_ascii_strdown (mac, -1);
+	g_free (mac);
 	if (!gc_web_service_query (plazes->web_service, error,
-	                           PLAZES_KEY_MAC, mac, 
+	                           PLAZES_KEY_MAC, mac_lc, 
 	                           (char *)0)) {
-		g_free (mac);
+		g_free (mac_lc);
 		geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_AVAILABLE);
 		g_set_error (error, GEOCLUE_ERROR, 
 		             GEOCLUE_ERROR_NOT_AVAILABLE, 
 		             "Did not get reply from server");
 		return FALSE;
 	}
-	
+	g_free (mac_lc);
+
 	if (address) {
 		char *str;
 		

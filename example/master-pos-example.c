@@ -65,6 +65,35 @@ provider_changed_cb (GeoclueMasterClient *client,
 }
 
 static void
+position_callback (GeocluePosition      *pos,
+		   GeocluePositionFields fields,
+		   int                   timestamp,
+		   double                latitude,
+		   double                longitude,
+		   double                altitude,
+		   GeoclueAccuracy      *accuracy,
+		   GError               *error,
+		   gpointer              userdata)
+{
+	if (error) {
+		g_printerr ("Error getting initial position: %s\n", error->message);
+		g_error_free (error);
+	} else {
+		if (fields & GEOCLUE_POSITION_FIELDS_LATITUDE &&
+		    fields & GEOCLUE_POSITION_FIELDS_LONGITUDE) {
+			GeoclueAccuracyLevel level;
+			
+			geoclue_accuracy_get_details (accuracy, &level, NULL, NULL);
+			g_print ("Initial position (accuracy %d):\n", level);
+			g_print ("\t%f, %f\n", latitude, longitude);
+		} else {
+			g_print ("Initial position not available.\n");
+		}
+	}
+}
+
+
+static void
 position_changed_cb (GeocluePosition      *position,
 		     GeocluePositionFields fields,
 		     int                   timestamp,
@@ -128,7 +157,11 @@ main (int    argc,
 	
 	g_signal_connect (G_OBJECT (position), "position-changed",
 			  G_CALLBACK (position_changed_cb), NULL);
-	
+
+	geoclue_position_get_position_async (position, 
+	                                     (GeocluePositionCallback) position_callback,
+	                                     NULL);
+    
 	mainloop = g_main_loop_new (NULL, FALSE);
 	g_main_loop_run (mainloop);
 	

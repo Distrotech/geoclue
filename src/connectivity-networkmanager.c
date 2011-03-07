@@ -38,6 +38,10 @@
 #include <nm-device-wifi.h>
 #include <nm-setting-ip4-config.h>
 
+#if !defined(NM_CHECK_VERSION)
+#define NM_CHECK_VERSION(x,y,z) 0
+#endif
+
 #include "connectivity-networkmanager.h"
 
 static void geoclue_networkmanager_connectivity_init (GeoclueConnectivityInterface *iface);
@@ -285,10 +289,19 @@ nmstate_to_geocluenetworkstatus (NMState status)
 			return GEOCLUE_CONNECTIVITY_UNKNOWN;
 		case NM_STATE_ASLEEP:
 		case NM_STATE_DISCONNECTED:
+#if NM_CHECK_VERSION(0,8,992)
+		case NM_STATE_DISCONNECTING:
+#endif
 			return GEOCLUE_CONNECTIVITY_OFFLINE;
 		case NM_STATE_CONNECTING:
 			return GEOCLUE_CONNECTIVITY_ACQUIRING;
+#if NM_CHECK_VERSION(0,8,992)
+		case NM_STATE_CONNECTED_LOCAL:
+		case NM_STATE_CONNECTED_SITE:
+		case NM_STATE_CONNECTED_GLOBAL:
+#else
 		case NM_STATE_CONNECTED:
+#endif
 			return GEOCLUE_CONNECTIVITY_ONLINE;
 		default:
 			g_warning ("Unknown NMStatus: %d", status);

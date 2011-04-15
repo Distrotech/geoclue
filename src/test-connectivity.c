@@ -17,6 +17,10 @@ print_aps (GeoclueConnectivity *conn)
 	GHashTable *ht;
 
 	ht = geoclue_connectivity_get_aps (conn);
+	if (ht == NULL) {
+		g_message ("No Access Points available");
+		return;
+	}
 	g_message ("APs:");
 	g_hash_table_foreach (ht, print_ap, NULL);
 }
@@ -30,7 +34,7 @@ print_if_avail (GeoclueConnectivity *self,
 		return;
 	print_aps (self);
 	ap = geoclue_connectivity_get_ap_mac (self);
-	g_message ("AP is '%s'", ap);
+	g_message ("AP is '%s'", ap ? ap : "Unavailable");
 	g_free (ap);
 
 	router = geoclue_connectivity_get_router_mac (self);

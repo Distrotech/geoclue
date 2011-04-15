@@ -27,7 +27,7 @@
 #endif
 
 #include <glib.h>
-#include <gio/gsettings.h>
+#include <gio/gio.h>
 
 #include <dbus/dbus-protocol.h>
 #include <dbus/dbus-glib.h>

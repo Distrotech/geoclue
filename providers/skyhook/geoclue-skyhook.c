@@ -289,7 +289,9 @@ int
 main()
 {
 	g_type_init();
+#if !GLIB_CHECK_VERSION(2,31,0)
 	g_thread_init (NULL);
+#endif
 
 	GeoclueSkyhook *o = g_object_new (GEOCLUE_TYPE_SKYHOOK, NULL);
 	o->loop = g_main_loop_new (NULL, TRUE);

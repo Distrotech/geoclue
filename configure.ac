@@ -35,6 +35,12 @@ else
 	AC_DEFINE(GEOCLUE_DBUS_BUS, DBUS_BUS_SESSION, Use the session bus)
 fi
 
+AC_ARG_ENABLE(tests,[  --disable-tests           disable test libraries ], enable_tests=$enableval,enable_tests=yes)
+if test "x$enable_tests" = "xyes"; then
+   BUILD_TESTS=test
+fi
+AC_SUBST(BUILD_TESTS)
+
 PKG_CHECK_MODULES(GEOCLUE, [
 		  glib-2.0
 		  gobject-2.0

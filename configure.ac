@@ -77,7 +77,7 @@ AC_ARG_ENABLE(gtk,
 if test "x$enable_gtk" != "xno"; then
    PKG_CHECK_MODULES(GTK,
    [
-      gtk+-2.0
+      gtk+-3.0
    ], have_gtk="yes", have_gtk="no")
  
    if test "x$have_gtk" = "xyes"; then

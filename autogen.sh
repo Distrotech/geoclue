@@ -42,4 +42,6 @@ gtkdocize || exit 1
 && "${AUTOMAKE}" --add-missing \
 && "${AUTOCONF}"
 
-$(dirname "${0}")/configure "$@"
+if test -z "$NOCONFIGURE"; then
+    exec $(dirname "${0}")/configure "$@"
+fi

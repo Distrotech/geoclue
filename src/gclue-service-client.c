@@ -77,10 +77,7 @@ gclue_service_client_finalize (GObject *object)
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (object)->priv;
 
-        if (priv->path) {
-                g_free (priv->path);
-                priv->path = NULL;
-        }
+        g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
 
         /* Chain up to the parent class */

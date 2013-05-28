@@ -112,6 +112,18 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
 }
 
 static void
+gclue_service_manager_finalize (GObject *object)
+{
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (object)->priv;
+
+        g_clear_object (&priv->connection);
+        g_clear_pointer (&priv->clients, g_hash_table_unref);
+
+        /* Chain up to the parent class */
+        G_OBJECT_CLASS (gclue_service_manager_parent_class)->finalize (object);
+}
+
+static void
 gclue_service_manager_get_property (GObject    *object,
                                    guint       prop_id,
                                    GValue     *value,
@@ -154,6 +166,7 @@ gclue_service_manager_class_init (GClueServiceManagerClass *klass)
         GObjectClass *object_class;
 
         object_class = G_OBJECT_CLASS (klass);
+        object_class->finalize = gclue_service_manager_finalize;
         object_class->get_property = gclue_service_manager_get_property;
         object_class->set_property = gclue_service_manager_set_property;
 

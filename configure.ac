@@ -66,7 +66,6 @@ AC_ARG_ENABLE(debug,
         enable_debug=no)
 if test "x$enable_debug" = "xyes"; then
         CFLAGS="$CFLAGS -O0 -ggdb3"
-        VALA_DEBUG_FLAGS="-g"
 fi
 
 AC_CONFIG_FILES([

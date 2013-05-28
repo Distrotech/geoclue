@@ -54,10 +54,9 @@ struct _GClueServiceClientClass
 
 GType gclue_service_client_get_type (void) G_GNUC_CONST;
 
-GClueServiceClient * gclue_service_client_new      (const char *path);
-gboolean             gclue_service_client_register (GClueServiceClient *client,
-                                                    GDBusConnection    *connection,
-                                                    GError            **error);
+GClueServiceClient * gclue_service_client_new      (const char      *path,
+                                                    GDBusConnection *connection,
+                                                    GError         **error);
 const char *         gclue_service_client_get_path (GClueServiceClient    *client);
 
 G_END_DECLS

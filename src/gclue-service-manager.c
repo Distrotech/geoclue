@@ -25,22 +25,28 @@
 #include "gclue-service-client.h"
 
 static void
-gclue_manager_init (GClueManagerIface *iface);
+gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
+static void
+gclue_service_manager_initable_iface_init (GInitableIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (GClueServiceManager,
                          gclue_service_manager,
                          GCLUE_TYPE_MANAGER_SKELETON,
                          G_IMPLEMENT_INTERFACE (GCLUE_TYPE_MANAGER,
-                                                gclue_manager_init))
+                                                gclue_service_manager_manager_iface_init)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
+                                                gclue_service_manager_initable_iface_init))
 
 struct _GClueServiceManagerPrivate
 {
+        GDBusConnection *connection;
         GHashTable *clients;
 };
 
 enum
 {
         PROP_0,
+        PROP_CONNECTION,
         LAST_PROP
 };
 
@@ -89,11 +95,8 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                 return TRUE;
         }
 
-        client = gclue_service_client_new (path);
-        if (!gclue_service_client_register
-                        (client,
-                         g_dbus_method_invocation_get_connection (invocation),
-                         &error)) {
+        client = gclue_service_client_new (path, priv->connection, &error);
+        if (error != NULL) {
                 g_dbus_method_invocation_return_dbus_error (invocation,
                                                             "Object registration failure",
                                                             error->message);
@@ -109,13 +112,62 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
 }
 
 static void
+gclue_service_manager_get_property (GObject    *object,
+                                   guint       prop_id,
+                                   GValue     *value,
+                                   GParamSpec *pspec)
+{
+        GClueServiceManager *manager = GCLUE_SERVICE_MANAGER (object);
+
+        switch (prop_id) {
+        case PROP_CONNECTION:
+                g_value_set_object (value, manager->priv->connection);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
+gclue_service_manager_set_property (GObject      *object,
+                                    guint         prop_id,
+                                    const GValue *value,
+                                    GParamSpec   *pspec)
+{
+        GClueServiceManager *manager = GCLUE_SERVICE_MANAGER (object);
+
+        switch (prop_id) {
+        case PROP_CONNECTION:
+                manager->priv->connection = g_value_dup_object (value);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+
+static void
 gclue_service_manager_class_init (GClueServiceManagerClass *klass)
 {
         GObjectClass *object_class;
 
         object_class = G_OBJECT_CLASS (klass);
+        object_class->get_property = gclue_service_manager_get_property;
+        object_class->set_property = gclue_service_manager_set_property;
 
         g_type_class_add_private (object_class, sizeof (GClueServiceManagerPrivate));
+
+        gParamSpecs[PROP_CONNECTION] = g_param_spec_object ("connection",
+                                                            "Connection",
+                                                            "DBus Connection",
+                                                            G_TYPE_DBUS_CONNECTION,
+                                                            G_PARAM_READWRITE |
+                                                            G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (object_class,
+                                         PROP_CONNECTION,
+                                         gParamSpecs[PROP_CONNECTION]);
 }
 
 static void
@@ -131,25 +183,37 @@ gclue_service_manager_init (GClueServiceManager *manager)
                                                         g_object_unref);
 }
 
+static gboolean
+gclue_service_manager_initable_init (GInitable    *initable,
+                                     GCancellable *cancellable,
+                                     GError      **error)
+{
+        return g_dbus_interface_skeleton_export
+                (G_DBUS_INTERFACE_SKELETON (initable),
+                 GCLUE_SERVICE_MANAGER (initable)->priv->connection,
+                 "/org/freedesktop/GeoClue2/Manager",
+                 error);
+}
+
 static void
-gclue_manager_init (GClueManagerIface *iface)
+gclue_service_manager_manager_iface_init (GClueManagerIface *iface)
 {
         iface->handle_get_client = gclue_service_manager_handle_get_client;
 }
 
-GClueServiceManager *
-gclue_service_manager_new (void)
+static void
+gclue_service_manager_initable_iface_init (GInitableIface *iface)
 {
-        return g_object_new (GClUE_TYPE_SERVICE_MANAGER, NULL);
+        iface->init = gclue_service_manager_initable_init;
 }
 
-gboolean
-gclue_service_manager_export (GClueServiceManager *manager,
-                              GDBusConnection     *connection,
-                              GError             **error)
+GClueServiceManager *
+gclue_service_manager_new (GDBusConnection *connection,
+                           GError         **error)
 {
-        return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (manager),
-                                                 connection,
-                                                 "/org/freedesktop/GeoClue2/Manager",
-                                                 error);
+        return g_initable_new (GClUE_TYPE_SERVICE_MANAGER,
+                               NULL,
+                               error,
+                               "connection", connection,
+                               NULL);
 }

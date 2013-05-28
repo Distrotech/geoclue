@@ -24,23 +24,29 @@
 #include "gclue-service-client.h"
 
 static void
-gclue_client_init (GClueClientIface *iface);
+gclue_service_client_client_iface_init (GClueClientIface *iface);
+static void
+gclue_service_client_initable_iface_init (GInitableIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (GClueServiceClient,
                          gclue_service_client,
                          GCLUE_TYPE_CLIENT_SKELETON,
                          G_IMPLEMENT_INTERFACE (GCLUE_TYPE_CLIENT,
-                                                gclue_client_init))
+                                                gclue_service_client_client_iface_init)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
+                                                gclue_service_client_initable_iface_init));
 
 struct _GClueServiceClientPrivate
 {
         const char *path;
+        GDBusConnection *connection;
 };
 
 enum
 {
         PROP_0,
         PROP_PATH,
+        PROP_CONNECTION,
         LAST_PROP
 };
 
@@ -75,6 +81,7 @@ gclue_service_client_finalize (GObject *object)
                 g_free (priv->path);
                 priv->path = NULL;
         }
+        g_clear_object (&priv->connection);
 
         /* Chain up to the parent class */
         G_OBJECT_CLASS (gclue_service_client_parent_class)->finalize (object);
@@ -93,6 +100,10 @@ gclue_service_client_get_property (GObject    *object,
                 g_value_set_string (value, client->priv->path);
                 break;
 
+        case PROP_CONNECTION:
+                g_value_set_object (value, client->priv->connection);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -109,6 +120,10 @@ gclue_service_client_set_property (GObject      *object,
         switch (prop_id) {
         case PROP_PATH:
                 client->priv->path = g_value_dup_string (value);
+                break;
+
+        case PROP_CONNECTION:
+                client->priv->connection = g_value_dup_object (value);
                 break;
 
         default:
@@ -137,13 +152,46 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_PATH,
                                          gParamSpecs[PROP_PATH]);
+
+        gParamSpecs[PROP_CONNECTION] = g_param_spec_object ("connection",
+                                                            "Connection",
+                                                            "DBus Connection",
+                                                            G_TYPE_DBUS_CONNECTION,
+                                                            G_PARAM_READWRITE |
+                                                            G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (object_class,
+                                         PROP_CONNECTION,
+                                         gParamSpecs[PROP_CONNECTION]);
 }
 
 static void
-gclue_client_init (GClueClientIface *iface)
+gclue_service_client_client_iface_init (GClueClientIface *iface)
 {
         iface->handle_start = gclue_service_client_handle_start;
         iface->handle_stop = gclue_service_client_handle_stop;
+}
+
+static gboolean
+gclue_service_client_initable_init (GInitable    *initable,
+                                    GCancellable *cancellable,
+                                    GError      **error)
+{
+        GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (initable);
+
+        return (g_dbus_connection_register_object
+                        (GCLUE_SERVICE_CLIENT (initable)->priv->connection,
+                         GCLUE_SERVICE_CLIENT (initable)->priv->path,
+                         g_dbus_interface_skeleton_get_info (skeleton),
+                         g_dbus_interface_skeleton_get_vtable (skeleton),
+                         initable,
+                         NULL,
+                         error) != 0);
+}
+
+static void
+gclue_service_client_initable_iface_init (GInitableIface *iface)
+{
+        iface->init = gclue_service_client_initable_init;
 }
 
 static void
@@ -155,26 +203,16 @@ gclue_service_client_init (GClueServiceClient *client)
 }
 
 GClueServiceClient *
-gclue_service_client_new (const char *path)
+gclue_service_client_new (const char      *path,
+                          GDBusConnection *connection,
+                          GError         **error)
 {
-        return g_object_new (GClUE_TYPE_SERVICE_CLIENT,
-                             "path", path,
-                             NULL);
-}
-
-gboolean
-gclue_service_client_register (GClueServiceClient *client,
-                               GDBusConnection    *connection,
-                               GError            **error)
-{
-        return (g_dbus_connection_register_object
-                        (connection,
-                         gclue_service_client_get_path (client),
-                         g_dbus_interface_skeleton_get_info (client),
-                         g_dbus_interface_skeleton_get_vtable (client),
-                         client,
-                         NULL,
-                         error) != 0);
+        return g_initable_new (GClUE_TYPE_SERVICE_CLIENT,
+                               NULL,
+                               error,
+                               "path", path,
+                               "connection", connection,
+                               NULL);
 }
 
 const gchar *

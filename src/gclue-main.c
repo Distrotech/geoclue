@@ -28,7 +28,7 @@
 
 #define BUS_NAME "org.freedesktop.GeoClue2"
 
-GClueServiceManager *manager;
+GClueServiceManager *manager = NULL;
 
 static void
 on_bus_acquired (GDBusConnection *connection,
@@ -37,7 +37,8 @@ on_bus_acquired (GDBusConnection *connection,
 {
         GError *error = NULL;
 
-        if (!gclue_service_manager_export (manager, connection, &error)) {
+        manager = gclue_service_manager_new (connection, &error);
+        if (error != NULL) {
                 g_critical ("Failed to register server: %s", error->message);
                 g_error_free (&error);
 
@@ -65,8 +66,6 @@ main (int argc, char **argv)
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
         g_set_application_name (_("GeoClue"));
 
-        manager = gclue_service_manager_new ();
-
         owner_id = g_bus_own_name (G_BUS_TYPE_SESSION,
                                    BUS_NAME,
                                    G_BUS_NAME_OWNER_FLAGS_NONE,
@@ -79,7 +78,8 @@ main (int argc, char **argv)
         main_loop = g_main_loop_new (NULL, FALSE);
         g_main_loop_run (main_loop);
 
-        g_object_unref (manager);
+        if (manager != NULL);
+                g_object_unref (manager);
         g_bus_unown_name (owner_id);
         g_main_loop_unref (main_loop);
 

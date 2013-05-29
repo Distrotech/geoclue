@@ -128,17 +128,7 @@ gclue_service_client_handle_start (GClueClient           *client,
                                    GDBusMethodInvocation *invocation,
                                    gpointer               user_data)
 {
-        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         GError *error = NULL;
-
-        if (strcmp (g_dbus_method_invocation_get_sender (invocation),
-                    GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
-                g_dbus_method_invocation_return_error (invocation,
-                                                       G_DBUS_ERROR,
-                                                       G_DBUS_ERROR_ACCESS_DENIED,
-                                                       "Access denied");
-                return TRUE;
-        }
 
         if (!update_location (GCLUE_SERVICE_CLIENT (client), &error)) {
                 g_dbus_method_invocation_return_error (invocation,
@@ -159,15 +149,6 @@ gclue_service_client_handle_stop (GClueClient           *client,
                                   GDBusMethodInvocation *invocation,
                                   gpointer               user_data)
 {
-        if (strcmp (g_dbus_method_invocation_get_sender (invocation),
-                    GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
-                g_dbus_method_invocation_return_error (invocation,
-                                                       G_DBUS_ERROR,
-                                                       G_DBUS_ERROR_ACCESS_DENIED,
-                                                       "Access denied");
-                return TRUE;
-        }
-
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;
@@ -241,14 +222,132 @@ gclue_service_client_set_property (GObject      *object,
 }
 
 static void
+gclue_service_client_handle_method_call (GDBusConnection       *connection,
+                                         const gchar           *sender,
+                                         const gchar           *object_path,
+                                         const gchar           *interface_name,
+                                         const gchar           *method_name,
+                                         GVariant              *parameters,
+                                         GDBusMethodInvocation *invocation,
+                                         gpointer               user_data)
+{
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (user_data)->priv;
+        GDBusInterfaceSkeletonClass *skeleton_class;
+        GDBusInterfaceVTable *skeleton_vtable;
+
+        if (strcmp (sender, priv->peer) != 0) {
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "Access denied");
+                return;
+        }
+
+        skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_client_parent_class);
+        skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
+        skeleton_vtable->method_call (connection,
+                                      sender,
+                                      object_path,
+                                      interface_name,
+                                      method_name,
+                                      parameters,
+                                      invocation,
+                                      user_data);
+}
+
+static void
+gclue_service_client_handle_get_property (GDBusConnection *connection,
+                                          const gchar     *sender,
+                                          const gchar     *object_path,
+                                          const gchar     *interface_name,
+                                          const gchar     *property_name,
+                                          GError         **error,
+                                          gpointer        user_data)
+{
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (user_data)->priv;
+        GDBusInterfaceSkeletonClass *skeleton_class;
+        GDBusInterfaceVTable *skeleton_vtable;
+
+        if (strcmp (sender, priv->peer) != 0) {
+                g_set_error (error,
+                             G_DBUS_ERROR,
+                             G_DBUS_ERROR_ACCESS_DENIED,
+                             "Access denied");
+                return;
+        }
+
+        skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_client_parent_class);
+        skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
+        skeleton_vtable->get_property (connection,
+                                       sender,
+                                       object_path,
+                                       interface_name,
+                                       property_name,
+                                       error,
+                                       user_data);
+}
+
+static void
+gclue_service_client_handle_set_property (GDBusConnection *connection,
+                                          const gchar     *sender,
+                                          const gchar     *object_path,
+                                          const gchar     *interface_name,
+                                          const gchar     *property_name,
+                                          GVariant        *variant,
+                                          GError         **error,
+                                          gpointer        user_data)
+{
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (user_data)->priv;
+        GDBusInterfaceSkeletonClass *skeleton_class;
+        GDBusInterfaceVTable *skeleton_vtable;
+
+        if (strcmp (sender, priv->peer) != 0) {
+                g_set_error (error,
+                             G_DBUS_ERROR,
+                             G_DBUS_ERROR_ACCESS_DENIED,
+                             "Access denied");
+                return;
+        }
+
+        skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_client_parent_class);
+        skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
+        skeleton_vtable->set_property (connection,
+                                       sender,
+                                       object_path,
+                                       interface_name,
+                                       property_name,
+                                       variant,
+                                       error,
+                                       user_data);
+}
+
+static const GDBusInterfaceVTable gclue_service_client_vtable =
+{
+        gclue_service_client_handle_method_call,
+        gclue_service_client_handle_get_property,
+        gclue_service_client_handle_set_property,
+        {NULL}
+};
+
+static GDBusInterfaceVTable *
+gclue_service_client_get_vtable (GDBusInterfaceSkeleton *skeleton G_GNUC_UNUSED)
+{
+        return (GDBusInterfaceVTable *) &gclue_service_client_vtable;
+}
+
+static void
 gclue_service_client_class_init (GClueServiceClientClass *klass)
 {
         GObjectClass *object_class;
+        GDBusInterfaceSkeletonClass *skeleton_class;
 
         object_class = G_OBJECT_CLASS (klass);
         object_class->finalize = gclue_service_client_finalize;
         object_class->get_property = gclue_service_client_get_property;
         object_class->set_property = gclue_service_client_set_property;
+
+        skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (klass);
+        skeleton_class->get_vtable = gclue_service_client_get_vtable;
 
         g_type_class_add_private (object_class, sizeof (GClueServiceClientPrivate));
 

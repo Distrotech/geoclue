@@ -22,6 +22,7 @@
 #include <glib/gi18n.h>
 
 #include "gclue-service-client.h"
+#include "gclue-service-location.h"
 
 static void
 gclue_service_client_client_iface_init (GClueClientIface *iface);
@@ -40,6 +41,12 @@ struct _GClueServiceClientPrivate
 {
         const char *path;
         GDBusConnection *connection;
+
+        GClueServiceLocation *location;
+        GClueServiceLocation *prev_location;
+
+        /* Number of times location has been updated */
+        guint locations_updated;
 };
 
 enum
@@ -52,11 +59,81 @@ enum
 
 static GParamSpec *gParamSpecs[LAST_PROP];
 
+static char *
+next_location_path (GClueServiceClient *client)
+{
+        GClueServiceClientPrivate *priv = client->priv;
+        char *path, *index_str;
+
+        index_str = g_strdup_printf ("%llu", (priv->locations_updated)++),
+        path = g_strjoin ("/", priv->path, "Location", index_str, NULL);
+        g_free (index_str);
+
+        return path;
+}
+
+static void
+set_location (GClueServiceClient   *client,
+              GClueServiceLocation *location,
+              const char           *path)
+{
+        GClueServiceClientPrivate *priv = client->priv;
+        const char *prev_path;
+
+        if (priv->prev_location != NULL)
+                g_object_unref (priv->prev_location);
+        priv->prev_location = priv->location;
+        if (priv->location != NULL)
+                prev_path = gclue_service_location_get_path (priv->location);
+        else
+                prev_path = "/";
+        priv->location = location;
+
+        gclue_client_set_location (client, path);
+        gclue_client_emit_location_updated (client, prev_path, path);
+}
+
+// FIXME: This function should be async
+static gboolean
+update_location (GClueServiceClient *client,
+                 GError            **error)
+{
+        GClueServiceClientPrivate *priv = client->priv;
+        GClueServiceLocation *location;
+        char *path;
+
+        path = next_location_path (client);
+        location = gclue_service_location_new (path,
+                                               priv->connection,
+                                               0, 0, 0,
+                                               error);
+        if (*error != NULL) {
+                g_free (path);
+
+                return FALSE;
+        }
+
+        set_location (client, location, path);
+
+        g_free (path);
+
+        return TRUE;
+}
+
 static gboolean
 gclue_service_client_handle_start (GClueClient           *client,
                                    GDBusMethodInvocation *invocation,
                                    gpointer               user_data)
 {
+        GError *error = NULL;
+
+        if (!update_location (GCLUE_SERVICE_CLIENT (client), &error)) {
+                g_dbus_method_invocation_return_dbus_error (invocation,
+                                                            "Failed to update location info",
+                                                            error->message);
+                return TRUE;
+        }
+
         gclue_client_complete_start (client, invocation);
 
         return TRUE;
@@ -79,6 +156,8 @@ gclue_service_client_finalize (GObject *object)
 
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
+        g_clear_object (&priv->location);
+        g_clear_object (&priv->prev_location);
 
         /* Chain up to the parent class */
         G_OBJECT_CLASS (gclue_service_client_parent_class)->finalize (object);

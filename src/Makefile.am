@@ -20,6 +20,8 @@ geoclue_SOURCES =	 	 \
 	gclue-service-manager.c  \
 	gclue-service-client.h   \
 	gclue-service-client.c   \
+	gclue-service-location.h \
+	gclue-service-location.c \
 	$(NULL)
 
 geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \

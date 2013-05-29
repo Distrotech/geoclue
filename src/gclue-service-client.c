@@ -173,16 +173,12 @@ gclue_service_client_initable_init (GInitable    *initable,
                                     GCancellable *cancellable,
                                     GError      **error)
 {
-        GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (initable);
+        return g_dbus_interface_skeleton_export
+                                (G_DBUS_INTERFACE_SKELETON (initable),
+                                 GCLUE_SERVICE_CLIENT (initable)->priv->connection,
+                                 GCLUE_SERVICE_CLIENT (initable)->priv->path,
+                                 error);
 
-        return (g_dbus_connection_register_object
-                        (GCLUE_SERVICE_CLIENT (initable)->priv->connection,
-                         GCLUE_SERVICE_CLIENT (initable)->priv->path,
-                         g_dbus_interface_skeleton_get_info (skeleton),
-                         g_dbus_interface_skeleton_get_vtable (skeleton),
-                         initable,
-                         NULL,
-                         error) != 0);
 }
 
 static void

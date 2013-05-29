@@ -133,16 +133,19 @@ gclue_service_client_handle_start (GClueClient           *client,
 
         if (strcmp (g_dbus_method_invocation_get_sender (invocation),
                     GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
-                g_dbus_method_invocation_return_dbus_error (invocation,
-                                                            "Access denied",
-                                                            "Access denied");
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "Access denied");
                 return TRUE;
         }
 
         if (!update_location (GCLUE_SERVICE_CLIENT (client), &error)) {
-                g_dbus_method_invocation_return_dbus_error (invocation,
-                                                            "Failed to update location info",
-                                                            error->message);
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_FAILED,
+                                                       "Failed to update location info: %s",
+                                                       error->message);
                 return TRUE;
         }
 
@@ -158,9 +161,10 @@ gclue_service_client_handle_stop (GClueClient           *client,
 {
         if (strcmp (g_dbus_method_invocation_get_sender (invocation),
                     GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
-                g_dbus_method_invocation_return_dbus_error (invocation,
-                                                            "Access denied",
-                                                            "Access denied");
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "Access denied");
                 return TRUE;
         }
 

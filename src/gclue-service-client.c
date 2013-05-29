@@ -105,7 +105,8 @@ update_location (GClueServiceClient *client,
         char *path;
 
         path = next_location_path (client);
-        location = gclue_service_location_new (path,
+        location = gclue_service_location_new (priv->peer,
+                                               path,
                                                priv->connection,
                                                0, 0, 0,
                                                error);

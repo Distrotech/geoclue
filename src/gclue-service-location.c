@@ -34,6 +34,7 @@ G_DEFINE_TYPE_WITH_CODE (GClueServiceLocation,
 
 struct _GClueServiceLocationPrivate
 {
+        const char *peer;
         const char *path;
         GDBusConnection *connection;
 };
@@ -41,6 +42,7 @@ struct _GClueServiceLocationPrivate
 enum
 {
         PROP_0,
+        PROP_PEER,
         PROP_PATH,
         PROP_CONNECTION,
         LAST_PROP
@@ -53,6 +55,7 @@ gclue_service_location_finalize (GObject *object)
 {
         GClueServiceLocationPrivate *priv = GCLUE_SERVICE_LOCATION (object)->priv;
 
+        g_clear_pointer (&priv->peer, g_free);
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
 
@@ -69,6 +72,10 @@ gclue_service_location_get_property (GObject    *object,
         GClueServiceLocation *location = GCLUE_SERVICE_LOCATION (object);
 
         switch (prop_id) {
+        case PROP_PEER:
+                g_value_set_string (value, location->priv->peer);
+                break;
+
         case PROP_PATH:
                 g_value_set_string (value, location->priv->path);
                 break;
@@ -91,6 +98,10 @@ gclue_service_location_set_property (GObject      *object,
         GClueServiceLocation *location = GCLUE_SERVICE_LOCATION (object);
 
         switch (prop_id) {
+        case PROP_PEER:
+                location->priv->peer = g_value_dup_string (value);
+                break;
+
         case PROP_PATH:
                 location->priv->path = g_value_dup_string (value);
                 break;
@@ -115,6 +126,16 @@ gclue_service_location_class_init (GClueServiceLocationClass *klass)
         object_class->set_property = gclue_service_location_set_property;
 
         g_type_class_add_private (object_class, sizeof (GClueServiceLocationPrivate));
+
+        gParamSpecs[PROP_PEER] = g_param_spec_string ("peer",
+                                                      "Peer",
+                                                      "Bus name of client app",
+                                                      NULL,
+                                                      G_PARAM_READWRITE |
+                                                      G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (object_class,
+                                         PROP_PEER,
+                                         gParamSpecs[PROP_PEER]);
 
         gParamSpecs[PROP_PATH] = g_param_spec_string ("path",
                                                       "Path",
@@ -164,7 +185,8 @@ gclue_service_location_initable_iface_init (GInitableIface *iface)
 }
 
 GClueServiceLocation *
-gclue_service_location_new (const char      *path,
+gclue_service_location_new (const char      *peer,
+                            const char      *path,
                             GDBusConnection *connection,
                             gdouble          latitude,
                             gdouble          longitude,
@@ -174,6 +196,7 @@ gclue_service_location_new (const char      *path,
         return g_initable_new (GClUE_TYPE_SERVICE_LOCATION,
                                NULL,
                                error,
+                               "peer", peer,
                                "path", path,
                                "connection", connection,
                                "latitude", latitude,

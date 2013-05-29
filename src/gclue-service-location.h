@@ -54,7 +54,8 @@ struct _GClueServiceLocationClass
 
 GType gclue_service_location_get_type (void) G_GNUC_CONST;
 
-GClueServiceLocation * gclue_service_location_new      (const char      *path,
+GClueServiceLocation * gclue_service_location_new      (const char      *peer,
+                                                        const char      *path,
                                                         GDBusConnection *connection,
                                                         gdouble          latitude,
                                                         gdouble          longitude,

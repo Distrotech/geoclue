@@ -41,6 +41,8 @@ struct _GClueServiceManagerPrivate
 {
         GDBusConnection *connection;
         GHashTable *clients;
+
+        guint num_clients;
 };
 
 enum
@@ -52,30 +54,6 @@ enum
 
 static GParamSpec *gParamSpecs[LAST_PROP];
 
-char *
-create_client_path_from_bus_name (const char *name)
-{
-        char *path;
-        char *path_name;
-        guint i, j;
-        guint name_len;
-
-        name_len = strlen (name);
-        path_name = g_malloc (name_len);
-        for (i = 0, j = 0; i < name_len; i++) {
-                if (isalnum (name[i]) || name[i] == '_') {
-                    path_name[j] = name[i];
-                    j++;
-                }
-        }
-
-        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%s",
-                                path_name);
-        g_free (path_name);
-
-        return path;
-}
-
 static gboolean
 gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                                          GDBusMethodInvocation *invocation)
@@ -85,8 +63,8 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
         char *path;
         GError *error = NULL;
 
-        path = create_client_path_from_bus_name
-                (g_dbus_method_invocation_get_sender (invocation));
+        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%llu",
+                                ++priv->num_clients);
 
         client = g_hash_table_lookup (priv->clients, path);
         if (client != NULL) {

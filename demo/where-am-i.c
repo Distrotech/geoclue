@@ -30,6 +30,53 @@
 GMainLoop *main_loop;
 
 static void
+on_location_proxy_ready (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+        GClueManagerProxy *manager = GCLUE_MANAGER_PROXY (user_data);
+        GClueLocationProxy *location;
+        const char *desc;
+        GError *error = NULL;
+
+        location = gclue_location_proxy_new_for_bus_finish (res, &error);
+        if (error != NULL) {
+            g_critical ("Failed to connect to GeoClue2 service: %s", error->message);
+
+            exit (-5);
+        }
+
+        g_print ("Latitude: %f\nLongitude: %f\nAccuracy (in meters): %f\n",
+                 gclue_location_get_latitude (location),
+                 gclue_location_get_longitude (location),
+                 gclue_location_get_accuracy (location));
+        desc = gclue_location_get_description (location);
+        if (desc[0] != NULL)
+                g_print ("Description: %s\n", desc);
+
+        g_object_unref (location);
+        g_object_unref (manager);
+
+        g_main_loop_quit (main_loop);
+}
+
+static void
+on_location_updated (GClueClient *client,
+                     const char  *old_path,
+                     const char  *new_path,
+                     gpointer     user_data)
+{
+        gclue_location_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                                          G_DBUS_PROXY_FLAGS_NONE,
+                                          "org.freedesktop.GeoClue2",
+                                          new_path,
+                                          NULL,
+                                          on_location_proxy_ready,
+                                          user_data);
+        g_object_unref (client);
+}
+
+static void
 on_start_ready (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
@@ -43,11 +90,6 @@ on_start_ready (GObject      *source_object,
 
             exit (-4);
         }
-
-        g_object_unref (client);
-        g_object_unref (manager);
-
-        g_main_loop_quit (main_loop);
 }
 
 static void
@@ -64,6 +106,8 @@ on_client_proxy_ready (GObject      *source_object,
 
             exit (-3);
         }
+
+        g_signal_connect (client, "location-updated", on_location_updated, user_data);
 
         gclue_client_call_start (client, NULL, on_start_ready, user_data);
 }

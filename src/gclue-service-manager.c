@@ -60,6 +60,7 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
 {
         GClueServiceManagerPrivate *priv = manager->priv;
         GClueServiceClient *client;
+        const char *peer;
         char *path;
         GError *error = NULL;
 
@@ -73,7 +74,8 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                 return TRUE;
         }
 
-        client = gclue_service_client_new (path, priv->connection, &error);
+        peer = g_dbus_method_invocation_get_sender (invocation);
+        client = gclue_service_client_new (peer, path, priv->connection, &error);
         if (error != NULL) {
                 g_dbus_method_invocation_return_dbus_error (invocation,
                                                             "Object registration failure",

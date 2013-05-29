@@ -39,6 +39,7 @@ G_DEFINE_TYPE_WITH_CODE (GClueServiceClient,
 
 struct _GClueServiceClientPrivate
 {
+        const char *peer;
         const char *path;
         GDBusConnection *connection;
 
@@ -52,6 +53,7 @@ struct _GClueServiceClientPrivate
 enum
 {
         PROP_0,
+        PROP_PEER,
         PROP_PATH,
         PROP_CONNECTION,
         LAST_PROP
@@ -125,7 +127,16 @@ gclue_service_client_handle_start (GClueClient           *client,
                                    GDBusMethodInvocation *invocation,
                                    gpointer               user_data)
 {
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         GError *error = NULL;
+
+        if (strcmp (g_dbus_method_invocation_get_sender (invocation),
+                    GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
+                g_dbus_method_invocation_return_dbus_error (invocation,
+                                                            "Access denied",
+                                                            "Access denied");
+                return TRUE;
+        }
 
         if (!update_location (GCLUE_SERVICE_CLIENT (client), &error)) {
                 g_dbus_method_invocation_return_dbus_error (invocation,
@@ -144,6 +155,14 @@ gclue_service_client_handle_stop (GClueClient           *client,
                                   GDBusMethodInvocation *invocation,
                                   gpointer               user_data)
 {
+        if (strcmp (g_dbus_method_invocation_get_sender (invocation),
+                    GCLUE_SERVICE_CLIENT (client)->priv->peer) != 0) {
+                g_dbus_method_invocation_return_dbus_error (invocation,
+                                                            "Access denied",
+                                                            "Access denied");
+                return TRUE;
+        }
+
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;
@@ -154,6 +173,7 @@ gclue_service_client_finalize (GObject *object)
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (object)->priv;
 
+        g_clear_pointer (&priv->peer, g_free);
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
         g_clear_object (&priv->location);
@@ -172,6 +192,10 @@ gclue_service_client_get_property (GObject    *object,
         GClueServiceClient *client = GCLUE_SERVICE_CLIENT (object);
 
         switch (prop_id) {
+        case PROP_PEER:
+                g_value_set_string (value, client->priv->peer);
+                break;
+
         case PROP_PATH:
                 g_value_set_string (value, client->priv->path);
                 break;
@@ -194,6 +218,10 @@ gclue_service_client_set_property (GObject      *object,
         GClueServiceClient *client = GCLUE_SERVICE_CLIENT (object);
 
         switch (prop_id) {
+        case PROP_PEER:
+                client->priv->peer = g_value_dup_string (value);
+                break;
+
         case PROP_PATH:
                 client->priv->path = g_value_dup_string (value);
                 break;
@@ -218,6 +246,16 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         object_class->set_property = gclue_service_client_set_property;
 
         g_type_class_add_private (object_class, sizeof (GClueServiceClientPrivate));
+
+        gParamSpecs[PROP_PEER] = g_param_spec_string ("peer",
+                                                      "Peer",
+                                                      "Bus name of client app",
+                                                      NULL,
+                                                      G_PARAM_READWRITE |
+                                                      G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (object_class,
+                                         PROP_PEER,
+                                         gParamSpecs[PROP_PEER]);
 
         gParamSpecs[PROP_PATH] = g_param_spec_string ("path",
                                                       "Path",
@@ -275,13 +313,15 @@ gclue_service_client_init (GClueServiceClient *client)
 }
 
 GClueServiceClient *
-gclue_service_client_new (const char      *path,
+gclue_service_client_new (const char      *peer,
+                          const char      *path,
                           GDBusConnection *connection,
                           GError         **error)
 {
         return g_initable_new (GClUE_TYPE_SERVICE_CLIENT,
                                NULL,
                                error,
+                               "peer", peer,
                                "path", path,
                                "connection", connection,
                                NULL);

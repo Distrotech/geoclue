@@ -16,6 +16,8 @@ BUILT_SOURCES = 		\
 geoclue_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \
 	gclue-main.c	 	 \
+	gclue-locator.h 	 \
+	gclue-locator.c 	 \
 	gclue-service-manager.h  \
 	gclue-service-manager.c  \
 	gclue-service-client.h   \

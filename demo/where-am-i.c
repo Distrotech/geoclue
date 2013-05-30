@@ -51,7 +51,7 @@ on_location_proxy_ready (GObject      *source_object,
                  gclue_location_get_longitude (location),
                  gclue_location_get_accuracy (location));
         desc = gclue_location_get_description (location);
-        if (desc[0] != NULL)
+        if (desc != NULL && desc[0] != NULL)
                 g_print ("Description: %s\n", desc);
 
         g_object_unref (location);

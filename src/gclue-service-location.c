@@ -45,6 +45,7 @@ enum
         PROP_PEER,
         PROP_PATH,
         PROP_CONNECTION,
+        PROP_LOCATION,
         LAST_PROP
 };
 
@@ -84,6 +85,23 @@ gclue_service_location_get_property (GObject    *object,
                 g_value_set_object (value, location->priv->connection);
                 break;
 
+        case PROP_LOCATION:
+        {
+                GeocodeLocation *loc;
+                const char *desc;
+
+                loc = geocode_location_new
+                        (gclue_location_get_latitude (location),
+                         gclue_location_get_longitude (location),
+                         gclue_location_get_accuracy (location));
+                desc = gclue_location_get_description (location);
+                if (desc != NULL)
+                        geocode_location_set_description (loc, desc);
+
+                g_value_take_object (value, loc);
+                break;
+        }
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -109,6 +127,22 @@ gclue_service_location_set_property (GObject      *object,
         case PROP_CONNECTION:
                 location->priv->connection = g_value_dup_object (value);
                 break;
+
+        case PROP_LOCATION:
+        {
+                GeocodeLocation *loc;
+
+                loc = g_value_get_object (value);
+                gclue_location_set_latitude
+                        (location, geocode_location_get_latitude (loc));
+                gclue_location_set_longitude
+                        (location, geocode_location_get_longitude (loc));
+                gclue_location_set_accuracy
+                        (location, geocode_location_get_accuracy (loc));
+                gclue_location_set_description
+                        (location, geocode_location_get_description (loc));
+                break;
+        }
 
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -274,6 +308,16 @@ gclue_service_location_class_init (GClueServiceLocationClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_CONNECTION,
                                          gParamSpecs[PROP_CONNECTION]);
+
+        gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
+                                                          "Location",
+                                                          "Location",
+                                                          GEOCODE_TYPE_LOCATION,
+                                                          G_PARAM_READWRITE |
+                                                          G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (object_class,
+                                         PROP_LOCATION,
+                                         gParamSpecs[PROP_LOCATION]);
 }
 
 static void
@@ -306,9 +350,7 @@ GClueServiceLocation *
 gclue_service_location_new (const char      *peer,
                             const char      *path,
                             GDBusConnection *connection,
-                            gdouble          latitude,
-                            gdouble          longitude,
-                            gdouble          accuracy,
+                            GeocodeLocation *location,
                             GError         **error)
 {
         return g_initable_new (GClUE_TYPE_SERVICE_LOCATION,
@@ -317,9 +359,7 @@ gclue_service_location_new (const char      *peer,
                                "peer", peer,
                                "path", path,
                                "connection", connection,
-                               "latitude", latitude,
-                               "longitude", longitude,
-                               "accuracy", accuracy,
+                               "location", location,
                                NULL);
 }
 

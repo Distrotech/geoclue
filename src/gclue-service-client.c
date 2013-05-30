@@ -126,22 +126,25 @@ update_location (GClueServiceClient *client,
                  GError            **error)
 {
         GClueServiceClientPrivate *priv = client->priv;
-        GClueServiceLocation *location;
+        GClueServiceLocation *service_location;
+        GeocodeLocation *location;
         char *path;
 
+        location = geocode_location_new (0, 0, 0);
         path = next_location_path (client);
-        location = gclue_service_location_new (priv->peer,
-                                               path,
-                                               priv->connection,
-                                               0, 0, 0,
-                                               error);
+        service_location = gclue_service_location_new (priv->peer,
+                                                       path,
+                                                       priv->connection,
+                                                       location,
+                                                       error);
+        g_object_unref (location);
         if (*error != NULL) {
                 g_free (path);
 
                 return FALSE;
         }
 
-        if (!set_location (client, location, path, error)) {
+        if (!set_location (client, service_location, path, error)) {
                 g_free (path);
 
                 return FALSE;

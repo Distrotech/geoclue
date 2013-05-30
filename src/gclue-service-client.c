@@ -74,10 +74,34 @@ next_location_path (GClueServiceClient *client)
         return path;
 }
 
-static void
+/* We don't use the gdbus-codegen provided gclue_client_emit_location_updated()
+ * as that sends the signal to all listeners on the bus
+ */
+static gboolean
+emit_location_updated (GClueServiceClient *client,
+                       const char         *old,
+                       const char         *new,
+                       GError            **error)
+{
+        GClueServiceClientPrivate *priv = client->priv;
+        GVariant *variant;
+
+        variant = g_variant_new ("(oo)", old, new);
+
+        return g_dbus_connection_emit_signal (priv->connection,
+                                              priv->peer,
+                                              priv->path,
+                                              "org.freedesktop.GeoClue2.Client",
+                                              "LocationUpdated",
+                                              variant,
+                                              error);
+}
+
+static gboolean
 set_location (GClueServiceClient   *client,
               GClueServiceLocation *location,
-              const char           *path)
+              const char           *path,
+              GError              **error)
 {
         GClueServiceClientPrivate *priv = client->priv;
         const char *prev_path;
@@ -92,7 +116,8 @@ set_location (GClueServiceClient   *client,
         priv->location = location;
 
         gclue_client_set_location (client, path);
-        gclue_client_emit_location_updated (client, prev_path, path);
+
+        return emit_location_updated (client, prev_path, path, error);
 }
 
 // FIXME: This function should be async
@@ -116,7 +141,11 @@ update_location (GClueServiceClient *client,
                 return FALSE;
         }
 
-        set_location (client, location, path);
+        if (!set_location (client, location, path, error)) {
+                g_free (path);
+
+                return FALSE;
+        }
 
         g_free (path);
 

@@ -130,6 +130,10 @@ gclue_service_client_handle_start (GClueClient           *client,
 {
         GError *error = NULL;
 
+        /* TODO: We need some kind of mechanism to ask user if location info can
+         *       be shared with peer app.
+         */
+
         if (!update_location (GCLUE_SERVICE_CLIENT (client), &error)) {
                 g_dbus_method_invocation_return_error (invocation,
                                                        G_DBUS_ERROR,

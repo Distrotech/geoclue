@@ -496,3 +496,11 @@ gclue_service_client_get_path (GClueServiceClient *client)
 
         return client->priv->path;
 }
+
+const gchar *
+gclue_service_client_get_peer (GClueServiceClient *client)
+{
+        g_return_val_if_fail (GCLUE_IS_SERVICE_CLIENT(client), NULL);
+
+        return client->priv->peer;
+}

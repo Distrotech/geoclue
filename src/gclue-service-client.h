@@ -50,6 +50,9 @@ struct _GClueServiceClient
 struct _GClueServiceClientClass
 {
         GClueClientSkeletonClass parent_class;
+
+        /* signals */
+        void (* peer_vanished)  (GClueServiceClient *client);
 };
 
 GType gclue_service_client_get_type (void) G_GNUC_CONST;

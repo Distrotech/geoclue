@@ -51,6 +51,8 @@ struct _GClueServiceClientPrivate
 
         /* Number of times location has been updated */
         guint locations_updated;
+
+        guint watch_id;
 };
 
 enum
@@ -63,6 +65,13 @@ enum
 };
 
 static GParamSpec *gParamSpecs[LAST_PROP];
+
+enum {
+        PEER_VANISHED,
+        SIGNAL_LAST
+};
+
+static guint signals[SIGNAL_LAST];
 
 static char *
 next_location_path (GClueServiceClient *client)
@@ -436,6 +445,19 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_CONNECTION,
                                          gParamSpecs[PROP_CONNECTION]);
+
+        signals[PEER_VANISHED] =
+                g_signal_new ("peer-vanished",
+                              GCLUE_TYPE_SERVICE_CLIENT,
+                              G_SIGNAL_RUN_LAST,
+                              G_STRUCT_OFFSET (GClueServiceClientClass,
+                                               peer_vanished),
+                              NULL,
+                              NULL,
+                              g_cclosure_marshal_VOID__VOID,
+                              G_TYPE_NONE,
+                              0,
+                              G_TYPE_NONE);
 }
 
 static void
@@ -445,17 +467,38 @@ gclue_service_client_client_iface_init (GClueClientIface *iface)
         iface->handle_stop = gclue_service_client_handle_stop;
 }
 
+static on_name_vanished (GDBusConnection *connection,
+                         const gchar     *name,
+                         gpointer         user_data)
+{
+        g_signal_emit (GCLUE_SERVICE_CLIENT (user_data),
+                       signals[PEER_VANISHED],
+                       0);
+
+        g_object_unref (G_OBJECT (user_data));
+}
+
 static gboolean
 gclue_service_client_initable_init (GInitable    *initable,
                                     GCancellable *cancellable,
                                     GError      **error)
 {
-        return g_dbus_interface_skeleton_export
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (initable)->priv;
+
+        if (!g_dbus_interface_skeleton_export
                                 (G_DBUS_INTERFACE_SKELETON (initable),
                                  GCLUE_SERVICE_CLIENT (initable)->priv->connection,
                                  GCLUE_SERVICE_CLIENT (initable)->priv->path,
-                                 error);
+                                 error))
+                return FALSE;
 
+        priv->watch_id = g_bus_watch_name_on_connection (priv->connection,
+                                                         priv->peer,
+                                                         G_BUS_NAME_WATCHER_FLAGS_NONE, 
+                                                         NULL,
+                                                         on_name_vanished,
+                                                         g_object_ref (initable),
+                                                         g_object_unref);
 }
 
 static void

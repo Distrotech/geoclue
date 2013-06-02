@@ -64,17 +64,17 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
         char *path;
         GError *error = NULL;
 
-        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%llu",
-                                ++priv->num_clients);
-
-        client = g_hash_table_lookup (priv->clients, path);
+        peer = g_dbus_method_invocation_get_sender (invocation);
+        client = g_hash_table_lookup (priv->clients, peer);
         if (client != NULL) {
                 gclue_manager_complete_get_client (manager, invocation, path);
 
                 return TRUE;
         }
 
-        peer = g_dbus_method_invocation_get_sender (invocation);
+        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%llu",
+                                ++priv->num_clients);
+
         client = gclue_service_client_new (peer, path, priv->connection, &error);
         if (error != NULL) {
                 g_dbus_method_invocation_return_error (invocation,
@@ -85,7 +85,7 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
         }
 
         /* FIXME: Register to client-side bus name changes to free clients on associated app exitting */
-        g_hash_table_insert (priv->clients, path, client);
+        g_hash_table_insert (priv->clients, g_strdup (peer), client);
 
         gclue_manager_complete_get_client (manager, invocation, path);
 

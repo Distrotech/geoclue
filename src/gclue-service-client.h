@@ -58,7 +58,7 @@ GClueServiceClient * gclue_service_client_new      (const char      *peer,
                                                     const char      *path,
                                                     GDBusConnection *connection,
                                                     GError         **error);
-const char *         gclue_service_client_get_path (GClueServiceClient    *client);
+const char *         gclue_service_client_get_path (GClueServiceClient *client);
 
 G_END_DECLS
 

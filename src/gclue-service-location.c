@@ -324,7 +324,7 @@ static void
 gclue_service_location_init (GClueServiceLocation *location)
 {
         location->priv = G_TYPE_INSTANCE_GET_PRIVATE (location,
-                                                      GClUE_TYPE_SERVICE_LOCATION,
+                                                      GCLUE_TYPE_SERVICE_LOCATION,
                                                       GClueServiceLocationPrivate);
 }
 
@@ -353,7 +353,7 @@ gclue_service_location_new (const char      *peer,
                             GeocodeLocation *location,
                             GError         **error)
 {
-        return g_initable_new (GClUE_TYPE_SERVICE_LOCATION,
+        return g_initable_new (GCLUE_TYPE_SERVICE_LOCATION,
                                NULL,
                                error,
                                "peer", peer,
@@ -366,7 +366,7 @@ gclue_service_location_new (const char      *peer,
 const gchar *
 gclue_service_location_get_path (GClueServiceLocation *location)
 {
-        g_return_val_if_fail (GClUE_IS_SERVICE_LOCATION(location), NULL);
+        g_return_val_if_fail (GCLUE_IS_SERVICE_LOCATION(location), NULL);
 
         return location->priv->path;
 }

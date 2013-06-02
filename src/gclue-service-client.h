@@ -27,13 +27,13 @@
 
 G_BEGIN_DECLS
 
-#define GClUE_TYPE_SERVICE_CLIENT            (gclue_service_client_get_type())
-#define GCLUE_SERVICE_CLIENT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GClUE_TYPE_SERVICE_CLIENT, GClueServiceClient))
-#define GCLUE_SERVICE_CLIENT_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GClUE_TYPE_SERVICE_CLIENT, GClueServiceClient const))
-#define GCLUE_SERVICE_CLIENT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GClUE_TYPE_SERVICE_CLIENT, GClueServiceClientClass))
-#define GClUE_IS_SERVICE_CLIENT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GClUE_TYPE_SERVICE_CLIENT))
-#define GClUE_IS_SERVICE_CLIENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GClUE_TYPE_SERVICE_CLIENT))
-#define GCLUE_SERVICE_CLIENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GClUE_TYPE_SERVICE_CLIENT, GClueServiceClientClass))
+#define GCLUE_TYPE_SERVICE_CLIENT            (gclue_service_client_get_type())
+#define GCLUE_SERVICE_CLIENT(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_SERVICE_CLIENT, GClueServiceClient))
+#define GCLUE_SERVICE_CLIENT_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_SERVICE_CLIENT, GClueServiceClient const))
+#define GCLUE_SERVICE_CLIENT_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GCLUE_TYPE_SERVICE_CLIENT, GClueServiceClientClass))
+#define GCLUE_IS_SERVICE_CLIENT(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GCLUE_TYPE_SERVICE_CLIENT))
+#define GCLUE_IS_SERVICE_CLIENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GCLUE_TYPE_SERVICE_CLIENT))
+#define GCLUE_SERVICE_CLIENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GCLUE_TYPE_SERVICE_CLIENT, GClueServiceClientClass))
 
 typedef struct _GClueServiceClient        GClueServiceClient;
 typedef struct _GClueServiceClientClass   GClueServiceClientClass;

@@ -28,13 +28,13 @@
 
 G_BEGIN_DECLS
 
-#define GClUE_TYPE_SERVICE_LOCATION            (gclue_service_location_get_type())
-#define GCLUE_SERVICE_LOCATION(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GClUE_TYPE_SERVICE_LOCATION, GClueServiceLocation))
-#define GCLUE_SERVICE_LOCATION_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GClUE_TYPE_SERVICE_LOCATION, GClueServiceLocation const))
-#define GCLUE_SERVICE_LOCATION_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GClUE_TYPE_SERVICE_LOCATION, GClueServiceLocationClass))
-#define GClUE_IS_SERVICE_LOCATION(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GClUE_TYPE_SERVICE_LOCATION))
-#define GClUE_IS_SERVICE_LOCATION_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GClUE_TYPE_SERVICE_LOCATION))
-#define GCLUE_SERVICE_LOCATION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GClUE_TYPE_SERVICE_LOCATION, GClueServiceLocationClass))
+#define GCLUE_TYPE_SERVICE_LOCATION            (gclue_service_location_get_type())
+#define GCLUE_SERVICE_LOCATION(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_SERVICE_LOCATION, GClueServiceLocation))
+#define GCLUE_SERVICE_LOCATION_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_SERVICE_LOCATION, GClueServiceLocation const))
+#define GCLUE_SERVICE_LOCATION_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GCLUE_TYPE_SERVICE_LOCATION, GClueServiceLocationClass))
+#define GCLUE_IS_SERVICE_LOCATION(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GCLUE_TYPE_SERVICE_LOCATION))
+#define GCLUE_IS_SERVICE_LOCATION_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GCLUE_TYPE_SERVICE_LOCATION))
+#define GCLUE_SERVICE_LOCATION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GCLUE_TYPE_SERVICE_LOCATION, GClueServiceLocationClass))
 
 typedef struct _GClueServiceLocation        GClueServiceLocation;
 typedef struct _GClueServiceLocationClass   GClueServiceLocationClass;

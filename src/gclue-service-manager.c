@@ -168,7 +168,7 @@ static void
 gclue_service_manager_init (GClueServiceManager *manager)
 {
         manager->priv = G_TYPE_INSTANCE_GET_PRIVATE (manager,
-                                                     GClUE_TYPE_SERVICE_MANAGER,
+                                                     GCLUE_TYPE_SERVICE_MANAGER,
                                                      GClueServiceManagerPrivate);
 
         manager->priv->clients = g_hash_table_new_full (g_str_hash,
@@ -205,7 +205,7 @@ GClueServiceManager *
 gclue_service_manager_new (GDBusConnection *connection,
                            GError         **error)
 {
-        return g_initable_new (GClUE_TYPE_SERVICE_MANAGER,
+        return g_initable_new (GCLUE_TYPE_SERVICE_MANAGER,
                                NULL,
                                error,
                                "connection", connection,

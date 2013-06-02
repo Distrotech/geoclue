@@ -468,7 +468,7 @@ static void
 gclue_service_client_init (GClueServiceClient *client)
 {
         client->priv = G_TYPE_INSTANCE_GET_PRIVATE (client,
-                                                    GClUE_TYPE_SERVICE_CLIENT,
+                                                    GCLUE_TYPE_SERVICE_CLIENT,
                                                     GClueServiceClientPrivate);
 
         client->priv->locator = gclue_locator_new ();
@@ -480,7 +480,7 @@ gclue_service_client_new (const char      *peer,
                           GDBusConnection *connection,
                           GError         **error)
 {
-        return g_initable_new (GClUE_TYPE_SERVICE_CLIENT,
+        return g_initable_new (GCLUE_TYPE_SERVICE_CLIENT,
                                NULL,
                                error,
                                "peer", peer,
@@ -492,7 +492,7 @@ gclue_service_client_new (const char      *peer,
 const gchar *
 gclue_service_client_get_path (GClueServiceClient *client)
 {
-        g_return_val_if_fail (GClUE_IS_SERVICE_CLIENT(client), NULL);
+        g_return_val_if_fail (GCLUE_IS_SERVICE_CLIENT(client), NULL);
 
         return client->priv->path;
 }

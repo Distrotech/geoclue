@@ -54,6 +54,14 @@ enum
 
 static GParamSpec *gParamSpecs[LAST_PROP];
 
+static void
+on_peer_vanished (GClueServiceClient *client,
+                  gpointer            user_data)
+{
+        g_hash_table_remove (GCLUE_SERVICE_MANAGER (user_data)->priv->clients,
+                             gclue_service_client_get_peer (client));
+}
+
 static gboolean
 gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                                          GDBusMethodInvocation *invocation)
@@ -86,6 +94,8 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
 
         /* FIXME: Register to client-side bus name changes to free clients on associated app exitting */
         g_hash_table_insert (priv->clients, g_strdup (peer), client);
+
+        g_signal_connect (client, "peer-vanished", on_peer_vanished, manager);
 
         gclue_manager_complete_get_client (manager, invocation, path);
 

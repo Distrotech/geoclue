@@ -105,11 +105,10 @@ void on_ipclient_search_ready (GObject      *source_object,
         locator->priv->location = geocode_ipclient_search_finish (ipclient,
                                                                   res,
                                                                   error);
-        if (error != NULL) {
-                g_simple_async_result_set_from_error (simple, error);
+        if (locator->priv->location == NULL) {
+                g_simple_async_result_take_error (simple, error);
                 g_simple_async_result_complete_in_idle (simple);
                 g_object_unref (simple);
-                g_error_free (error);
 
                 return;
         }

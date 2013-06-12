@@ -38,7 +38,7 @@ on_bus_acquired (GDBusConnection *connection,
         GError *error = NULL;
 
         manager = gclue_service_manager_new (connection, &error);
-        if (error != NULL) {
+        if (manager == NULL) {
                 g_critical ("Failed to register server: %s", error->message);
                 g_error_free (&error);
 

@@ -162,7 +162,7 @@ on_start_ready (GObject      *source_object,
                                                        location,
                                                        error);
         g_object_unref (location);
-        if (error != NULL)
+        if (service_location == NULL)
                 goto error_out;
 
         if (!set_location (data->client, service_location, path, error))

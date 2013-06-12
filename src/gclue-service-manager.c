@@ -84,7 +84,7 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                                 ++priv->num_clients);
 
         client = gclue_service_client_new (peer, path, priv->connection, &error);
-        if (error != NULL) {
+        if (client == NULL) {
                 g_dbus_method_invocation_return_error (invocation,
                                                        G_DBUS_ERROR,
                                                        G_DBUS_ERROR_FAILED,

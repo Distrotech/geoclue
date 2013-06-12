@@ -125,7 +125,6 @@ gclue_locator_start (GClueLocator        *locator,
                      gpointer             user_data)
 {
         GSimpleAsyncResult *simple;
-        GError *error = NULL;
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
@@ -170,7 +169,6 @@ gclue_locator_stop (GClueLocator        *locator,
                     gpointer             user_data)
 {
         GSimpleAsyncResult *simple;
-        GError *error = NULL;
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 

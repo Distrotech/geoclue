@@ -61,6 +61,8 @@ main (int argc, char **argv)
         GMainLoop *main_loop;
         guint owner_id;
 
+        setlocale (LC_ALL, "");
+
         textdomain (GETTEXT_PACKAGE);
         bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");

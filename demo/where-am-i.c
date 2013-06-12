@@ -162,6 +162,7 @@ on_manager_proxy_ready (GObject      *source_object,
 gint
 main (gint argc, gchar *argv[])
 {
+        setlocale (LC_ALL, "");
         textdomain (GETTEXT_PACKAGE);
         bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");

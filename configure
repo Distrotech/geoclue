@@ -12353,7 +12353,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-CFLAGS="$CFLAGS -g -Wall -Werror -Wno-format"
+CFLAGS="$CFLAGS -g -Wno-format"
 
 # -----------------------------------------------------------
 # gtk+

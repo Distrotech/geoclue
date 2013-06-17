@@ -307,7 +307,6 @@ int
 main()
 {
 	g_type_init();
-	g_thread_init (NULL);
 
 	GeoclueSkyhook *o = g_object_new (GEOCLUE_TYPE_SKYHOOK, NULL);
 	o->loop = g_main_loop_new (NULL, TRUE);

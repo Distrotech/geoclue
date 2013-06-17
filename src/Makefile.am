@@ -33,7 +33,7 @@ geoclue_LDADD = $(GEOCLUE_LIBS)
 lib_LTLIBRARIES = libgeoclue-1.0.la
 libgeoclue_1_0_ladir = $(includedir)/geoclue-1.0
 
-libgeoclue_1_0_la_HEADERS = geoclue-interface.h
+libgeoclue_1_0_la_HEADERS = geoclue.h geoclue-interface.h
 libgeoclue_1_0_la_SOURCES = geoclue-interface.c
 libgeoclue_1_0_la_CFLAGS = $(GEOCLUE_CFLAGS)
 libgeoclue_1_0_la_LIBADD = $(GEOCLUE_LIBS)

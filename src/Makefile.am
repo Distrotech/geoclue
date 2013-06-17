@@ -43,4 +43,40 @@ CLEANFILES = $(BUILT_SOURCES)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-1.0.pc
 
+if HAVE_INTROSPECTION
+girdir = $(datadir)/gir-1.0
+gir_DATA = Geoclue-1.0.gir
+
+typelibsdir = $(libdir)/girepository-1.0
+typelibs_DATA = Geoclue-1.0.typelib
+
+Geoclue-1.0.gir: $(libgeoclue_1_0_la_SOURCES) $(libgeoclue_1_0_la_HEADERS)
+	$(INTROSPECTION_SCANNER) -v		\
+	    --warn-all				\
+	    --namespace Geoclue			\
+	    --identifier-prefix=GClue 		\
+	    --symbol-prefix=gclue		\
+	    --nsversion=1.0			\
+	    --include=Gio-2.0			\
+	    --library=geoclue-1.0		\
+	    --output $@				\
+	    --pkg=glib-2.0			\
+	    --pkg=gobject-2.0			\
+	    --pkg=gio-2.0			\
+	    --pkg-export=geoclue-1.0		\
+	    --libtool=$(top_builddir)/libtool	\
+	    --c-include='geoclue.h'		\
+	    -I$(top_srcdir)/src			\
+	    -I$(top_builddir)/src		\
+	    $^					\
+	    $(NULL)
+
+Geoclue-1.0.gir: libgeoclue-1.0.la $(INTROSPECTION_SCANNER) Makefile.am
+Geoclue-1.0.typelib: Geoclue-1.0.gir $(INTROSPECTION_COMPILER)
+	$(INTROSPECTION_COMPILER) $< -o $@
+
+CLEANFILES += $(gir_DATA) $(typelibs_DATA)
+
+endif # HAVE_INTROSPECTION
+
 -include $(top_srcdir)/git.mk

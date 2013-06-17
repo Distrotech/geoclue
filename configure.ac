@@ -70,6 +70,8 @@ if test "x$enable_debug" = "xyes"; then
         CFLAGS="$CFLAGS -O0 -ggdb3"
 fi
 
+GOBJECT_INTROSPECTION_CHECK([0.6.2])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile

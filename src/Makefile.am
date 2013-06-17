@@ -40,4 +40,7 @@ libgeoclue_1_0_la_LIBADD = $(GEOCLUE_LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = geoclue-1.0.pc
+
 -include $(top_srcdir)/git.mk

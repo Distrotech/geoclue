@@ -73,6 +73,7 @@ fi
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
+  src/geoclue-1.0.pc
   po/Makefile.in
   data/Makefile
   demo/Makefile

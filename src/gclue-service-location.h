@@ -23,7 +23,7 @@
 #define GCLUE_SERVICE_LOCATION_H
 
 #include <glib-object.h>
-#include <geocode-glib.h>
+#include <geocode-glib/geocode-glib.h>
 #include "geoclue-interface.h"
 
 G_BEGIN_DECLS

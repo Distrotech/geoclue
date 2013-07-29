@@ -3,7 +3,7 @@
 #define GCLUE_LOCATOR_H
 
 #include <glib-object.h>
-#include <geocode-glib.h>
+#include <geocode-glib/geocode-glib.h>
 
 G_BEGIN_DECLS
 

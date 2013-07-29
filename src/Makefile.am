@@ -76,6 +76,7 @@ Geoclue-1.0.typelib: Geoclue-1.0.gir $(INTROSPECTION_COMPILER)
 	$(INTROSPECTION_COMPILER) $< -o $@
 
 CLEANFILES += $(gir_DATA) $(typelibs_DATA)
+EXTRA_DIST = geoclue-interface.xml
 
 endif # HAVE_INTROSPECTION
 

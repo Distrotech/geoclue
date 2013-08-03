@@ -17,7 +17,6 @@ DISTCLEANFILES =				\
 	$(NULL)
 
 EXTRA_DIST =					\
-	build-aux/git-version-gen		\
 	.version				\
 	$(INTLTOOL_FILES)			\
 	$(NULL)
@@ -52,10 +51,6 @@ MAINTAINERCLEANFILES =				\
 	po/quot.sed				\
 	po/remove-potcdate.sin			\
 	$(NULL)
-
-# see git-version-gen
-dist-hook:
-	echo $(VERSION) > $(distdir)/.tarball-version
 
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:

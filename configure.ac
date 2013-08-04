@@ -75,7 +75,7 @@ GOBJECT_INTROSPECTION_CHECK([0.6.2])
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
-  src/geoclue-1.0.pc
+  src/geoclue-2.0.pc
   po/Makefile.in
   data/Makefile
   demo/Makefile

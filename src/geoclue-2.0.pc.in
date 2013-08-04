@@ -6,6 +6,4 @@ includedir=@includedir@
 Name: Geoclue
 Description: The Geoinformation Service
 Version: @VERSION@
-Requires: gio-2.0
-Libs: -L${libdir} -lgoa-1.0
-Cflags: -I${includedir}/goa-1.0 -I${libdir}/goa-1.0/include
+Requires: gio-unix-2.0 geocode-glib

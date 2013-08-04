@@ -41,7 +41,7 @@ libgeoclue_1_0_la_LIBADD = $(GEOCLUE_LIBS)
 CLEANFILES = $(BUILT_SOURCES)
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = geoclue-1.0.pc
+pkgconfig_DATA = geoclue-2.0.pc
 
 if HAVE_INTROSPECTION
 girdir = $(datadir)/gir-1.0

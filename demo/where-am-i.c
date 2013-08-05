@@ -66,7 +66,7 @@ on_location_updated (GClueClient *client,
                      const char  *new_path,
                      gpointer     user_data)
 {
-        gclue_location_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+        gclue_location_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                           G_DBUS_PROXY_FLAGS_NONE,
                                           "org.freedesktop.GeoClue2",
                                           new_path,
@@ -129,7 +129,7 @@ on_get_client_ready (GObject      *source_object,
 
         g_print ("Client object: %s\n", client_path);
 
-        gclue_client_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+        gclue_client_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                         G_DBUS_PROXY_FLAGS_NONE,
                                         "org.freedesktop.GeoClue2",
                                         client_path,
@@ -168,7 +168,7 @@ main (gint argc, gchar *argv[])
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
         g_set_application_name (_("Where Am I"));
 
-        gclue_manager_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+        gclue_manager_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                          G_DBUS_PROXY_FLAGS_NONE,
                                          "org.freedesktop.GeoClue2",
                                          "/org/freedesktop/GeoClue2/Manager",

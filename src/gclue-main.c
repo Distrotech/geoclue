@@ -50,7 +50,7 @@ on_name_lost (GDBusConnection *connection,
               const gchar     *name,
               gpointer         user_data)
 {
-        g_critical ("Failed to acquire name '%s' on session bus or lost it.", name);
+        g_critical ("Failed to acquire name '%s' on system bus or lost it.", name);
 
         exit (-3);
 }
@@ -68,7 +68,7 @@ main (int argc, char **argv)
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
         g_set_application_name (_("GeoClue"));
 
-        owner_id = g_bus_own_name (G_BUS_TYPE_SESSION,
+        owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
                                    BUS_NAME,
                                    G_BUS_NAME_OWNER_FLAGS_NONE,
                                    on_bus_acquired,

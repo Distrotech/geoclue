@@ -70,6 +70,15 @@ if test "x$enable_debug" = "xyes"; then
         CFLAGS="$CFLAGS -O0 -ggdb3"
 fi
 
+# DBus system directory
+AC_ARG_WITH(dbus-sys-dir, AS_HELP_STRING([--with-dbus-sys-dir=DIR], [where D-BUS system.d directory is]))
+if test -n "$with_dbus_sys_dir" ; then
+    DBUS_SYS_DIR="$with_dbus_sys_dir"
+else
+    DBUS_SYS_DIR="${sysconfdir}/dbus-1/system.d"
+fi
+AC_SUBST(DBUS_SYS_DIR)
+
 GOBJECT_INTROSPECTION_CHECK([0.6.2])
 
 AC_CONFIG_FILES([

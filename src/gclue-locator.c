@@ -104,7 +104,7 @@ void on_ipclient_search_ready (GObject      *source_object,
         locator = g_simple_async_result_get_op_res_gpointer (simple);
         locator->priv->location = geocode_ipclient_search_finish (ipclient,
                                                                   res,
-                                                                  error);
+                                                                  &error);
         if (locator->priv->location == NULL) {
                 g_simple_async_result_take_error (simple, error);
                 g_simple_async_result_complete_in_idle (simple);

@@ -14,7 +14,7 @@ interface_DATA = geoclue-interface.xml
 dbus_built_sources = geoclue-interface.c geoclue-interface.h
 geoclue-interface.c: geoclue-interface.h
 geoclue-interface.h: Makefile.am $(interface_DATA)
-	gdbus-codegen						\
+	$(AM_V_GEN)$(GDBUS_CODEGEN) \
 		--interface-prefix org.freedesktop.GeoClue2.	\
 		--c-namespace GClue				\
 		--generate-c-code geoclue-interface		\

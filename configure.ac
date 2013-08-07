@@ -153,6 +153,20 @@ AC_ARG_WITH(dbus-service-user,
 	    dbus_srv_user="root")
 AC_SUBST(dbus_srv_user)
 
+# gdbus-codegen
+if test x$cross_compiling != xyes; then
+	GDBUS_CODEGEN=`$PKG_CONFIG --variable gdbus_codegen gio-2.0`
+else
+	AC_PATH_PROG([GDBUS_CODEGEN],[gdbus-codegen])
+fi
+AC_SUBST([GDBUS_CODEGEN])
+
+if test "x$GDBUS_CODEGEN" = "x"; then
+	ifelse([$2],,[AC_MSG_ERROR([gdbus-codegen not found.])],[$2])
+else
+	ifelse([$1],,[:],[$1])
+fi
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile

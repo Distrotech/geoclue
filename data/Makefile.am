@@ -13,6 +13,6 @@ dbusservice_DATA = org.freedesktop.GeoClue2.conf \
 
 DISTCLEANFILES = $(service_DATA)
 EXTRA_DIST = $(service_in_files) \
-	     org.freedesktop.GeoClue2.Agent.conf
+             $(dbusservice_DATA)
 
 -include $(top_srcdir)/git.mk

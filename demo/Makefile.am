@@ -35,3 +35,5 @@ agent_CFLAGS = $(DEMO_AGENT_CFLAGS)   		   \
 agent_LDADD = $(DEMO_AGENT_LIBS)
 
 endif # BUILD_DEMO_AGENT
+
+-include $(top_srcdir)/git.mk

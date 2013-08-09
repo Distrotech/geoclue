@@ -75,6 +75,7 @@
 /po/boldquot.sed
 /po/en@boldquot.header
 /po/en@quot.header
+/po/geoclue.pot
 /po/gnome-boxes.pot
 /po/insert-header.sin
 /po/quot.sed
@@ -88,6 +89,15 @@
 /src/geoclue-2.0.pc
 /src/geoclue-interface.c
 /src/geoclue-interface.h
+/src/geoip-server/.deps/
+/src/geoip-server/Makefile
+/src/geoip-server/Makefile.in
+/src/geoip-server/geoip-lookup
+/src/geoip-server/geoip-lookup.o
+/src/geoip-server/geoip-update
+/src/geoip-server/geoip-update.o
+/src/geoip-server/test-geoipformat
+/src/geoip-server/test-geoipformat.o
 /src/libgeoclue-1.0.la
 /src/libgeoclue_1_0_la-geoclue-interface.lo
 /src/*.o

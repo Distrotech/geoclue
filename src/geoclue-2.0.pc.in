@@ -6,4 +6,4 @@ includedir=@includedir@
 Name: Geoclue
 Description: The Geoinformation Service
 Version: @VERSION@
-Requires: gio-unix-2.0 geocode-glib
+Requires: gio-unix-2.0 libsoup json-glib-1.0

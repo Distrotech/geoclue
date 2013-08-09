@@ -45,15 +45,32 @@ YELP_HELP_INIT
 # GSettings support
 GLIB_GSETTINGS
 
-GLIB_MIN_VERSION=2.32.0
-GEOCODE_MIN_VERSION=0.99.1
+GLIB_MIN_VERSION=2.34.0
+JSON_GLIB_MIN_VERSION=0.14
+
+AC_CHECK_LIB([m],[sin])
 
 PKG_CHECK_MODULES(GEOCLUE, [
   glib-2.0 >= $GLIB_MIN_VERSION
   gio-2.0 >= $GLIB_MIN_VERSION
   gio-unix-2.0 >= $GLIB_MIN_VERSION
-  geocode-glib-1.0 >= $GEOCODE_MIN_VERSION
+  json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
+  libsoup-2.4
 ])
+
+# Requires for the geoip server
+PKG_CHECK_MODULES(GEOIP_SERVER,
+		  gio-2.0 >= $GLIB_MIN_VERSION
+		  json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
+		  libsoup-2.4
+                  geoip)
+
+# Requires for the database update
+PKG_CHECK_MODULES(GEOIP_DBUPDATE,
+		  gio-2.0 >= $GLIB_MIN_VERSION)
+
+GEOIP_DATABASE_PATH=`$PKG_CONFIG --variable=databasedir geoip`
+AC_SUBST(GEOIP_DATABASE_PATH)
 
 dnl Strict compiler
 AC_ARG_ENABLE([strict-cc],
@@ -85,6 +102,7 @@ AC_CONFIG_FILES([
   Makefile
   src/Makefile
   src/geoclue-2.0.pc
+  src/geoip-server/Makefile
   po/Makefile.in
   data/Makefile
   demo/Makefile

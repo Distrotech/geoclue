@@ -23,7 +23,7 @@
 #define GCLUE_SERVICE_LOCATION_H
 
 #include <glib-object.h>
-#include <geocode-glib/geocode-glib.h>
+#include "gclue-location-info.h"
 #include "geoclue-interface.h"
 
 G_BEGIN_DECLS
@@ -55,11 +55,11 @@ struct _GClueServiceLocationClass
 
 GType gclue_service_location_get_type (void) G_GNUC_CONST;
 
-GClueServiceLocation * gclue_service_location_new      (const char      *peer,
-                                                        const char      *path,
-                                                        GDBusConnection *connection,
-                                                        GeocodeLocation *location,
-                                                        GError         **error);
+GClueServiceLocation * gclue_service_location_new      (const char        *peer,
+                                                        const char        *path,
+                                                        GDBusConnection   *connection,
+                                                        GClueLocationInfo *location,
+                                                        GError           **error);
 const char *           gclue_service_location_get_path (GClueServiceLocation *location);
 
 G_END_DECLS

@@ -2,6 +2,7 @@
 #include <glib/gi18n.h>
 
 #include "gclue-locator.h"
+#include "gclue-ipclient.h"
 
 /* This class will be responsible for doing the actual geolocating. */
 
@@ -9,12 +10,9 @@ G_DEFINE_TYPE (GClueLocator, gclue_locator, G_TYPE_OBJECT)
 
 struct _GClueLocatorPrivate
 {
-        /* Perhaps we should move this class from geocode-glib to geoclue in the
-         * near future.
-         */
-        GeocodeIpclient *ipclient;
+        GClueIpclient *ipclient;
 
-        GeocodeLocation *location;
+        GClueLocationInfo *location;
 };
 
 enum
@@ -70,7 +68,7 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
                                                           "Location",
                                                           "Location",
-                                                          GEOCODE_TYPE_LOCATION,
+                                                          GCLUE_TYPE_LOCATION_INFO,
                                                           G_PARAM_READABLE);
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
@@ -96,15 +94,15 @@ void on_ipclient_search_ready (GObject      *source_object,
                                GAsyncResult *res,
                                gpointer      user_data)
 {
-        GeocodeIpclient *ipclient = GEOCODE_IPCLIENT (source_object);
+        GClueIpclient *ipclient = GCLUE_IPCLIENT (source_object);
         GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (user_data);
         GClueLocator *locator;
         GError *error = NULL;
 
         locator = g_simple_async_result_get_op_res_gpointer (simple);
-        locator->priv->location = geocode_ipclient_search_finish (ipclient,
-                                                                  res,
-                                                                  &error);
+        locator->priv->location = gclue_ipclient_search_finish (ipclient,
+                                                                res,
+                                                                &error);
         if (locator->priv->location == NULL) {
                 g_simple_async_result_take_error (simple, error);
                 g_simple_async_result_complete_in_idle (simple);
@@ -128,7 +126,7 @@ gclue_locator_start (GClueLocator        *locator,
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
-        locator->priv->ipclient = geocode_ipclient_new ();
+        locator->priv->ipclient = gclue_ipclient_new ();
         g_object_set (locator->priv->ipclient,
                       "server", "http://freegeoip.net/json/",
                       "compatibility-mode", TRUE,
@@ -140,7 +138,7 @@ gclue_locator_start (GClueLocator        *locator,
                                             gclue_locator_start);
         g_simple_async_result_set_op_res_gpointer (simple, locator, NULL);
 
-        geocode_ipclient_search_async (locator->priv->ipclient,
+        gclue_ipclient_search_async (locator->priv->ipclient,
                                        cancellable,
                                        on_ipclient_search_ready,
                                        simple);
@@ -200,7 +198,7 @@ gclue_locator_stop_finish (GClueLocator  *locator,
         return TRUE;
 }
 
-GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)
+GClueLocationInfo * gclue_locator_get_location (GClueLocator *locator)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), NULL);
 

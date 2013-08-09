@@ -147,7 +147,7 @@ on_start_ready (GObject      *source_object,
         GClueServiceClientPrivate *priv = data->client->priv;
         GClueLocator *locator = GCLUE_LOCATOR (source_object);
         GClueServiceLocation *service_location;
-        GeocodeLocation *location;
+        GClueLocationInfo *location;
         char *path;
         GError *error = NULL;
 

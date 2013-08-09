@@ -2,8 +2,8 @@
 #ifndef GCLUE_LOCATOR_H
 #define GCLUE_LOCATOR_H
 
-#include <glib-object.h>
-#include <geocode-glib/geocode-glib.h>
+#include <gio/gio.h>
+#include "gclue-location-info.h"
 
 G_BEGIN_DECLS
 
@@ -34,22 +34,22 @@ struct _GClueLocatorClass
 
 GType gclue_locator_get_type (void) G_GNUC_CONST;
 
-GClueLocator *    gclue_locator_new           (void);
-void              gclue_locator_start         (GClueLocator       *locator,
-                                               GCancellable       *cancellable,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data);
-gboolean          gclue_locator_start_finish  (GClueLocator *locator,
-                                               GAsyncResult *res,
-                                               GError      **error);
-void              gclue_locator_stop          (GClueLocator       *locator,
-                                               GCancellable       *cancellable,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data);
-gboolean          gclue_locator_stop_finish   (GClueLocator *locator,
-                                               GAsyncResult *res,
-                                               GError      **error);
-GeocodeLocation * gclue_locator_get_location  (GClueLocator *locator);
+GClueLocator *      gclue_locator_new          (void);
+void                gclue_locator_start        (GClueLocator       *locator,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+gboolean            gclue_locator_start_finish (GClueLocator *locator,
+                                                GAsyncResult *res,
+                                                GError      **error);
+void                gclue_locator_stop         (GClueLocator       *locator,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+gboolean            gclue_locator_stop_finish  (GClueLocator *locator,
+                                                GAsyncResult *res,
+                                                GError      **error);
+GClueLocationInfo * gclue_locator_get_location (GClueLocator *locator);
 
 G_END_DECLS
 

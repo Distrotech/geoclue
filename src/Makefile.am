@@ -1,4 +1,8 @@
+include $(top_srcdir)/Makefile.decl
+
 libexec_PROGRAMS = geoclue
+
+SUBDIRS = geoip-server
 
 dbus_built_sources = geoclue-interface.c geoclue-interface.h
 geoclue-interface.c: geoclue-interface.h
@@ -16,6 +20,12 @@ BUILT_SOURCES = 		\
 geoclue_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \
 	gclue-main.c	 	 \
+	gclue-error.h 	 	 \
+	gclue-error.c 	 	 \
+	gclue-ipclient.h 	 \
+	gclue-ipclient.c 	 \
+	gclue-location-info.h 	 \
+	gclue-location-info.c 	 \
 	gclue-locator.h 	 \
 	gclue-locator.c 	 \
 	gclue-service-manager.h  \
@@ -28,7 +38,7 @@ geoclue_SOURCES =	 	 \
 
 geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
 		 -DLOCALEDIR="\"$(datadir)/locale\""
-geoclue_LDADD = $(GEOCLUE_LIBS)
+geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 lib_LTLIBRARIES = libgeoclue-1.0.la
 libgeoclue_1_0_ladir = $(includedir)/geoclue-1.0
@@ -76,7 +86,8 @@ Geoclue-1.0.typelib: Geoclue-1.0.gir $(INTROSPECTION_COMPILER)
 	$(INTROSPECTION_COMPILER) $< -o $@
 
 CLEANFILES += $(gir_DATA) $(typelibs_DATA)
-EXTRA_DIST = geoclue-interface.xml
+EXTRA_DIST = geoclue-interface.xml			 \
+	     test-data/freegeoip-results.json
 
 endif # HAVE_INTROSPECTION
 

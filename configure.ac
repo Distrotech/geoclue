@@ -15,6 +15,8 @@ AM_MAINTAINER_MODE([enable])
 
 AM_SILENT_RULES([yes])
 
+AC_SUBST([GEOCLUE_API_VERSION], [2.0])
+
 # Check for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -228,7 +230,7 @@ AC_CONFIG_FILES([
   Makefile
   build-aux/Makefile
   src/Makefile
-  src/geoclue-2.0.pc
+  src/geoclue-$GEOCLUE_API_VERSION.pc:src/geoclue.pc.in
   src/agent/Makefile
   src/geocode-glib/Makefile
   src/public-api/Makefile

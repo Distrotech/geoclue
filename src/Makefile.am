@@ -8,7 +8,7 @@ if BUILD_GEOIP_SERVER
 SUBDIRS += geoip-server
 endif # BUILD_GEOIP_SERVER
 
-interfacedir = $(datadir)/geoclue-2.0
+interfacedir = $(datadir)/geoclue-$(GEOCLUE_API_VERSION)
 interface_DATA = geoclue-interface.xml
 
 dbus_built_sources = geoclue-interface.c geoclue-interface.h
@@ -99,6 +99,6 @@ EXTRA_DIST = $(interface_DATA) \
 	     test-data/freegeoip-results.json
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = geoclue-2.0.pc
+pkgconfig_DATA = geoclue-$(GEOCLUE_API_VERSION).pc
 
 -include $(top_srcdir)/git.mk

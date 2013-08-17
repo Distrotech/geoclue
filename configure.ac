@@ -47,6 +47,7 @@ GLIB_GSETTINGS
 
 GLIB_MIN_VERSION=2.34.0
 JSON_GLIB_MIN_VERSION=0.14
+GEOIP_MIN_VERSION=1.5.1
 
 AC_CHECK_LIB([m],[sin])
 
@@ -63,7 +64,7 @@ PKG_CHECK_MODULES(GEOIP_SERVER,
 		  gio-2.0 >= $GLIB_MIN_VERSION
 		  json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
 		  libsoup-2.4
-                  geoip)
+                  geoip >= GEOIP_MIN_VERSION)
 
 # Requires for the database update
 PKG_CHECK_MODULES(GEOIP_DBUPDATE,

@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=org.freedesktop.GeoClue2
 Exec=@libexecdir@/geoclue
+User=root

@@ -83,4 +83,4 @@ typedef enum {
 } GeoipServerError;
 
 They are defined in
-https://git.gnome.org/browse/geocode-glib/tree/geocode-glib/geocode-ip-server/geoip-server.h
+http://cgit.freedesktop.org/geoclue/tree/src/geoip-server/geoip-server.h

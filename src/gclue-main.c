@@ -30,10 +30,18 @@
 #define BUS_NAME "org.freedesktop.GeoClue2"
 
 /* Commandline options */
+static gboolean version;
 static gint inactivity_timeout = 0;
 
 static GOptionEntry entries[] =
 {
+        { "version",
+          0,
+          0,
+          G_OPTION_ARG_NONE,
+          &version,
+          N_("Display version number"),
+          NULL },
         { "timeout",
           't',
           0,
@@ -136,6 +144,11 @@ main (int argc, char **argv)
         if (!g_option_context_parse (context, &argc, &argv, &error)) {
                 g_critical ("option parsing failed: %s\n", error->message);
                 exit (-1);
+        }
+
+        if (version) {
+                g_print ("%s\n", PACKAGE_VERSION);
+                exit (0);
         }
 
         owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,

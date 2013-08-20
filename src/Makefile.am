@@ -2,7 +2,11 @@ include $(top_srcdir)/Makefile.decl
 
 libexec_PROGRAMS = geoclue
 
+if BUILD_GEOIP_SERVER
 SUBDIRS = geoip-server
+else
+SUBDIRS =
+endif # BUILD_GEOIP_SERVER
 
 dbus_built_sources = geoclue-interface.c geoclue-interface.h
 geoclue-interface.c: geoclue-interface.h

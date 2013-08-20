@@ -59,19 +59,47 @@ PKG_CHECK_MODULES(GEOCLUE, [
   libsoup-2.4
 ])
 
-# Requires for the geoip server
-PKG_CHECK_MODULES(GEOIP_SERVER,
-		  gio-2.0 >= $GLIB_MIN_VERSION
-		  json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
-		  libsoup-2.4
-                  geoip >= GEOIP_MIN_VERSION)
-
-# Requires for the database update
-PKG_CHECK_MODULES(GEOIP_DBUPDATE,
-		  gio-2.0 >= $GLIB_MIN_VERSION)
-
-GEOIP_DATABASE_PATH=`$PKG_CONFIG --variable=databasedir geoip`
-AC_SUBST(GEOIP_DATABASE_PATH)
+# Geoip server
+AC_ARG_ENABLE(geoip-server,
+              AS_HELP_STRING([--enable-geoip-server=yes|no|auto], [Build geoip server]),
+              [enable_geoip_server=$enableval],
+              [enable_geoip_server=auto])
+case "x$enable_geoip_server" in
+  xyes)
+    PKG_CHECK_MODULES(GEOIP_SERVER,
+		      gio-2.0 >= $GLIB_MIN_VERSION
+                      json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
+                      libsoup-2.4
+                      geoip >= GEOIP_MIN_VERSION)
+    build_geoip_server="yes"
+    ;;
+  xauto)
+    PKG_CHECK_MODULES(GEOIP_SERVER,
+		      gio-2.0 >= $GLIB_MIN_VERSION
+                      json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
+                      libsoup-2.4
+                      geoip >= GEOIP_MIN_VERSION,
+                      [build_geoip_server=yes],
+                      [build_geoip_server=no])
+    ;;
+  xno)
+    build_geoip_server="xno"
+    ;;
+  x*)
+    AC_MSG_ERROR([Unknown --enable-geoip-server argument: $enable_geoip_server])
+    ;;
+esac
+if test "x$build_geoip_server" = "xyes"; then
+  # Requires for the database update
+  PKG_CHECK_MODULES(GEOIP_DBUPDATE,
+		    gio-2.0 >= $GLIB_MIN_VERSION)
+  GEOIP_DATABASE_PATH=`$PKG_CONFIG --variable=databasedir geoip`
+  AC_SUBST(GEOIP_DATABASE_PATH)
+  AC_DEFINE([BUILD_GEOIP_SERVER], [1], [Build geoip server?])
+else
+  AC_DEFINE([BUILD_GEOIP_SERVER], [0], [Build geoip server?])
+fi
+AM_CONDITIONAL([BUILD_GEOIP_SERVER], [test "x$build_geoip_server" = "xyes"])
 
 dnl Strict compiler
 AC_ARG_ENABLE([strict-cc],

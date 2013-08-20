@@ -26,9 +26,41 @@
 
 #include "gclue-service-manager.h"
 
-#define BUS_NAME "org.freedesktop.GeoClue2"
+#define BUS_NAME          "org.freedesktop.GeoClue2"
+#define NO_CLIENT_TIMEOUT 5
 
+GMainLoop *main_loop;
 GClueServiceManager *manager = NULL;
+guint no_client_timeout_id = 0;
+
+static gboolean
+no_client_timeout (gpointer user_data)
+{
+        g_main_loop_quit (main_loop);
+
+        return FALSE;
+}
+
+static void
+on_connected_clients_notify (GObject    *gobject,
+                             GParamSpec *pspec,
+                             gpointer    user_data)
+{
+        guint connected;
+
+        connected = gclue_service_manager_get_connected_clients
+                        (GCLUE_SERVICE_MANAGER (gobject));
+        g_debug ("Number of connected clients: %u", connected);
+
+        if (connected == 0)
+                no_client_timeout_id = g_timeout_add_seconds (NO_CLIENT_TIMEOUT,
+                                                              no_client_timeout,
+                                                              NULL);
+        else if (no_client_timeout_id != 0) {
+                g_source_remove (no_client_timeout_id);
+                no_client_timeout_id = 0;
+        }
+}
 
 static void
 on_bus_acquired (GDBusConnection *connection,
@@ -44,6 +76,15 @@ on_bus_acquired (GDBusConnection *connection,
 
                 exit (-2);
         }
+
+        g_signal_connect (manager,
+                          "notify::connected-clients",
+                          on_connected_clients_notify,
+                          NULL);
+
+        no_client_timeout_id = g_timeout_add_seconds (NO_CLIENT_TIMEOUT,
+                                                      no_client_timeout,
+                                                      NULL);
 }
 
 on_name_lost (GDBusConnection *connection,
@@ -58,7 +99,6 @@ on_name_lost (GDBusConnection *connection,
 int
 main (int argc, char **argv)
 {
-        GMainLoop *main_loop;
         guint owner_id;
 
         setlocale (LC_ALL, "");

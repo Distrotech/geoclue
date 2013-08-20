@@ -92,7 +92,6 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                 return TRUE;
         }
 
-        /* FIXME: Register to client-side bus name changes to free clients on associated app exitting */
         g_hash_table_insert (priv->clients, g_strdup (peer), client);
 
         g_signal_connect (client, "peer-vanished", on_peer_vanished, manager);

@@ -1,3 +1,32 @@
+1.99.1
+======
+
+- Move to system D-Bus.
+- Import geoip code from geocode-glib.
+- Add option to automatically exit on inactivity. By default it:
+  - Runs indefinitely when launched manually.
+  - Exits after 5 seconds of inactivity when (auto)launched by D-Bus.
+- Relicense from LGPLv2+ to GPLv2+.
+- Some build/installation related fixes.
+- Correctly version pkg-config file.
+- Fix crash on error.
+- Add --version cmdline option.
+
+Dependency-related changes:
+
+- Remove redundant GOA dep from pkg-config.
+- Drop dependency on geocode-glib.
+- New dependencies:
+  - json-glib-1.0 >= 0.14
+  - libsoup-2.4
+  - geoip >= 1.5.1 (Only needed by geoip server)
+
+All contributors to this release:
+
+Bastien Nocera <hadess@hadess.net>
+Colin Walters <walters@verbum.org>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 1.99.0
 ======
 

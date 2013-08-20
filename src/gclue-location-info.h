@@ -1,5 +1,5 @@
 /* vim: set et ts=8 sw=8: */
-/* main.c
+/* gclue-location-info.h
  *
  * Copyright (C) 2013 Red Hat, Inc.
  * Copyright (C) 2012 Bastien Nocera

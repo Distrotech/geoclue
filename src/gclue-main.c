@@ -26,8 +26,22 @@
 
 #include "gclue-service-manager.h"
 
-#define BUS_NAME          "org.freedesktop.GeoClue2"
-#define NO_CLIENT_TIMEOUT 5
+#define BUS_NAME "org.freedesktop.GeoClue2"
+
+/* Commandline options */
+static gint inactivity_timeout = 0;
+
+static GOptionEntry entries[] =
+{
+        { "timeout",
+          't',
+          0,
+          G_OPTION_ARG_INT,
+          &inactivity_timeout,
+          N_("Exit after T seconds of inactivity. Default: 0 (never)"),
+          "T" },
+        { NULL }
+};
 
 GMainLoop *main_loop;
 GClueServiceManager *manager = NULL;
@@ -52,10 +66,14 @@ on_connected_clients_notify (GObject    *gobject,
                         (GCLUE_SERVICE_MANAGER (gobject));
         g_debug ("Number of connected clients: %u", connected);
 
+        if (inactivity_timeout <= 0)
+                return;
+
         if (connected == 0)
-                no_client_timeout_id = g_timeout_add_seconds (NO_CLIENT_TIMEOUT,
-                                                              no_client_timeout,
-                                                              NULL);
+                no_client_timeout_id =
+                        g_timeout_add_seconds (inactivity_timeout,
+                                               no_client_timeout,
+                                               NULL);
         else if (no_client_timeout_id != 0) {
                 g_source_remove (no_client_timeout_id);
                 no_client_timeout_id = 0;
@@ -82,9 +100,11 @@ on_bus_acquired (GDBusConnection *connection,
                           on_connected_clients_notify,
                           NULL);
 
-        no_client_timeout_id = g_timeout_add_seconds (NO_CLIENT_TIMEOUT,
-                                                      no_client_timeout,
-                                                      NULL);
+        if (inactivity_timeout > 0)
+                no_client_timeout_id =
+                        g_timeout_add_seconds (inactivity_timeout,
+                                               no_client_timeout,
+                                               NULL);
 }
 
 on_name_lost (GDBusConnection *connection,
@@ -100,6 +120,8 @@ int
 main (int argc, char **argv)
 {
         guint owner_id;
+        GError *error = NULL;
+        GOptionContext *context;
 
         setlocale (LC_ALL, "");
 
@@ -107,6 +129,13 @@ main (int argc, char **argv)
         bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
         g_set_application_name (_("GeoClue"));
+
+        context = g_option_context_new ("- Geoclue D-Bus service");
+        g_option_context_add_main_entries (context, entries, GETTEXT_PACKAGE);
+        if (!g_option_context_parse (context, &argc, &argv, &error)) {
+                g_critical ("option parsing failed: %s\n", error->message);
+                exit (-1);
+        }
 
         owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
                                    BUS_NAME,

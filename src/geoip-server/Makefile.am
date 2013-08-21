@@ -23,5 +23,7 @@ geoip_lookup_LDADD = $(GEOIP_SERVER_LIBS)
 geoip_update_LDADD = $(GEOIP_DBUPDATE_LIBS)
 test_geoipformat_LDADD = $(GEOCLUE_LIBS)
 
+EXTRA_DIST = API-Documentation.txt
+
 MAINTAINERCLEANFILES = Makefile.in
 

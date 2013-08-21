@@ -12,10 +12,10 @@ AM_CFLAGS = \
 	-DTEST_SRCDIR=\""$(top_srcdir)/src/test-data/"\" \
 	-DBUILDDIR=\""$(builddir)/"\"
 
-bin_PROGRAMS = geoip-update
+bin_PROGRAMS = geoip-lookup geoip-update
 
 TEST_PROGS += test-geoipformat
-noinst_PROGRAMS = geoip-lookup $(TEST_PROGS)
+noinst_PROGRAMS = $(TEST_PROGS)
 
 geoip_lookup_SOURCES = geoip-lookup.c geoip-server.h
 

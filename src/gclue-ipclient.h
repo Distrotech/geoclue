@@ -1,7 +1,7 @@
 /* vim: set et ts=8 sw=8: */
 /*
  * Copyright (C) 2013 Red Hat, Inc.
-   Copyright (C) 2013 Satabdi Das
+ * Copyright (C) 2013 Satabdi Das
  *
  * Geoclue is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free

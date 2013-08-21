@@ -18,6 +18,7 @@ DISTCLEANFILES =				\
 
 EXTRA_DIST =					\
 	.version				\
+	COPYING					\
 	$(INTLTOOL_FILES)			\
 	$(NULL)
 

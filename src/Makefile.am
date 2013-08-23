@@ -8,14 +8,17 @@ else
 SUBDIRS =
 endif # BUILD_GEOIP_SERVER
 
+interfacedir = $(datadir)/geoclue-2.0
+interface_DATA = geoclue-interface.xml
+
 dbus_built_sources = geoclue-interface.c geoclue-interface.h
 geoclue-interface.c: geoclue-interface.h
-geoclue-interface.h: Makefile.am geoclue-interface.xml
+geoclue-interface.h: Makefile.am $(interface_DATA)
 	gdbus-codegen						\
 		--interface-prefix org.freedesktop.GeoClue2.	\
 		--c-namespace GClue				\
 		--generate-c-code geoclue-interface		\
-		$(srcdir)/geoclue-interface.xml
+		$(srcdir)/$(interface_DATA)
 
 BUILT_SOURCES = 		\
 	$(dbus_built_sources)	\
@@ -45,6 +48,7 @@ geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)
+EXTRA_DIST = $(interface_DATA)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-2.0.pc

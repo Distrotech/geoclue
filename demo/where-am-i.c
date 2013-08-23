@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <locale.h>
 #include <glib/gi18n.h>
-#include <geoclue.h>
+#include <gio/gio.h>
 
 GMainLoop *main_loop;
 
@@ -35,24 +35,36 @@ on_location_proxy_ready (GObject      *source_object,
                          GAsyncResult *res,
                          gpointer      user_data)
 {
-        GClueManagerProxy *manager = GCLUE_MANAGER_PROXY (user_data);
-        GClueLocationProxy *location;
+        GDBusProxy *manager = G_DBUS_PROXY (user_data);
+        GDBusProxy *location = G_DBUS_PROXY (source_object);
+        GVariant *value;
+        gdouble latitude, longitude, accuracy;
         const char *desc;
+        gsize desc_len;
         GError *error = NULL;
 
-        location = gclue_location_proxy_new_for_bus_finish (res, &error);
+        location = g_dbus_proxy_new_for_bus_finish (res, &error);
         if (error != NULL) {
             g_critical ("Failed to connect to GeoClue2 service: %s", error->message);
 
             exit (-5);
         }
 
+        value = g_dbus_proxy_get_cached_property (location, "latitude");
+        latitude = g_variant_get_double (value);
+        value = g_dbus_proxy_get_cached_property (location, "longitude");
+        longitude = g_variant_get_double (value);
+        value = g_dbus_proxy_get_cached_property (location, "accuracy");
+        accuracy = g_variant_get_double (value);
+
         g_print ("Latitude: %f\nLongitude: %f\nAccuracy (in meters): %f\n",
-                 gclue_location_get_latitude (location),
-                 gclue_location_get_longitude (location),
-                 gclue_location_get_accuracy (location));
-        desc = gclue_location_get_description (location);
-        if (desc != NULL && desc[0] != NULL)
+                 latitude,
+                 longitude,
+                 accuracy);
+
+        value = g_dbus_proxy_get_cached_property (location, "description");
+        desc = g_variant_get_string (value, &desc_len);
+        if (desc_len > 0)
                 g_print ("Description: %s\n", desc);
 
         g_object_unref (location);
@@ -62,18 +74,28 @@ on_location_proxy_ready (GObject      *source_object,
 }
 
 static void
-on_location_updated (GClueClient *client,
-                     const char  *old_path,
-                     const char  *new_path,
-                     gpointer     user_data)
+on_client_signal (GDBusProxy *client,
+                  gchar      *sender_name,
+                  gchar      *signal_name,
+                  GVariant   *parameters,
+                  gpointer    user_data)
 {
-        gclue_location_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                          G_DBUS_PROXY_FLAGS_NONE,
-                                          "org.freedesktop.GeoClue2",
-                                          new_path,
-                                          NULL,
-                                          on_location_proxy_ready,
-                                          user_data);
+        char *location_path;
+        if (g_strcmp0 (signal_name, "LocationUpdated") != 0)
+                return;
+
+        g_assert (g_variant_n_children (parameters) > 1);
+        g_variant_get_child (parameters, 1, "&o", &location_path);
+
+        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                                  G_DBUS_PROXY_FLAGS_NONE,
+                                  NULL,
+                                  "org.freedesktop.GeoClue2",
+                                  location_path,
+                                  "org.freedesktop.GeoClue2.Location",
+                                  NULL,
+                                  on_location_proxy_ready,
+                                  user_data);
         g_object_unref (client);
 }
 
@@ -82,15 +104,19 @@ on_start_ready (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
 {
-        GClueManagerProxy *manager = GCLUE_MANAGER_PROXY (user_data);
-        GClueClientProxy *client = GCLUE_CLIENT_PROXY (source_object);
+        GDBusProxy *manager = G_DBUS_PROXY (user_data);
+        GDBusProxy *client = G_DBUS_PROXY (source_object);
+        GVariant *results;
         GError *error = NULL;
 
-        if (!gclue_client_call_start_finish (client, res, &error)) {
+        results = g_dbus_proxy_call_finish (client, res, &error);
+        if (results == NULL) {
             g_critical ("Failed to start GeoClue2 client: %s", error->message);
 
             exit (-4);
         }
+
+        g_variant_unref (results);
 }
 
 static void
@@ -98,19 +124,26 @@ on_client_proxy_ready (GObject      *source_object,
                        GAsyncResult *res,
                        gpointer      user_data)
 {
-        GClueClientProxy *client;
+        GDBusProxy *client;
         GError *error = NULL;
 
-        client = gclue_client_proxy_new_for_bus_finish (res, &error);
+        client = g_dbus_proxy_new_for_bus_finish (res, &error);
         if (error != NULL) {
             g_critical ("Failed to connect to GeoClue2 service: %s", error->message);
 
             exit (-3);
         }
 
-        g_signal_connect (client, "location-updated", on_location_updated, user_data);
+        g_signal_connect (client, "g-signal", on_client_signal, user_data);
 
-        gclue_client_call_start (client, NULL, on_start_ready, user_data);
+        g_dbus_proxy_call (client,
+                           "Start",
+                           NULL,
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL,
+                           on_start_ready,
+                           user_data);
 }
 
 static void
@@ -118,25 +151,33 @@ on_get_client_ready (GObject      *source_object,
                      GAsyncResult *res,
                      gpointer      user_data)
 {
-        GClueManagerProxy *manager = GCLUE_MANAGER_PROXY (source_object);
+        GDBusProxy *manager = G_DBUS_PROXY (source_object);
+        GVariant *results;
         const char *client_path;
         GError *error = NULL;
 
-        if (!gclue_manager_call_get_client_finish (manager, &client_path, res, &error)) {
+        results = g_dbus_proxy_call_finish (manager, res, &error);
+        if (results == NULL) {
             g_critical ("Failed to connect to GeoClue2 service: %s", error->message);
 
             exit (-2);
         }
 
+        g_assert (g_variant_n_children (results) > 0);
+        g_variant_get_child (results, 0, "&o", &client_path);
+
         g_print ("Client object: %s\n", client_path);
 
-        gclue_client_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                        G_DBUS_PROXY_FLAGS_NONE,
-                                        "org.freedesktop.GeoClue2",
-                                        client_path,
-                                        NULL,
-                                        on_client_proxy_ready,
-                                        manager);
+        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                                  G_DBUS_PROXY_FLAGS_NONE,
+                                  NULL,
+                                  "org.freedesktop.GeoClue2",
+                                  client_path,
+                                  "org.freedesktop.GeoClue2.Client",
+                                  NULL,
+                                  on_client_proxy_ready,
+                                  manager);
+        g_variant_unref (results);
 }
 
 static void
@@ -144,20 +185,24 @@ on_manager_proxy_ready (GObject      *source_object,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
-        GClueManagerProxy *manager;
+        GDBusProxy *manager;
         GError *error = NULL;
 
-        manager = gclue_manager_proxy_new_for_bus_finish (res, &error);
+        manager = g_dbus_proxy_new_for_bus_finish (res, &error);
         if (error != NULL) {
             g_critical ("Failed to connect to GeoClue2 service: %s", error->message);
 
             exit (-1);
         }
 
-        gclue_manager_call_get_client (manager,
-                                       NULL,
-                                       on_get_client_ready,
-                                       NULL);
+        g_dbus_proxy_call (manager,
+                           "GetClient",
+                           NULL,
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL,
+                           on_get_client_ready,
+                           NULL);
 }
 
 gint
@@ -169,13 +214,15 @@ main (gint argc, gchar *argv[])
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
         g_set_application_name (_("Where Am I"));
 
-        gclue_manager_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                         G_DBUS_PROXY_FLAGS_NONE,
-                                         "org.freedesktop.GeoClue2",
-                                         "/org/freedesktop/GeoClue2/Manager",
-                                         NULL,
-                                         on_manager_proxy_ready,
-                                         NULL);
+        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                                  G_DBUS_PROXY_FLAGS_NONE,
+                                  NULL,
+                                  "org.freedesktop.GeoClue2",
+                                  "/org/freedesktop/GeoClue2/Manager",
+                                  "org.freedesktop.GeoClue2.Manager",
+                                  NULL,
+                                  on_manager_proxy_ready,
+                                  NULL);
 
         main_loop = g_main_loop_new (NULL, FALSE);
         g_main_loop_run (main_loop);

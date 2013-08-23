@@ -48,7 +48,8 @@ geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)
-EXTRA_DIST = $(interface_DATA)
+EXTRA_DIST = $(interface_DATA) \
+	     test-data/freegeoip-results.json
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-2.0.pc

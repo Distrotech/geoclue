@@ -1,3 +1,19 @@
+1.99.2
+======
+
+- Drop client-side library.
+- Add COPYING file.
+- Install geoip-lookup with make install. This makes life easier for binary
+  distributions that can then ship geoip-lookup in a package.
+- Distribute server documentation.
+- Distribute & install interface XML file.
+- Add/update forgotten copyright headers.
+
+All contributors to this release:
+
+Kalev Lember <kalevlember@gmail.com>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 1.99.1
 ======
 

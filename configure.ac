@@ -36,9 +36,6 @@ GETTEXT_PACKAGE=AC_PACKAGE_NAME
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[The name of the gettext domain])
 
-# GObject-introspection support
-GOBJECT_INTROSPECTION_REQUIRE([0.9.6])
-
 # Mallard help
 YELP_HELP_INIT
 
@@ -124,8 +121,6 @@ else
     DBUS_SYS_DIR="${sysconfdir}/dbus-1/system.d"
 fi
 AC_SUBST(DBUS_SYS_DIR)
-
-GOBJECT_INTROSPECTION_CHECK([0.6.2])
 
 AC_CONFIG_FILES([
   Makefile

@@ -104,7 +104,6 @@ on_start_ready (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
 {
-        GDBusProxy *manager = G_DBUS_PROXY (user_data);
         GDBusProxy *client = G_DBUS_PROXY (source_object);
         GVariant *results;
         GError *error = NULL;
@@ -134,7 +133,8 @@ on_client_proxy_ready (GObject      *source_object,
             exit (-3);
         }
 
-        g_signal_connect (client, "g-signal", on_client_signal, user_data);
+        g_signal_connect (client, "g-signal",
+                          G_CALLBACK (on_client_signal), user_data);
 
         g_dbus_proxy_call (client,
                            "Start",

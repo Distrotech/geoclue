@@ -100,8 +100,7 @@ dnl Strict compiler
 AC_ARG_ENABLE([strict-cc],
   AS_HELP_STRING([--enable-strict-cc],[Enable strict C compiler]))
 
-AS_IF([test "x$enable_strict_cc" = "xyes"], [CFLAGS="$CFLAGS -Wall -Werror"],
-      [CFLAGS="$CFLAGS -w"])
+AS_IF([test "x$enable_strict_cc" = "xyes"], [CFLAGS="$CFLAGS -Wall -Werror"])
 
 dnl Debugging
 AC_ARG_ENABLE(debug,

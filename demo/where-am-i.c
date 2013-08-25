@@ -50,11 +50,11 @@ on_location_proxy_ready (GObject      *source_object,
             exit (-5);
         }
 
-        value = g_dbus_proxy_get_cached_property (location, "latitude");
+        value = g_dbus_proxy_get_cached_property (location, "Latitude");
         latitude = g_variant_get_double (value);
-        value = g_dbus_proxy_get_cached_property (location, "longitude");
+        value = g_dbus_proxy_get_cached_property (location, "Longitude");
         longitude = g_variant_get_double (value);
-        value = g_dbus_proxy_get_cached_property (location, "accuracy");
+        value = g_dbus_proxy_get_cached_property (location, "Accuracy");
         accuracy = g_variant_get_double (value);
 
         g_print ("Latitude: %f\nLongitude: %f\nAccuracy (in meters): %f\n",
@@ -62,7 +62,7 @@ on_location_proxy_ready (GObject      *source_object,
                  longitude,
                  accuracy);
 
-        value = g_dbus_proxy_get_cached_property (location, "description");
+        value = g_dbus_proxy_get_cached_property (location, "Description");
         desc = g_variant_get_string (value, &desc_len);
         if (desc_len > 0)
                 g_print ("Description: %s\n", desc);

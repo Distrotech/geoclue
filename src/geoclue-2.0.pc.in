@@ -4,4 +4,4 @@ exec_prefix=@exec_prefix@
 Name: Geoclue
 Description: The Geoinformation Service
 Version: @VERSION@
-Requires: gio-unix-2.0 libsoup json-glib-1.0
+Requires: gio-unix-2.0 libsoup-2.4 json-glib-1.0

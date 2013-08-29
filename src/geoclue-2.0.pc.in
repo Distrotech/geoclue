@@ -1,5 +1,8 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+datadir=@datadir@
+
+dbus_interface=${datadir}/geoclue-2.0/geoclue-interface.xml
 
 Name: Geoclue
 Description: The Geoinformation Service

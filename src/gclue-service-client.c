@@ -149,7 +149,7 @@ on_start_ready (GObject      *source_object,
         GClueLocator *locator = GCLUE_LOCATOR (source_object);
         GClueServiceLocation *service_location;
         GClueLocationInfo *location;
-        char *path;
+        char *path = NULL;
         GError *error = NULL;
 
         if (!gclue_locator_start_finish (locator, res, &error))

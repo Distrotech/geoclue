@@ -161,12 +161,12 @@ on_start_ready (GObject      *source_object,
                                                        path,
                                                        priv->connection,
                                                        location,
-                                                       error);
+                                                       &error);
         g_object_unref (location);
         if (service_location == NULL)
                 goto error_out;
 
-        if (!set_location (data->client, service_location, path, error))
+        if (!set_location (data->client, service_location, path, &error))
                 goto error_out;
 
         gclue_client_complete_start (data->client, data->invocation);
@@ -468,9 +468,10 @@ gclue_service_client_client_iface_init (GClueClientIface *iface)
         iface->handle_stop = gclue_service_client_handle_stop;
 }
 
-static on_name_vanished (GDBusConnection *connection,
-                         const gchar     *name,
-                         gpointer         user_data)
+static void
+on_name_vanished (GDBusConnection *connection,
+                  const gchar     *name,
+                  gpointer         user_data)
 {
         g_signal_emit (GCLUE_SERVICE_CLIENT (user_data),
                        signals[PEER_VANISHED],

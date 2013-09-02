@@ -24,6 +24,7 @@
 #include <glib.h>
 #include <locale.h>
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "gclue-service-manager.h"
 
@@ -99,14 +100,14 @@ on_bus_acquired (GDBusConnection *connection,
         manager = gclue_service_manager_new (connection, &error);
         if (manager == NULL) {
                 g_critical ("Failed to register server: %s", error->message);
-                g_error_free (&error);
+                g_error_free (error);
 
                 exit (-2);
         }
 
         g_signal_connect (manager,
                           "notify::connected-clients",
-                          on_connected_clients_notify,
+                          G_CALLBACK (on_connected_clients_notify),
                           NULL);
 
         if (inactivity_timeout > 0)
@@ -116,6 +117,7 @@ on_bus_acquired (GDBusConnection *connection,
                                                NULL);
 }
 
+static void
 on_name_lost (GDBusConnection *connection,
               const gchar     *name,
               gpointer         user_data)

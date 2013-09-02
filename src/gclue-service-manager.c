@@ -64,7 +64,7 @@ on_peer_vanished (GClueServiceClient *client,
 
         g_hash_table_remove (manager->priv->clients,
                              gclue_service_client_get_peer (client));
-        g_object_notify (manager, "connected-clients");
+        g_object_notify (G_OBJECT (manager), "connected-clients");
 }
 
 static gboolean
@@ -98,9 +98,10 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
         }
 
         g_hash_table_insert (priv->clients, g_strdup (peer), client);
-        g_object_notify (manager, "connected-clients");
+        g_object_notify (G_OBJECT (manager), "connected-clients");
 
-        g_signal_connect (client, "peer-vanished", on_peer_vanished, manager);
+        g_signal_connect (client, "peer-vanished",
+                          G_CALLBACK (on_peer_vanished), manager);
 
         gclue_manager_complete_get_client (manager, invocation, path);
 

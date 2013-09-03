@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <libsoup/soup.h>
 
 static struct {
         const char *uri;
@@ -47,44 +48,55 @@ static struct {
  * to be updated.
  */
 static gboolean
-local_db_needs_update (GFile *db, GFile *db_local, gboolean *needs_update, GError **error)
+local_db_needs_update (SoupSession *session,
+                       const char  *db_uri,
+                       GFile       *db_local,
+                       gboolean    *needs_update,
+                       GError     **error)
 {
-        GFileInfo *db_info;
         GFileInfo *db_local_info;
+        SoupMessage *msg;
+        SoupDate *date;
+        const gchar *db_time_str;
         guint64 db_time;
         guint64 db_local_time;
+        guint status_code;
 
         if (g_file_query_exists (db_local, NULL) == FALSE) {
                 *needs_update = TRUE;
                 return TRUE;
         }
 
-        db_info = g_file_query_info (db,
-                                     "time::modified",
-                                     G_FILE_QUERY_INFO_NONE,
-                                     NULL,
-                                     error);
-        if (!db_info)
+        msg = soup_message_new ("HEAD", db_uri);
+        status_code = soup_session_send_message (session, msg);
+        if (status_code != SOUP_STATUS_OK) {
+                g_set_error_literal (error,
+                                     SOUP_HTTP_ERROR,
+                                     status_code,
+                                     msg->reason_phrase);
                 return FALSE;
+        }
+
+        db_time_str = soup_message_headers_get_one (msg->response_headers, "Last-Modified");
+        date = soup_date_new_from_string (db_time_str);
+        db_time = (guint64) soup_date_to_time_t (date);
+        soup_date_free (date);
+        g_object_unref (msg);
 
         db_local_info = g_file_query_info (db_local,
                                            "time::modified",
                                            G_FILE_QUERY_INFO_NONE,
                                            NULL,
                                            error);
-        if (!db_local_info) {
-                g_object_unref (db_info);
+        if (!db_local_info)
                 return FALSE;
-        }
 
-        db_time = g_file_info_get_attribute_uint64 (db_info, "time::modified");
         db_local_time = g_file_info_get_attribute_uint64 (db_local_info, "time::modified");
         if (db_time <= db_local_time)
                 *needs_update = FALSE;
         else
                 *needs_update = TRUE;
 
-        g_object_unref (db_info);
         g_object_unref (db_local_info);
 
         return TRUE;
@@ -173,7 +185,7 @@ end:
 int
 main (int argc, char **argv)
 {
-
+        SoupSession *session;
         GError *error = NULL;
         const char *path, *dbpath = NULL;
         guint i;
@@ -202,21 +214,25 @@ main (int argc, char **argv)
                         path = GEOIP_DATABASE_PATH;
         }
 
+        session = soup_session_new ();
+
         for (i = 0; i < G_N_ELEMENTS (db_info_map); i++) {
-                GFile *db_remote;
+                SoupMessage *msg = NULL;
+                const char*db_uri;
                 GFile *db_local;
                 char *db_path;
                 char *db_decompressed_path;
                 gboolean needs_update;
+                guint status_code;
 
                 g_print ("Updating %s database\n", db_info_map[i].db_name);
-                db_remote = g_file_new_for_uri (db_info_map[i].uri);
+                db_uri = db_info_map[i].uri;
 
                 db_path = g_build_filename (path, db_info_map[i].db_gz_name, NULL);
                 db_local = g_file_new_for_path (db_path);
                 g_free (db_path);
 
-                if (local_db_needs_update (db_remote, db_local, &needs_update, &error) == FALSE) {
+                if (local_db_needs_update (session, db_uri, db_local, &needs_update, &error) == FALSE) {
                         g_print ("Could not update the database: %s\n", error->message);
                         g_error_free (error);
                         goto end_loop;
@@ -226,13 +242,26 @@ main (int argc, char **argv)
                         goto end_loop;
                 }
 
-                if (g_file_copy (db_remote,
-                                 db_local,
-                                 G_FILE_COPY_OVERWRITE,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 &error) == FALSE) {
+                msg = soup_message_new ("GET", db_uri);
+                status_code = soup_session_send_message (session, msg);
+                if (status_code != SOUP_STATUS_OK) {
+                        g_set_error (error,
+                                     SOUP_HTTP_ERROR,
+                                     status_code,
+                                     msg->reason_phrase);
+                        g_print ("Could not download the database: %s\n", msg->reason_phrase);
+                        goto end_loop;
+                }
+
+                if (g_file_replace_contents (db_local,
+                                             msg->response_body->data,
+                                             msg->response_body->length,
+                                             NULL,
+                                             FALSE,
+                                             0,
+                                             NULL,
+                                             NULL,
+                                             &error) == FALSE) {
                         g_print ("Could not download the database: %s\n", error->message);
                         goto end_loop;
                 }
@@ -242,10 +271,12 @@ main (int argc, char **argv)
                 g_free (db_decompressed_path);
 
 end_loop:
-                g_object_unref (db_remote);
                 g_object_unref (db_local);
+                g_clear_object (&msg);
                 error = NULL;
         }
+
+        g_object_unref (session);
 
         return 0;
 }

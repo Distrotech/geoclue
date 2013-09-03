@@ -86,7 +86,8 @@ esac
 if test "x$build_geoip_server" = "xyes"; then
   # Requires for the database update
   PKG_CHECK_MODULES(GEOIP_DBUPDATE,
-		    gio-2.0 >= $GLIB_MIN_VERSION)
+		    gio-2.0 >= $GLIB_MIN_VERSION
+                    libsoup-2.4)
   GEOIP_DATABASE_PATH=`$PKG_CONFIG --variable=databasedir geoip`
   AC_SUBST(GEOIP_DATABASE_PATH)
   AC_DEFINE([BUILD_GEOIP_SERVER], [1], [Build geoip server?])

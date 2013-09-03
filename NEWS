@@ -1,3 +1,21 @@
+1.99.3
+======
+
+- All D-Bus prop names capitalized as per general conventions.
+- Expose D-Bus specification XML file in pkg-config file.
+- Fix some potential crashes in error handling code.
+- Remove unused build-time yelp dependency.
+- Correct the libsoup dependency in pkg-config (although it doesn't affect any
+  applications at the moment).
+- Fix some compiler warnings.
+
+All contributors to this release:
+
+Evgeny Bobkin <evgen.ibqn@gmail.com>
+Guillaume Desmottes <guillaume.desmottes@collabora.co.uk>
+Kalev Lember <kalevlember@gmail.com>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 1.99.2
 ======
 

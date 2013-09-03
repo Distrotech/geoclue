@@ -79,7 +79,7 @@ local_db_needs_update (GFile *db, GFile *db_local, gboolean *needs_update, GErro
 
         db_time = g_file_info_get_attribute_uint64 (db_info, "time::modified");
         db_local_time = g_file_info_get_attribute_uint64 (db_local_info, "time::modified");
-        if (db_time == db_local_time)
+        if (db_time <= db_local_time)
                 *needs_update = FALSE;
         else
                 *needs_update = TRUE;

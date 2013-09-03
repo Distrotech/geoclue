@@ -226,10 +226,6 @@ main (int argc, char **argv)
                         goto end_loop;
                 }
 
-                /* Copying the dat.gz for future reference.
-                 * Ever update checks the timestamp of the file
-                 * to decide whether to download it or not.
-                 */
                 if (g_file_copy (db_remote,
                                  db_local,
                                  G_FILE_COPY_OVERWRITE,

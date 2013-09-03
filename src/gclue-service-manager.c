@@ -100,8 +100,10 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
         g_hash_table_insert (priv->clients, g_strdup (peer), client);
         g_object_notify (G_OBJECT (manager), "connected-clients");
 
-        g_signal_connect (client, "peer-vanished",
-                          G_CALLBACK (on_peer_vanished), manager);
+        g_signal_connect (client,
+                          "peer-vanished",
+                          G_CALLBACK (on_peer_vanished),
+                          manager);
 
         gclue_manager_complete_get_client (manager, invocation, path);
 

@@ -54,6 +54,7 @@ struct _GClueServiceClientPrivate
         guint locations_updated;
 
         guint watch_id;
+        gulong location_change_id;
 };
 
 enum
@@ -133,6 +134,41 @@ set_location (GClueServiceClient   *client,
         return emit_location_updated (client, prev_path, path, error);
 }
 
+static void
+on_locator_location_changed (GObject    *gobject,
+                             GParamSpec *pspec,
+                             gpointer    user_data)
+{
+        GClueServiceClient *client = GCLUE_SERVICE_CLIENT (user_data);
+        GClueServiceClientPrivate *priv = client->priv;
+        GClueLocator *locator = GCLUE_LOCATOR (gobject);
+        GClueServiceLocation *service_location;
+        GClueLocationInfo *location;
+        char *path = NULL;
+        GError *error = NULL;
+
+        location = gclue_locator_get_location (locator);
+        path = next_location_path (client);
+        service_location = gclue_service_location_new (priv->peer,
+                                                       path,
+                                                       priv->connection,
+                                                       location,
+                                                       &error);
+        g_object_unref (location);
+        if (service_location == NULL)
+                goto error_out;
+
+        if (!set_location (client, service_location, path, &error))
+                goto error_out;
+        goto out;
+
+error_out:
+        g_warning ("Failed to update location info: %s", error->message);
+        g_error_free (error);
+out:
+        g_clear_pointer (&path, g_free);
+}
+
 typedef struct
 {
         GClueServiceClient *client;
@@ -145,28 +181,11 @@ on_start_ready (GObject      *source_object,
                 gpointer      user_data)
 {
         StartData *data = (StartData *) user_data;
-        GClueServiceClientPrivate *priv = data->client->priv;
         GClueLocator *locator = GCLUE_LOCATOR (source_object);
         GClueServiceLocation *service_location;
-        GClueLocationInfo *location;
-        char *path = NULL;
         GError *error = NULL;
 
         if (!gclue_locator_start_finish (locator, res, &error))
-                goto error_out;
-
-        location = gclue_locator_get_location (locator);
-        path = next_location_path (data->client);
-        service_location = gclue_service_location_new (priv->peer,
-                                                       path,
-                                                       priv->connection,
-                                                       location,
-                                                       &error);
-        g_object_unref (location);
-        if (service_location == NULL)
-                goto error_out;
-
-        if (!set_location (data->client, service_location, path, &error))
                 goto error_out;
 
         gclue_client_complete_start (GCLUE_CLIENT (data->client),
@@ -177,7 +196,7 @@ error_out:
         g_dbus_method_invocation_return_error (data->invocation,
                                                G_DBUS_ERROR,
                                                G_DBUS_ERROR_FAILED,
-                                               "Failed to update location info: %s",
+                                               "Failed to start: %s",
                                                error->message);
         g_error_free (error);
 
@@ -185,24 +204,33 @@ out:
         g_object_unref (data->client);
         g_object_unref (data->invocation);
         g_slice_free (StartData, data);
-        g_clear_pointer (&path, g_free);
 }
 
 static gboolean
 gclue_service_client_handle_start (GClueClient           *client,
                                    GDBusMethodInvocation *invocation)
 {
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         StartData *data;
+
+        if (priv->location_change_id)
+                /* Already started */
+                return;
 
         /* TODO: We need some kind of mechanism to ask user if location info can
          *       be shared with peer app.
          */
 
+        priv->location_change_id =
+                g_signal_connect (priv->locator,
+                                  "notify::location",
+                                  G_CALLBACK (on_locator_location_changed),
+                                  client);
+
         data = g_slice_new (StartData);
         data->client = g_object_ref (client);
         data->invocation =  g_object_ref (invocation);
-
-        gclue_locator_start (GCLUE_SERVICE_CLIENT (client)->priv->locator,
+        gclue_locator_start (priv->locator,
                              NULL,
                              on_start_ready,
                              data);
@@ -214,6 +242,14 @@ static gboolean
 gclue_service_client_handle_stop (GClueClient           *client,
                                   GDBusMethodInvocation *invocation)
 {
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
+
+        if (priv->location_change_id == 0) {
+                g_signal_handler_disconnect (priv->locator,
+                                             priv->location_change_id);
+                priv->location_change_id = 0;
+        }
+
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;

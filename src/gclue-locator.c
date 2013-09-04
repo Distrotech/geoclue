@@ -34,6 +34,10 @@ struct _GClueLocatorPrivate
         GClueIpclient *ipclient;
 
         GClueLocationInfo *location;
+
+        GCancellable *cancellable;
+
+        gulong network_changed_id;
 };
 
 enum
@@ -103,6 +107,7 @@ gclue_locator_init (GClueLocator *locator)
                 G_TYPE_INSTANCE_GET_PRIVATE (locator,
                                             GCLUE_TYPE_LOCATOR,
                                             GClueLocatorPrivate);
+        locator->priv->cancellable = g_cancellable_new ();
 }
 
 GClueLocator *
@@ -111,31 +116,80 @@ gclue_locator_new (void)
         return g_object_new (GCLUE_TYPE_LOCATOR, NULL);
 }
 
-void on_ipclient_search_ready (GObject      *source_object,
-                               GAsyncResult *res,
-                               gpointer      user_data)
+void
+gclue_locator_update_location (GClueLocator      *locator,
+                               GClueLocationInfo *location)
+{
+        gdouble accuracy, new_accuracy, distance;
+        const char *desc, *new_desc;
+
+        if (locator->priv->location == NULL)
+                goto update;
+
+        accuracy = gclue_location_info_get_accuracy (locator->priv->location);
+        new_accuracy = gclue_location_info_get_accuracy (location);
+        desc = gclue_location_info_get_description (locator->priv->location);
+        new_desc = gclue_location_info_get_description (location);
+        distance = gclue_location_info_get_distance_from
+                        (locator->priv->location, location);
+        if (accuracy == new_accuracy &&
+            g_strcmp0 (desc, new_desc) == 0 &&
+            /* FIXME: Take threshold into account */
+            distance == 0) {
+                g_debug ("Location remain unchanged");
+                return;
+        }
+
+        g_object_unref (locator->priv->location);
+update:
+        g_debug ("Updating location");
+        locator->priv->location = g_object_ref (location);
+        g_object_notify (G_OBJECT (locator), "location");
+}
+
+void
+on_ipclient_search_ready (GObject      *source_object,
+                          GAsyncResult *res,
+                          gpointer      user_data)
 {
         GClueIpclient *ipclient = GCLUE_IPCLIENT (source_object);
-        GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (user_data);
-        GClueLocator *locator;
+        GClueLocator *locator = GCLUE_LOCATOR (user_data);
+        GClueLocationInfo *location;
         GError *error = NULL;
 
-        locator = g_simple_async_result_get_op_res_gpointer (simple);
-        locator->priv->location = gclue_ipclient_search_finish (ipclient,
-                                                                res,
-                                                                &error);
-        if (locator->priv->location == NULL) {
-                g_simple_async_result_take_error (simple, error);
-                g_simple_async_result_complete_in_idle (simple);
-                g_object_unref (simple);
+        location = gclue_ipclient_search_finish (ipclient, res, &error);
+        if (location == NULL) {
+                g_warning ("Error fetching location from geoip server: %s",
+                           error->message);
+                g_error_free (error);
 
                 return;
         }
-        g_object_notify (locator, "location");
 
-        g_simple_async_result_complete_in_idle (simple);
+        g_debug ("New location available");
+        gclue_locator_update_location (locator, location);
+        g_object_unref (location);
+}
 
-        g_object_unref (simple);
+void
+on_network_changed (GNetworkMonitor *monitor,
+                    gboolean         available,
+                    gpointer         user_data)
+{
+        GClueLocator *locator = GCLUE_LOCATOR (user_data);
+
+        if (!available) {
+                g_debug ("Network unreachable");
+                return;
+        }
+        g_debug ("Network changed");
+
+        g_cancellable_cancel (locator->priv->cancellable);
+        g_cancellable_reset (locator->priv->cancellable);
+        gclue_ipclient_search_async (locator->priv->ipclient,
+                                     locator->priv->cancellable,
+                                     on_ipclient_search_ready,
+                                     user_data);
 }
 
 void
@@ -154,16 +208,26 @@ gclue_locator_start (GClueLocator        *locator,
                       "compatibility-mode", TRUE,
                       NULL);
 
-        simple = g_simple_async_result_new (G_OBJECT (locator),
-                                            callback,
-                                            user_data,
-                                            gclue_locator_start);
-        g_simple_async_result_set_op_res_gpointer (simple, locator, NULL);
+        g_cancellable_cancel (locator->priv->cancellable);
+        g_cancellable_reset (locator->priv->cancellable);
+        locator->priv->network_changed_id =
+                g_signal_connect (g_network_monitor_get_default (),
+                                  "network-changed",
+                                  G_CALLBACK (on_network_changed),
+                                  locator);
 
         gclue_ipclient_search_async (locator->priv->ipclient,
                                      cancellable,
                                      on_ipclient_search_ready,
-                                     simple);
+                                     locator);
+
+        simple = g_simple_async_result_new (G_OBJECT (locator),
+                                            callback,
+                                            user_data,
+                                            gclue_locator_start);
+        g_simple_async_result_complete_in_idle (simple);
+
+        g_object_unref (simple);
 }
 
 gboolean
@@ -192,6 +256,13 @@ gclue_locator_stop (GClueLocator        *locator,
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
+        if (locator->priv->network_changed_id) {
+                g_signal_handler_disconnect (g_network_monitor_get_default (),
+                                             locator->priv->network_changed_id);
+                locator->priv->network_changed_id = 0;
+        }
+
+        g_cancellable_cancel (locator->priv->cancellable);
         g_clear_object (&locator->priv->ipclient);
         g_clear_object (&locator->priv->location);
 

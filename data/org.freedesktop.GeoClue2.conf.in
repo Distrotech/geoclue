@@ -8,8 +8,8 @@
     <allow send_destination="org.freedesktop.GeoClue2"/>
   </policy>
 
-  <policy user="root">
-    <!-- Only allow root to own the name on the bus -->
+  <policy user="@dbus_srv_user@">
+    <!-- Only allow @dbus_srv_user@ to own the name on the bus -->
     <allow own="org.freedesktop.GeoClue2"/>
   </policy>
 </busconfig>

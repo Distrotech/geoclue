@@ -119,12 +119,20 @@ else
 fi
 AC_SUBST(DBUS_SYS_DIR)
 
+AC_ARG_WITH(dbus-service-user,
+	    AS_HELP_STRING([--with-dbus-service-user=USER],
+                           [The USER (existing) as which the service will run (default: root)]),
+	    dbus_srv_user="$with_dbus_service_user",
+	    dbus_srv_user="root")
+AC_SUBST(dbus_srv_user)
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
   src/geoclue-2.0.pc
   src/geoip-server/Makefile
   po/Makefile.in
+  data/org.freedesktop.GeoClue2.conf
   data/Makefile
   demo/Makefile
 ])

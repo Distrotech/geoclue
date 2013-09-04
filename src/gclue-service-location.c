@@ -71,19 +71,20 @@ gclue_service_location_get_property (GObject    *object,
                                      GValue     *value,
                                      GParamSpec *pspec)
 {
-        GClueServiceLocation *location = GCLUE_SERVICE_LOCATION (object);
+        GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
+        GClueLocation *location = GCLUE_LOCATION (object);
 
         switch (prop_id) {
         case PROP_PEER:
-                g_value_set_string (value, location->priv->peer);
+                g_value_set_string (value, self->priv->peer);
                 break;
 
         case PROP_PATH:
-                g_value_set_string (value, location->priv->path);
+                g_value_set_string (value, self->priv->path);
                 break;
 
         case PROP_CONNECTION:
-                g_value_set_object (value, location->priv->connection);
+                g_value_set_object (value, self->priv->connection);
                 break;
 
         case PROP_LOCATION:
@@ -114,19 +115,20 @@ gclue_service_location_set_property (GObject      *object,
                                      const GValue *value,
                                      GParamSpec   *pspec)
 {
-        GClueServiceLocation *location = GCLUE_SERVICE_LOCATION (object);
+        GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
+        GClueLocation *location = GCLUE_LOCATION (object);
 
         switch (prop_id) {
         case PROP_PEER:
-                location->priv->peer = g_value_dup_string (value);
+                self->priv->peer = g_value_dup_string (value);
                 break;
 
         case PROP_PATH:
-                location->priv->path = g_value_dup_string (value);
+                self->priv->path = g_value_dup_string (value);
                 break;
 
         case PROP_CONNECTION:
-                location->priv->connection = g_value_dup_object (value);
+                self->priv->connection = g_value_dup_object (value);
                 break;
 
         case PROP_LOCATION:
@@ -184,7 +186,7 @@ gclue_service_location_handle_method_call (GDBusConnection       *connection,
                                       user_data);
 }
 
-static void
+static GVariant *
 gclue_service_location_handle_get_property (GDBusConnection *connection,
                                             const gchar     *sender,
                                             const gchar     *object_path,
@@ -202,21 +204,21 @@ gclue_service_location_handle_get_property (GDBusConnection *connection,
                              G_DBUS_ERROR,
                              G_DBUS_ERROR_ACCESS_DENIED,
                              "Access denied");
-                return;
+                return NULL;
         }
 
         skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_location_parent_class);
         skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
-        skeleton_vtable->get_property (connection,
-                                       sender,
-                                       object_path,
-                                       interface_name,
-                                       property_name,
-                                       error,
-                                       user_data);
+        return skeleton_vtable->get_property (connection,
+                                              sender,
+                                              object_path,
+                                              interface_name,
+                                              property_name,
+                                              error,
+                                              user_data);
 }
 
-static void
+static gboolean
 gclue_service_location_handle_set_property (GDBusConnection *connection,
                                             const gchar     *sender,
                                             const gchar     *object_path,
@@ -235,19 +237,19 @@ gclue_service_location_handle_set_property (GDBusConnection *connection,
                              G_DBUS_ERROR,
                              G_DBUS_ERROR_ACCESS_DENIED,
                              "Access denied");
-                return;
+                return FALSE;
         }
 
         skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_location_parent_class);
         skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
-        skeleton_vtable->set_property (connection,
-                                       sender,
-                                       object_path,
-                                       interface_name,
-                                       property_name,
-                                       variant,
-                                       error,
-                                       user_data);
+        return skeleton_vtable->set_property (connection,
+                                              sender,
+                                              object_path,
+                                              interface_name,
+                                              property_name,
+                                              variant,
+                                              error,
+                                              user_data);
 }
 
 static const GDBusInterfaceVTable gclue_service_location_vtable =

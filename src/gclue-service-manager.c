@@ -68,10 +68,11 @@ on_peer_vanished (GClueServiceClient *client,
 }
 
 static gboolean
-gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
+gclue_service_manager_handle_get_client (GClueManager          *manager,
                                          GDBusMethodInvocation *invocation)
 {
-        GClueServiceManagerPrivate *priv = manager->priv;
+        GClueServiceManager *self = GCLUE_SERVICE_MANAGER (manager);
+        GClueServiceManagerPrivate *priv = self->priv;
         GClueServiceClient *client;
         const char *peer;
         char *path;
@@ -85,7 +86,7 @@ gclue_service_manager_handle_get_client (GClueServiceManager   *manager,
                 return TRUE;
         }
 
-        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%llu",
+        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%u",
                                 ++priv->num_clients);
 
         client = gclue_service_client_new (peer, path, priv->connection, &error);

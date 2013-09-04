@@ -245,7 +245,7 @@ main (int argc, char **argv)
                 msg = soup_message_new ("GET", db_uri);
                 status_code = soup_session_send_message (session, msg);
                 if (status_code != SOUP_STATUS_OK) {
-                        g_set_error (error,
+                        g_set_error (&error,
                                      SOUP_HTTP_ERROR,
                                      status_code,
                                      msg->reason_phrase);

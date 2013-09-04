@@ -131,6 +131,7 @@ void on_ipclient_search_ready (GObject      *source_object,
 
                 return;
         }
+        g_object_notify (locator, "location");
 
         g_simple_async_result_complete_in_idle (simple);
 

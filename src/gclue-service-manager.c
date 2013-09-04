@@ -81,8 +81,12 @@ gclue_service_manager_handle_get_client (GClueManager          *manager,
         peer = g_dbus_method_invocation_get_sender (invocation);
         client = g_hash_table_lookup (priv->clients, peer);
         if (client != NULL) {
-                gclue_manager_complete_get_client (manager, invocation, path);
+                const gchar *existing_path;
 
+                existing_path = gclue_service_client_get_path (client);
+                gclue_manager_complete_get_client (manager,
+                                                   invocation,
+                                                   existing_path);
                 return TRUE;
         }
 

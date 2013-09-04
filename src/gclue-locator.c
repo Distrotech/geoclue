@@ -160,9 +160,9 @@ gclue_locator_start (GClueLocator        *locator,
         g_simple_async_result_set_op_res_gpointer (simple, locator, NULL);
 
         gclue_ipclient_search_async (locator->priv->ipclient,
-                                       cancellable,
-                                       on_ipclient_search_ready,
-                                       simple);
+                                     cancellable,
+                                     on_ipclient_search_ready,
+                                     simple);
 }
 
 gboolean

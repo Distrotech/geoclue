@@ -241,6 +241,7 @@ gclue_locator_start (GClueLocator        *locator,
                      gpointer             user_data)
 {
         GSimpleAsyncResult *simple;
+        GNetworkMonitor *monitor;
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
@@ -253,16 +254,15 @@ gclue_locator_start (GClueLocator        *locator,
                       "compatibility-mode", TRUE,
                       NULL);
 
+        monitor = g_network_monitor_get_default ();
         locator->priv->network_changed_id =
-                g_signal_connect (g_network_monitor_get_default (),
+                g_signal_connect (monitor,
                                   "network-changed",
                                   G_CALLBACK (on_network_changed),
                                   locator);
 
-        gclue_ipclient_search_async (locator->priv->ipclient,
-                                     cancellable,
-                                     on_ipclient_search_ready,
-                                     g_object_ref (locator));
+        if (g_network_monitor_get_network_available (monitor))
+                on_network_changed (monitor, TRUE, locator);
 
         simple = g_simple_async_result_new (G_OBJECT (locator),
                                             callback,

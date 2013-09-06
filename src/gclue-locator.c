@@ -198,7 +198,7 @@ on_ipclient_search_ready (GObject      *source_object,
 
         location = gclue_ipclient_search_finish (ipclient, res, &error);
         if (location == NULL) {
-                if (error->code != G_IO_ERROR_CANCELLED)
+                if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
                         g_warning ("Error fetching location from geoip server: %s",
                                    error->message);
                 g_error_free (error);

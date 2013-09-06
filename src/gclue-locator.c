@@ -202,15 +202,12 @@ on_ipclient_search_ready (GObject      *source_object,
                         g_warning ("Error fetching location from geoip server: %s",
                                    error->message);
                 g_error_free (error);
-                g_object_unref (locator);
-
                 return;
         }
 
         g_debug ("New location available");
         gclue_locator_update_location (locator, location);
         g_object_unref (location);
-        g_object_unref (locator);
 }
 
 void
@@ -231,7 +228,7 @@ on_network_changed (GNetworkMonitor *monitor,
         gclue_ipclient_search_async (locator->priv->ipclient,
                                      locator->priv->cancellable,
                                      on_ipclient_search_ready,
-                                     g_object_ref (locator));
+                                     locator);
 }
 
 void

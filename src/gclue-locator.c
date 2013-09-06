@@ -231,7 +231,7 @@ on_network_changed (GNetworkMonitor *monitor,
         gclue_ipclient_search_async (locator->priv->ipclient,
                                      locator->priv->cancellable,
                                      on_ipclient_search_ready,
-                                     user_data);
+                                     g_object_ref (locator));
 }
 
 void

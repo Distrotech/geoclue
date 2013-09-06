@@ -162,6 +162,7 @@ on_ipclient_search_ready (GObject      *source_object,
                 g_warning ("Error fetching location from geoip server: %s",
                            error->message);
                 g_error_free (error);
+                g_object_unref (locator);
 
                 return;
         }
@@ -169,6 +170,7 @@ on_ipclient_search_ready (GObject      *source_object,
         g_debug ("New location available");
         gclue_locator_update_location (locator, location);
         g_object_unref (location);
+        g_object_unref (locator);
 }
 
 void
@@ -219,7 +221,7 @@ gclue_locator_start (GClueLocator        *locator,
         gclue_ipclient_search_async (locator->priv->ipclient,
                                      cancellable,
                                      on_ipclient_search_ready,
-                                     locator);
+                                     g_object_ref (locator));
 
         simple = g_simple_async_result_new (G_OBJECT (locator),
                                             callback,

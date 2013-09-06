@@ -268,6 +268,7 @@ search_cancelled_callback (GCancellable      *cancellable,
         GClueIpclient *ipclient = GCLUE_IPCLIENT
                 (g_async_result_get_source_object
                         (G_ASYNC_RESULT (data->simple)));
+        g_debug ("Cancelling query");
         soup_session_cancel_message (ipclient->priv->soup_session,
                                      data->message,
                                      SOUP_STATUS_CANCELLED);

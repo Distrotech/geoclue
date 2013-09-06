@@ -154,7 +154,6 @@ on_locator_location_changed (GObject    *gobject,
                                                        priv->connection,
                                                        location,
                                                        &error);
-        g_object_unref (location);
         if (service_location == NULL)
                 goto error_out;
 

@@ -243,7 +243,7 @@ gclue_service_client_handle_stop (GClueClient           *client,
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
 
-        if (priv->location_change_id == 0) {
+        if (priv->location_change_id != 0) {
                 g_signal_handler_disconnect (priv->locator,
                                              priv->location_change_id);
                 priv->location_change_id = 0;

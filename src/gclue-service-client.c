@@ -404,9 +404,11 @@ gclue_service_client_handle_set_property (GDBusConnection *connection,
                                           GError         **error,
                                           gpointer        user_data)
 {
-        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (user_data)->priv;
+        GClueClient *client = GCLUE_CLIENT (user_data);
+        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         GDBusInterfaceSkeletonClass *skeleton_class;
         GDBusInterfaceVTable *skeleton_vtable;
+        gboolean ret;
 
         if (strcmp (sender, priv->peer) != 0) {
                 g_set_error (error,
@@ -418,14 +420,21 @@ gclue_service_client_handle_set_property (GDBusConnection *connection,
 
         skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (gclue_service_client_parent_class);
         skeleton_vtable = skeleton_class->get_vtable (G_DBUS_INTERFACE_SKELETON (user_data));
-        return skeleton_vtable->set_property (connection,
-                                              sender,
-                                              object_path,
-                                              interface_name,
-                                              property_name,
-                                              variant,
-                                              error,
-                                              user_data);
+        ret = skeleton_vtable->set_property (connection,
+                                             sender,
+                                             object_path,
+                                             interface_name,
+                                             property_name,
+                                             variant,
+                                             error,
+                                             user_data);
+        if (ret && strcmp (property_name, "DistanceThreshold") == 0) {
+                guint threshold = gclue_client_get_distance_threshold (client);
+                gclue_locator_set_threshold (priv->locator, threshold);
+                g_debug ("New distance threshold: %u", threshold);
+        }
+
+        return ret;
 }
 
 static const GDBusInterfaceVTable gclue_service_client_vtable =

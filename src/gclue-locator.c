@@ -34,6 +34,7 @@ struct _GClueLocatorPrivate
         GClueIpclient *ipclient;
 
         GClueLocationInfo *location;
+        guint threshold;
 
         GCancellable *cancellable;
 
@@ -44,6 +45,7 @@ enum
 {
         PROP_0,
         PROP_LOCATION,
+        PROP_THRESHOLD,
         LAST_PROP
 };
 
@@ -79,6 +81,28 @@ gclue_locator_get_property (GObject    *object,
                 g_value_set_object (value, locator->priv->location);
                 break;
 
+        case PROP_THRESHOLD:
+                g_value_set_uint (value, locator->priv->threshold);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
+gclue_locator_set_property (GObject      *object,
+                            guint         prop_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
+{
+        GClueLocator *locator = GCLUE_LOCATOR (object);
+
+        switch (prop_id) {
+        case PROP_THRESHOLD:
+                gclue_locator_set_threshold (locator, g_value_get_uint (value));
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -92,6 +116,7 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         object_class = G_OBJECT_CLASS (klass);
         object_class->finalize = gclue_locator_finalize;
         object_class->get_property = gclue_locator_get_property;
+        object_class->set_property = gclue_locator_set_property;
         g_type_class_add_private (object_class, sizeof (GClueLocatorPrivate));
 
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
@@ -102,6 +127,17 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
                                          gParamSpecs[PROP_LOCATION]);
+
+        gParamSpecs[PROP_THRESHOLD] = g_param_spec_uint ("threshold",
+                                                         "Threshold",
+                                                         "Distance threshold",
+                                                         0,
+                                                         G_MAXUINT,
+                                                         0,
+                                                         G_PARAM_READWRITE);
+        g_object_class_install_property (object_class,
+                                         PROP_THRESHOLD,
+                                         gParamSpecs[PROP_THRESHOLD]);
 }
 
 static void
@@ -138,8 +174,7 @@ gclue_locator_update_location (GClueLocator      *locator,
                         (locator->priv->location, location);
         if (accuracy == new_accuracy &&
             g_strcmp0 (desc, new_desc) == 0 &&
-            /* FIXME: Take threshold into account */
-            distance == 0) {
+            distance < locator->priv->threshold) {
                 g_debug ("Location remain unchanged");
                 return;
         }
@@ -309,4 +344,22 @@ GClueLocationInfo * gclue_locator_get_location (GClueLocator *locator)
         g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), NULL);
 
         return locator->priv->location;
+}
+
+guint
+gclue_locator_get_threshold (GClueLocator *locator)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), 0);
+
+        return locator->priv->threshold;
+}
+
+void
+gclue_locator_set_threshold (GClueLocator *locator,
+                             guint         threshold)
+{
+        g_return_if_fail (GCLUE_IS_LOCATOR (locator));
+
+        locator->priv->threshold = threshold;
+        g_object_notify (G_OBJECT (locator), "threshold");
 }

@@ -208,14 +208,15 @@ gclue_locator_start (GClueLocator        *locator,
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
+        if (locator->priv->network_changed_id)
+                return; /* Already started */
+
         locator->priv->ipclient = gclue_ipclient_new ();
         g_object_set (locator->priv->ipclient,
                       "server", "http://freegeoip.net/json/",
                       "compatibility-mode", TRUE,
                       NULL);
 
-        g_cancellable_cancel (locator->priv->cancellable);
-        g_cancellable_reset (locator->priv->cancellable);
         locator->priv->network_changed_id =
                 g_signal_connect (g_network_monitor_get_default (),
                                   "network-changed",

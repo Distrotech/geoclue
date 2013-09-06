@@ -259,9 +259,16 @@ gclue_service_client_finalize (GObject *object)
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (object)->priv;
 
+        if (priv->location_change_id != 0) {
+                g_signal_handler_disconnect (priv->locator,
+                                             priv->location_change_id);
+                priv->location_change_id = 0;
+        }
+
         g_clear_pointer (&priv->peer, g_free);
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
+        g_clear_object (&priv->locator);
         g_clear_object (&priv->location);
         g_clear_object (&priv->prev_location);
 

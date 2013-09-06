@@ -50,12 +50,16 @@ enum
 static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
+gclue_locator_stop_sync (GClueLocator *locator);
+
+static void
 gclue_locator_finalize (GObject *object)
 {
         GClueLocatorPrivate *priv;
 
         priv = GCLUE_LOCATOR (object)->priv;
 
+        gclue_locator_stop_sync (GCLUE_LOCATOR (object));
         g_clear_object (&priv->ipclient);
         g_clear_object (&priv->location);
 
@@ -248,6 +252,20 @@ gclue_locator_start_finish (GClueLocator  *locator,
         return TRUE;
 }
 
+static void
+gclue_locator_stop_sync (GClueLocator *locator)
+{
+        if (locator->priv->network_changed_id) {
+                g_signal_handler_disconnect (g_network_monitor_get_default (),
+                                             locator->priv->network_changed_id);
+                locator->priv->network_changed_id = 0;
+        }
+
+        g_cancellable_cancel (locator->priv->cancellable);
+        g_cancellable_reset (locator->priv->cancellable);
+        g_clear_object (&locator->priv->ipclient);
+}
+
 void
 gclue_locator_stop (GClueLocator        *locator,
                     GCancellable        *cancellable,
@@ -258,15 +276,7 @@ gclue_locator_stop (GClueLocator        *locator,
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
-        if (locator->priv->network_changed_id) {
-                g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             locator->priv->network_changed_id);
-                locator->priv->network_changed_id = 0;
-        }
-
-        g_cancellable_cancel (locator->priv->cancellable);
-        g_clear_object (&locator->priv->ipclient);
-        g_clear_object (&locator->priv->location);
+        gclue_locator_stop_sync (locator);
 
         simple = g_simple_async_result_new (G_OBJECT (locator),
                                             callback,

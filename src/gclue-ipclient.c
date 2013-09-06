@@ -257,6 +257,7 @@ static void
 query_callback_data_free (QueryCallbackData *data)
 {
         g_object_unref (data->simple);
+        g_clear_object (&data->cancellable);
         g_slice_free (QueryCallbackData, data);
 }
 
@@ -334,11 +335,12 @@ gclue_ipclient_search_async (GClueIpclient      *ipclient,
         g_return_if_fail (ipclient->priv->server != NULL);
 
         data = g_slice_new0 (QueryCallbackData);
-        data->simple = g_simple_async_result_new (G_OBJECT (ipclient),
+        data->simple = g_simple_async_result_new (g_object_ref (ipclient),
                                                   callback,
                                                   user_data,
                                                   gclue_ipclient_search_async);
-        data->cancellable = cancellable;
+        if (cancellable != NULL)
+                data->cancellable = g_object_ref (cancellable);
         data->message = get_search_query (ipclient);
 
         if (cancellable != NULL)
@@ -514,6 +516,7 @@ gclue_ipclient_search_finish (GClueIpclient *ipclient,
         contents = g_simple_async_result_get_op_res_gpointer (simple);
         location = _gclue_ip_json_to_location (contents, error);
         g_free (contents);
+        g_object_unref (ipclient);
 
         return location;
 }

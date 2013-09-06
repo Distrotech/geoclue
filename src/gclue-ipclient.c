@@ -244,21 +244,60 @@ get_search_query (GClueIpclient *ipclient)
         return ret;
 }
 
+typedef struct
+{
+        GSimpleAsyncResult *simple;
+        SoupMessage *message;
+        GCancellable *cancellable;
+
+        gulong cancelled_id;
+} QueryCallbackData;
+
+static void
+query_callback_data_free (QueryCallbackData *data)
+{
+        g_object_unref (data->simple);
+        g_slice_free (QueryCallbackData, data);
+}
+
+static void
+search_cancelled_callback (GCancellable      *cancellable,
+                           QueryCallbackData *data)
+{
+        GClueIpclient *ipclient = GCLUE_IPCLIENT
+                (g_async_result_get_source_object
+                        (G_ASYNC_RESULT (data->simple)));
+        soup_session_cancel_message (ipclient->priv->soup_session,
+                                     data->message,
+                                     SOUP_STATUS_CANCELLED);
+}
+
 static void
 query_callback (SoupSession *session,
                 SoupMessage *query,
                 gpointer     user_data)
 {
-        GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (user_data);
+        QueryCallbackData *data = (QueryCallbackData *) user_data;
+        GSimpleAsyncResult *simple = data->simple;
         GError *error = NULL;
         char *contents;
 
+        if (data->cancellable != NULL)
+                g_signal_handler_disconnect (data->cancellable,
+                                             data->cancelled_id);
+
         if (query->status_code != SOUP_STATUS_OK) {
-		g_set_error_literal (&error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                GIOErrorEnum code;
+
+                if (query->status_code == SOUP_STATUS_CANCELLED)
+                        code = G_IO_ERROR_CANCELLED;
+                else
+                        code = G_IO_ERROR_FAILED;
+		g_set_error_literal (&error, G_IO_ERROR, code,
                                      query->reason_phrase ? query->reason_phrase : "Query failed");
                 g_simple_async_result_take_error (simple, error);
 		g_simple_async_result_complete_in_idle (simple);
-		g_object_unref (simple);
+		query_callback_data_free (data);
 		return;
 	}
 
@@ -266,7 +305,7 @@ query_callback (SoupSession *session,
         g_simple_async_result_set_op_res_gpointer (simple, contents, NULL);
 
         g_simple_async_result_complete_in_idle (simple);
-        g_object_unref (simple);
+        query_callback_data_free (data);
 }
 
 /**
@@ -289,22 +328,29 @@ gclue_ipclient_search_async (GClueIpclient      *ipclient,
                              GAsyncReadyCallback callback,
                              gpointer            user_data)
 {
-        GSimpleAsyncResult *simple;
-        SoupMessage *query;
+        QueryCallbackData *data;
 
         g_return_if_fail (GCLUE_IS_IPCLIENT (ipclient));
         g_return_if_fail (ipclient->priv->server != NULL);
 
-        simple = g_simple_async_result_new (G_OBJECT (ipclient),
-                                            callback,
-                                            user_data,
-                                            gclue_ipclient_search_async);
+        data = g_slice_new0 (QueryCallbackData);
+        data->simple = g_simple_async_result_new (G_OBJECT (ipclient),
+                                                  callback,
+                                                  user_data,
+                                                  gclue_ipclient_search_async);
+        data->cancellable = cancellable;
+        data->message = get_search_query (ipclient);
 
-        query = get_search_query (ipclient);
+        if (cancellable != NULL)
+                data->cancelled_id = g_signal_connect
+                        (cancellable,
+                         "cancelled",
+                         G_CALLBACK (search_cancelled_callback),
+                         data);
         soup_session_queue_message (ipclient->priv->soup_session,
-                                    query,
+                                    data->message,
                                     query_callback,
-                                    simple);
+                                    data);
 }
 
 static gboolean

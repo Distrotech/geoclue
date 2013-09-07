@@ -156,7 +156,7 @@ gclue_locator_new (void)
         return g_object_new (GCLUE_TYPE_LOCATOR, NULL);
 }
 
-void
+static void
 gclue_locator_update_location (GClueLocator      *locator,
                                GClueLocationInfo *location)
 {
@@ -186,7 +186,7 @@ update:
         g_object_notify (G_OBJECT (locator), "location");
 }
 
-void
+static void
 on_ipclient_search_ready (GObject      *source_object,
                           GAsyncResult *res,
                           gpointer      user_data)
@@ -210,7 +210,7 @@ on_ipclient_search_ready (GObject      *source_object,
         g_object_unref (location);
 }
 
-void
+static void
 on_network_changed (GNetworkMonitor *monitor,
                     gboolean         available,
                     gpointer         user_data)

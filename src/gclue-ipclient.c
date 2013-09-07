@@ -431,7 +431,7 @@ get_accuracy_from_json_location (JsonObject *object)
         }
 }
 
-GClueLocationInfo *
+static GClueLocationInfo *
 _gclue_ip_json_to_location (const char *json,
                             GError    **error)
 {

@@ -1,5 +1,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
 datadir=@datadir@
 
 dbus_interface=${datadir}/geoclue-2.0/geoclue-interface.xml
@@ -7,4 +8,3 @@ dbus_interface=${datadir}/geoclue-2.0/geoclue-interface.xml
 Name: Geoclue
 Description: The Geoinformation Service
 Version: @VERSION@
-Requires: gio-unix-2.0 libsoup-2.4 json-glib-1.0

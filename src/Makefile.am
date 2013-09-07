@@ -44,6 +44,7 @@ geoclue_SOURCES =	 	 \
 	$(NULL)
 
 geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
+		 $(WARN_CFLAGS)			     \
 		 -DLOCALEDIR="\"$(datadir)/locale\""
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 

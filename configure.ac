@@ -96,11 +96,7 @@ else
 fi
 AM_CONDITIONAL([BUILD_GEOIP_SERVER], [test "x$build_geoip_server" = "xyes"])
 
-dnl Strict compiler
-AC_ARG_ENABLE([strict-cc],
-  AS_HELP_STRING([--enable-strict-cc],[Enable strict C compiler]))
-
-AS_IF([test "x$enable_strict_cc" = "xyes"], [CFLAGS="$CFLAGS -Wall -Werror"])
+GNOME_COMPILE_WARNINGS([maximum])
 
 dnl Debugging
 AC_ARG_ENABLE(debug,

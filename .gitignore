@@ -43,6 +43,7 @@
 /configure.lineno
 /data/Makefile
 /data/Makefile.in
+/data/org.freedesktop.GeoClue2.conf
 /data/org.freedesktop.GeoClue2.service
 /demo/.deps/
 /demo/.libs/

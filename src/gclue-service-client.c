@@ -213,7 +213,7 @@ gclue_service_client_handle_start (GClueClient           *client,
 
         if (priv->location_change_id)
                 /* Already started */
-                return;
+                return TRUE;
 
         /* TODO: We need some kind of mechanism to ask user if location info can
          *       be shared with peer app.

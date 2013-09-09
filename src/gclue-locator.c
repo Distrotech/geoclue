@@ -162,6 +162,7 @@ gclue_locator_update_location (GClueLocator      *locator,
 {
         GClueLocatorPrivate *priv = locator->priv;
         gdouble accuracy, new_accuracy, distance;
+        gdouble threshold_km;
         const char *desc, *new_desc;
 
         if (priv->location == NULL)
@@ -171,11 +172,13 @@ gclue_locator_update_location (GClueLocator      *locator,
         new_accuracy = gclue_location_info_get_accuracy (location);
         desc = gclue_location_info_get_description (priv->location);
         new_desc = gclue_location_info_get_description (location);
+
+        threshold_km = priv->threshold / 1000.0;
         distance = gclue_location_info_get_distance_from (priv->location,
                                                           location);
         if (accuracy == new_accuracy &&
             g_strcmp0 (desc, new_desc) == 0 &&
-            distance < priv->threshold) {
+            distance < threshold_km) {
                 g_debug ("Location remain unchanged");
                 return;
         }

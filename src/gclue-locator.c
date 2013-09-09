@@ -160,29 +160,30 @@ static void
 gclue_locator_update_location (GClueLocator      *locator,
                                GClueLocationInfo *location)
 {
+        GClueLocatorPrivate *priv = locator->priv;
         gdouble accuracy, new_accuracy, distance;
         const char *desc, *new_desc;
 
-        if (locator->priv->location == NULL)
+        if (priv->location == NULL)
                 goto update;
 
-        accuracy = gclue_location_info_get_accuracy (locator->priv->location);
+        accuracy = gclue_location_info_get_accuracy (priv->location);
         new_accuracy = gclue_location_info_get_accuracy (location);
-        desc = gclue_location_info_get_description (locator->priv->location);
+        desc = gclue_location_info_get_description (priv->location);
         new_desc = gclue_location_info_get_description (location);
-        distance = gclue_location_info_get_distance_from
-                        (locator->priv->location, location);
+        distance = gclue_location_info_get_distance_from (priv->location,
+                                                          location);
         if (accuracy == new_accuracy &&
             g_strcmp0 (desc, new_desc) == 0 &&
-            distance < locator->priv->threshold) {
+            distance < priv->threshold) {
                 g_debug ("Location remain unchanged");
                 return;
         }
 
-        g_object_unref (locator->priv->location);
+        g_object_unref (priv->location);
 update:
         g_debug ("Updating location");
-        locator->priv->location = g_object_ref (location);
+        priv->location = g_object_ref (location);
         g_object_notify (G_OBJECT (locator), "location");
 }
 

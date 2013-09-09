@@ -181,7 +181,6 @@ on_start_ready (GObject      *source_object,
 {
         StartData *data = (StartData *) user_data;
         GClueLocator *locator = GCLUE_LOCATOR (source_object);
-        GClueServiceLocation *service_location;
         GError *error = NULL;
 
         if (!gclue_locator_start_finish (locator, res, &error))

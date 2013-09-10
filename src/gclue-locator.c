@@ -247,7 +247,7 @@ gclue_locator_start (GClueLocator        *locator,
 
         locator->priv->ipclient = gclue_ipclient_new ();
         g_object_set (locator->priv->ipclient,
-                      "server", "http://freegeoip.net/json/",
+                      "server", "https://geoip.fedoraproject.org/city",
                       "compatibility-mode", TRUE,
                       NULL);
 

@@ -51,6 +51,7 @@ geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)
 EXTRA_DIST = $(interface_DATA) \
+	     test-data/fedora-geoip-results.json \
 	     test-data/freegeoip-results.json
 
 pkgconfigdir = $(libdir)/pkgconfig

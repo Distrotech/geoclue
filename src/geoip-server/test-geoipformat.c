@@ -90,6 +90,28 @@ get_freegeoip_response (void)
 }
 
 static char *
+get_fedora_geoip_response (void)
+{
+        GFile *file;
+        char *contents = NULL;
+        char *path;
+        GError *error = NULL;
+
+        path = g_build_filename(TEST_SRCDIR, "fedora-geoip-results.json", NULL);
+        g_assert (path != NULL);
+        file = g_file_new_for_path(path);
+        if (!g_file_load_contents (file, NULL, &contents, NULL, NULL, &error)) {
+                g_warning ("Failed to load file '%s': %s", path, error->message);
+                g_error_free (error);
+                g_assert_not_reached ();
+        }
+
+        g_free (path);
+
+        return contents;
+}
+
+static char *
 get_our_server_response (const char *query)
 {
         char *response;
@@ -138,7 +160,7 @@ get_our_server_response (const char *query)
 int
 main (int argc, char **argv)
 {
-        char *our_response, *freegeoip_response;
+        char *our_response, *freegeoip_response, *fedora_geoip_response;
         int ret;
 
 #if (!GLIB_CHECK_VERSION (2, 36, 0))
@@ -157,8 +179,14 @@ main (int argc, char **argv)
                               freegeoip_response,
                               test_response_data);
 
+        fedora_geoip_response = get_fedora_geoip_response ();
+        g_test_add_data_func ("/geoip/fedora-geoip-format",
+                              fedora_geoip_response,
+                              test_response_data);
+
         ret = g_test_run ();
         g_free (freegeoip_response);
+        g_free (fedora_geoip_response);
         g_free (our_response);
 
         return ret;

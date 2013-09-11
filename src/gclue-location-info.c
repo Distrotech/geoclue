@@ -329,7 +329,6 @@ gclue_location_info_set_description (GClueLocationInfo *loc,
                                      const char    *description)
 {
         g_return_if_fail (GCLUE_IS_LOCATION_INFO (loc));
-        g_return_if_fail (description != NULL);
 
         g_free (loc->priv->description);
         loc->priv->description = g_strdup (description);

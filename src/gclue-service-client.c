@@ -165,7 +165,7 @@ error_out:
         g_warning ("Failed to update location info: %s", error->message);
         g_error_free (error);
 out:
-        g_clear_pointer (&path, g_free);
+        g_free (path);
 }
 
 typedef struct

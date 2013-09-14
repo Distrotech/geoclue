@@ -38,7 +38,6 @@ struct _GClueServiceLocationPrivate
         const char *peer;
         const char *path;
         GDBusConnection *connection;
-        GClueLocationInfo *location_info;
 };
 
 enum
@@ -61,7 +60,6 @@ gclue_service_location_finalize (GObject *object)
         g_clear_pointer (&priv->peer, g_free);
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
-        g_clear_object (&priv->location_info);
 
         /* Chain up to the parent class */
         G_OBJECT_CLASS (gclue_service_location_parent_class)->finalize (object);
@@ -74,6 +72,7 @@ gclue_service_location_get_property (GObject    *object,
                                      GParamSpec *pspec)
 {
         GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
+        GClueLocation *location = GCLUE_LOCATION (object);
 
         switch (prop_id) {
         case PROP_PEER:
@@ -89,8 +88,21 @@ gclue_service_location_get_property (GObject    *object,
                 break;
 
         case PROP_LOCATION:
-                g_value_set_object (value, self->priv->location_info);
+        {
+                GClueLocationInfo *loc;
+                const char *desc;
+
+                loc = gclue_location_info_new
+                        (gclue_location_get_latitude (location),
+                         gclue_location_get_longitude (location),
+                         gclue_location_get_accuracy (location));
+                desc = gclue_location_get_description (location);
+                if (desc != NULL)
+                        gclue_location_info_set_description (loc, desc);
+
+                g_value_take_object (value, loc);
                 break;
+        }
 
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -120,25 +132,20 @@ gclue_service_location_set_property (GObject      *object,
                 break;
 
         case PROP_LOCATION:
-                self->priv->location_info = g_value_dup_object (value);
+        {
+                GClueLocationInfo *loc;
 
-                g_object_bind_property (self->priv->location_info, "latitude",
-                                        location, "latitude",
-                                        G_BINDING_SYNC_CREATE);
-
-                g_object_bind_property (self->priv->location_info, "longitude",
-                                        location, "longitude",
-                                        G_BINDING_SYNC_CREATE);
-
-                g_object_bind_property (self->priv->location_info, "accuracy",
-                                        location, "accuracy",
-                                        G_BINDING_SYNC_CREATE);
-
-                g_object_bind_property (self->priv->location_info, "description",
-                                        location, "description",
-                                        G_BINDING_SYNC_CREATE);
-
+                loc = g_value_get_object (value);
+                gclue_location_set_latitude
+                        (location, gclue_location_info_get_latitude (loc));
+                gclue_location_set_longitude
+                        (location, gclue_location_info_get_longitude (loc));
+                gclue_location_set_accuracy
+                        (location, gclue_location_info_get_accuracy (loc));
+                gclue_location_set_description
+                        (location, gclue_location_info_get_description (loc));
                 break;
+        }
 
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);

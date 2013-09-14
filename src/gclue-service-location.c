@@ -90,15 +90,12 @@ gclue_service_location_get_property (GObject    *object,
         case PROP_LOCATION:
         {
                 GClueLocationInfo *loc;
-                const char *desc;
 
-                loc = gclue_location_info_new
+                loc = gclue_location_info_new_with_description
                         (gclue_location_get_latitude (location),
                          gclue_location_get_longitude (location),
-                         gclue_location_get_accuracy (location));
-                desc = gclue_location_get_description (location);
-                if (desc != NULL)
-                        gclue_location_info_set_description (loc, desc);
+                         gclue_location_get_accuracy (location),
+                         gclue_location_get_description (location));
 
                 g_value_take_object (value, loc);
                 break;

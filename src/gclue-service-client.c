@@ -47,6 +47,7 @@ struct _GClueServiceClientPrivate
 
         GClueServiceLocation *location;
         GClueServiceLocation *prev_location;
+        guint threshold;
 
         GClueLocator *locator;
 
@@ -112,26 +113,29 @@ emit_location_updated (GClueServiceClient *client,
 }
 
 static gboolean
-set_location (GClueServiceClient   *client,
-              GClueServiceLocation *location,
-              const char           *path,
-              GError              **error)
+below_threshold (GClueServiceClient *client,
+                 GClueLocationInfo  *location)
 {
         GClueServiceClientPrivate *priv = client->priv;
-        const char *prev_path;
+        GClueLocationInfo *cur_location;
+        gdouble distance;
+        gdouble threshold_km;
 
-        if (priv->prev_location != NULL)
-                g_object_unref (priv->prev_location);
-        priv->prev_location = priv->location;
-        if (priv->location != NULL)
-                prev_path = gclue_service_location_get_path (priv->location);
-        else
-                prev_path = "/";
-        priv->location = location;
+        if (priv->threshold == 0)
+                return FALSE;
 
-        gclue_client_set_location (GCLUE_CLIENT (client), path);
+        g_object_get (priv->location,
+                      "location", &cur_location,
+                      NULL);
+        distance = gclue_location_info_get_distance_from (cur_location,
+                                                          location);
+        g_object_unref (cur_location);
 
-        return emit_location_updated (client, prev_path, path, error);
+        threshold_km = priv->threshold / 1000.0;
+        if (distance < threshold_km)
+                return TRUE;
+
+        return FALSE;
 }
 
 static void
@@ -142,22 +146,41 @@ on_locator_location_changed (GObject    *gobject,
         GClueServiceClient *client = GCLUE_SERVICE_CLIENT (user_data);
         GClueServiceClientPrivate *priv = client->priv;
         GClueLocator *locator = GCLUE_LOCATOR (gobject);
-        GClueServiceLocation *service_location;
-        GClueLocationInfo *location;
+        GClueLocationInfo *location_info;
         char *path = NULL;
+        const char *prev_path;
         GError *error = NULL;
 
-        location = gclue_locator_get_location (locator);
+        location_info = gclue_locator_get_location (locator);
+
+        if (priv->location != NULL && below_threshold (client, location_info)) {
+                g_debug ("Updating location, below threshold");
+                g_object_set (priv->location,
+                              "location", location_info,
+                              NULL);
+                return;
+        }
+
+        g_clear_object (&priv->prev_location);
+        priv->prev_location = priv->location;
+
         path = next_location_path (client);
-        service_location = gclue_service_location_new (priv->peer,
-                                                       path,
-                                                       priv->connection,
-                                                       location,
-                                                       &error);
-        if (service_location == NULL)
+        priv->location = gclue_service_location_new (priv->peer,
+                                                     path,
+                                                     priv->connection,
+                                                     location_info,
+                                                     &error);
+        if (priv->location == NULL)
                 goto error_out;
 
-        if (!set_location (client, service_location, path, &error))
+        if (priv->prev_location != NULL)
+                prev_path = gclue_service_location_get_path (priv->prev_location);
+        else
+                prev_path = "/";
+
+        gclue_client_set_location (GCLUE_CLIENT (client), path);
+
+        if (!emit_location_updated (client, prev_path, path, &error))
                 goto error_out;
         goto out;
 
@@ -428,9 +451,8 @@ gclue_service_client_handle_set_property (GDBusConnection *connection,
                                              error,
                                              user_data);
         if (ret && strcmp (property_name, "DistanceThreshold") == 0) {
-                guint threshold = gclue_client_get_distance_threshold (client);
-                gclue_locator_set_threshold (priv->locator, threshold);
-                g_debug ("New distance threshold: %u", threshold);
+                priv->threshold = gclue_client_get_distance_threshold (client);
+                g_debug ("New distance threshold: %u", priv->threshold);
         }
 
         return ret;

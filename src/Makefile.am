@@ -45,7 +45,8 @@ geoclue_SOURCES =	 	 \
 
 geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
 		 $(WARN_CFLAGS)			     \
-		 -DLOCALEDIR="\"$(datadir)/locale\""
+		 -DLOCALEDIR="\"$(datadir)/locale\"" \
+		 -DG_LOG_DOMAIN=\""Geoclue"\"
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)

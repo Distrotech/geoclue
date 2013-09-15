@@ -45,6 +45,11 @@ GEOIP_MIN_VERSION=1.5.1
 
 AC_CHECK_LIB([m],[sin])
 
+dnl
+dnl Documentation
+dnl
+GTK_DOC_CHECK(1.0)
+
 PKG_CHECK_MODULES(GEOCLUE, [
   glib-2.0 >= $GLIB_MIN_VERSION
   gio-2.0 >= $GLIB_MIN_VERSION
@@ -131,6 +136,8 @@ AC_CONFIG_FILES([
   data/org.freedesktop.GeoClue2.conf
   data/Makefile
   demo/Makefile
+  docs/Makefile
+  docs/version.xml
 ])
 
 AC_OUTPUT

@@ -98,7 +98,7 @@ gclue_service_manager_handle_get_client (GClueManager          *manager,
                 g_dbus_method_invocation_return_error (invocation,
                                                        G_DBUS_ERROR,
                                                        G_DBUS_ERROR_FAILED,
-                                                       error->message);
+                                                       "%s", error->message);
                 return TRUE;
         }
 

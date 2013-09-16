@@ -248,7 +248,7 @@ main (int argc, char **argv)
                         g_set_error (&error,
                                      SOUP_HTTP_ERROR,
                                      status_code,
-                                     msg->reason_phrase);
+                                     "%s", msg->reason_phrase);
                         g_print ("Could not download the database: %s\n", msg->reason_phrase);
                         goto end_loop;
                 }

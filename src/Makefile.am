@@ -57,4 +57,10 @@ EXTRA_DIST = $(interface_DATA) \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-2.0.pc
 
+GEOCODEGLIBDIR=$(top_srcdir)/../geocode-glib/geocode-glib/
+GEOCODEGLIBFILES=geocode-location.c geocode-location.h
+update-from-geocode-glib:
+	FILES="$(GEOCODEGLIBFILES)" DIR="$(GEOCODEGLIBDIR)" $(srcdir)/update-from-geocode-glib.sh && changed=true ; \
+	git commit -m "location: Update from geocode-glib" $(GEOCODEGLIBFILES)
+
 -include $(top_srcdir)/git.mk

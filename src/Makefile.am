@@ -31,8 +31,6 @@ geoclue_SOURCES =	 	 \
 	gclue-error.c 	 	 \
 	gclue-ipclient.h 	 \
 	gclue-ipclient.c 	 \
-	gclue-location-info.h 	 \
-	gclue-location-info.c 	 \
 	gclue-locator.h 	 \
 	gclue-locator.c 	 \
 	gclue-service-manager.h  \
@@ -41,6 +39,8 @@ geoclue_SOURCES =	 	 \
 	gclue-service-client.c   \
 	gclue-service-location.h \
 	gclue-service-location.c \
+	geocode-location.c       \
+	geocode-location.h       \
 	$(NULL)
 
 geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \

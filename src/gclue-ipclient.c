@@ -29,6 +29,7 @@
 #include "gclue-ipclient.h"
 #include "gclue-error.h"
 #include "geoip-server/geoip-server.h"
+#include "geocode-location.h"
 
 /**
  * SECTION:gclue-ipclient
@@ -395,17 +396,17 @@ static gdouble
 get_accuracy_from_string (const char *str)
 {
         if (strcmp (str, "street") == 0)
-                return GCLUE_LOCATION_INFO_ACCURACY_STREET;
+                return GEOCODE_LOCATION_ACCURACY_STREET;
         else if (strcmp (str, "city") == 0)
-                return GCLUE_LOCATION_INFO_ACCURACY_CITY;
+                return GEOCODE_LOCATION_ACCURACY_CITY;
         else if (strcmp (str, "region") == 0)
-                return GCLUE_LOCATION_INFO_ACCURACY_REGION;
+                return GEOCODE_LOCATION_ACCURACY_REGION;
         else if (strcmp (str, "country") == 0)
-                return GCLUE_LOCATION_INFO_ACCURACY_COUNTRY;
+                return GEOCODE_LOCATION_ACCURACY_COUNTRY;
         else if (strcmp (str, "continent") == 0)
-                return GCLUE_LOCATION_INFO_ACCURACY_CONTINENT;
+                return GEOCODE_LOCATION_ACCURACY_CONTINENT;
         else
-                return GCLUE_LOCATION_INFO_ACCURACY_UNKNOWN;
+                return GEOCODE_LOCATION_ACCURACY_UNKNOWN;
 }
 
 static gdouble
@@ -417,28 +418,28 @@ get_accuracy_from_json_location (JsonObject *object)
                 str = json_object_get_string_member (object, "accuracy");
                 return get_accuracy_from_string (str);
         } else if (json_object_has_member (object, "street")) {
-                return GCLUE_LOCATION_INFO_ACCURACY_STREET;
+                return GEOCODE_LOCATION_ACCURACY_STREET;
         } else if (json_object_has_member (object, "city")) {
-                return GCLUE_LOCATION_INFO_ACCURACY_CITY;
+                return GEOCODE_LOCATION_ACCURACY_CITY;
         } else if (json_object_has_member (object, "region_name")) {
-                return GCLUE_LOCATION_INFO_ACCURACY_REGION;
+                return GEOCODE_LOCATION_ACCURACY_REGION;
         } else if (json_object_has_member (object, "country_name")) {
-                return GCLUE_LOCATION_INFO_ACCURACY_COUNTRY;
+                return GEOCODE_LOCATION_ACCURACY_COUNTRY;
         } else if (json_object_has_member (object, "continent")) {
-                return GCLUE_LOCATION_INFO_ACCURACY_CONTINENT;
+                return GEOCODE_LOCATION_ACCURACY_CONTINENT;
         } else {
-                return GCLUE_LOCATION_INFO_ACCURACY_UNKNOWN;
+                return GEOCODE_LOCATION_ACCURACY_UNKNOWN;
         }
 }
 
-static GClueLocationInfo *
+static GeocodeLocation *
 _gclue_ip_json_to_location (const char *json,
                             GError    **error)
 {
         JsonParser *parser;
         JsonNode *node;
         JsonObject *object;
-        GClueLocationInfo *location;
+        GeocodeLocation *location;
         gdouble latitude, longitude, accuracy;
         char *desc = NULL;
 
@@ -457,7 +458,7 @@ _gclue_ip_json_to_location (const char *json,
         longitude = json_object_get_double_member (object, "longitude");
         accuracy = get_accuracy_from_json_location (object);
 
-        location = gclue_location_info_new (latitude, longitude, accuracy);
+        location = geocode_location_new (latitude, longitude, accuracy);
 
         if (json_object_has_member (object, "country_name")) {
                 if (json_object_has_member (object, "region_name")) {
@@ -478,7 +479,7 @@ _gclue_ip_json_to_location (const char *json,
         }
 
         if (desc != NULL) {
-                gclue_location_info_set_description (location, desc);
+                geocode_location_set_description (location, desc);
                 g_free (desc);
         }
 
@@ -495,17 +496,17 @@ _gclue_ip_json_to_location (const char *json,
  *
  * Finishes a geolocation search operation. See gclue_ipclient_search_async().
  *
- * Returns: (transfer full): A #GClueLocationInfo object or %NULL in case of
+ * Returns: (transfer full): A #GeocodeLocation object or %NULL in case of
  * errors. Free the returned object with g_object_unref() when done.
  **/
-GClueLocationInfo *
+GeocodeLocation *
 gclue_ipclient_search_finish (GClueIpclient *ipclient,
                               GAsyncResult  *res,
                               GError       **error)
 {
         GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (res);
         char *contents = NULL;
-        GClueLocationInfo *location;
+        GeocodeLocation *location;
 
         g_return_val_if_fail (GCLUE_IS_IPCLIENT (ipclient), NULL);
 
@@ -529,16 +530,16 @@ gclue_ipclient_search_finish (GClueIpclient *ipclient,
  *
  * Gets the geolocation data for an IP address from the server.
  *
- * Returns: (transfer full): A #GClueLocationInfo object or %NULL in case of
+ * Returns: (transfer full): A #GeocodeLocation object or %NULL in case of
  * errors. Free the returned object with g_object_unref() when done.
  **/
-GClueLocationInfo *
+GeocodeLocation *
 gclue_ipclient_search (GClueIpclient *ipclient,
                        GError       **error)
 {
         char *contents;
         SoupMessage *query;
-        GClueLocationInfo *location;
+        GeocodeLocation *location;
 
         g_return_val_if_fail (GCLUE_IS_IPCLIENT (ipclient), NULL);
         g_return_val_if_fail (ipclient->priv->server != NULL, NULL);

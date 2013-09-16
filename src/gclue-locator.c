@@ -33,7 +33,7 @@ struct _GClueLocatorPrivate
 {
         GClueIpclient *ipclient;
 
-        GClueLocationInfo *location;
+        GeocodeLocation *location;
 
         GCancellable *cancellable;
 
@@ -107,7 +107,7 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
                                                           "Location",
                                                           "Location",
-                                                          GCLUE_TYPE_LOCATION_INFO,
+                                                          GEOCODE_TYPE_LOCATION,
                                                           G_PARAM_READABLE);
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
@@ -131,19 +131,19 @@ gclue_locator_new (void)
 }
 
 static void
-gclue_locator_update_location (GClueLocator      *locator,
-                               GClueLocationInfo *location)
+gclue_locator_update_location (GClueLocator    *locator,
+                               GeocodeLocation *location)
 {
         GClueLocatorPrivate *priv = locator->priv;
 
         if (priv->location == NULL)
-                priv->location = g_object_new (GCLUE_TYPE_LOCATION_INFO, NULL);
+                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
 
         g_object_set (priv->location,
-                      "latitude", gclue_location_info_get_latitude (location),
-                      "longitude", gclue_location_info_get_longitude (location),
-                      "accuracy", gclue_location_info_get_accuracy (location),
-                      "description", gclue_location_info_get_description (location),
+                      "latitude", geocode_location_get_latitude (location),
+                      "longitude", geocode_location_get_longitude (location),
+                      "accuracy", geocode_location_get_accuracy (location),
+                      "description", geocode_location_get_description (location),
                       NULL);
 
         g_object_notify (G_OBJECT (locator), "location");
@@ -156,7 +156,7 @@ on_ipclient_search_ready (GObject      *source_object,
 {
         GClueIpclient *ipclient = GCLUE_IPCLIENT (source_object);
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
-        GClueLocationInfo *location;
+        GeocodeLocation *location;
         GError *error = NULL;
 
         location = gclue_ipclient_search_finish (ipclient, res, &error);
@@ -300,7 +300,7 @@ gclue_locator_stop_finish (GClueLocator  *locator,
         return TRUE;
 }
 
-GClueLocationInfo * gclue_locator_get_location (GClueLocator *locator)
+GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), NULL);
 

@@ -24,7 +24,7 @@
 #define GCLUE_LOCATOR_H
 
 #include <gio/gio.h>
-#include "gclue-location-info.h"
+#include "geocode-location.h"
 
 G_BEGIN_DECLS
 
@@ -70,7 +70,7 @@ void                gclue_locator_stop          (GClueLocator       *locator,
 gboolean            gclue_locator_stop_finish   (GClueLocator *locator,
                                                  GAsyncResult *res,
                                                  GError      **error);
-GClueLocationInfo * gclue_locator_get_location  (GClueLocator *locator);
+GeocodeLocation *   gclue_locator_get_location  (GClueLocator *locator);
 guint               gclue_locator_get_threshold (GClueLocator *locator);
 void                gclue_locator_set_threshold (GClueLocator *locator,
                                                  guint         threshold);

@@ -114,10 +114,10 @@ emit_location_updated (GClueServiceClient *client,
 
 static gboolean
 below_threshold (GClueServiceClient *client,
-                 GClueLocationInfo  *location)
+                 GeocodeLocation    *location)
 {
         GClueServiceClientPrivate *priv = client->priv;
-        GClueLocationInfo *cur_location;
+        GeocodeLocation *cur_location;
         gdouble distance;
         gdouble threshold_km;
 
@@ -127,8 +127,8 @@ below_threshold (GClueServiceClient *client,
         g_object_get (priv->location,
                       "location", &cur_location,
                       NULL);
-        distance = gclue_location_info_get_distance_from (cur_location,
-                                                          location);
+        distance = geocode_location_get_distance_from (cur_location,
+                                                       location);
         g_object_unref (cur_location);
 
         threshold_km = priv->threshold / 1000.0;
@@ -146,7 +146,7 @@ on_locator_location_changed (GObject    *gobject,
         GClueServiceClient *client = GCLUE_SERVICE_CLIENT (user_data);
         GClueServiceClientPrivate *priv = client->priv;
         GClueLocator *locator = GCLUE_LOCATOR (gobject);
-        GClueLocationInfo *location_info;
+        GeocodeLocation *location_info;
         char *path = NULL;
         const char *prev_path;
         GError *error = NULL;

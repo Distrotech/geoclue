@@ -1,3 +1,33 @@
+1.99.4
+======
+
+- Correct check for whether db needs update in geoip-update.
+- Fix geoip-update by direct usage of libsoup for HTTP GET.
+- Don't inhibit compiler warnings in build.
+- Fix various potential crashers.
+- Take 'DistanceThreshold' property into account.
+- Watch for and signal out location changes.
+- Add configure option to specify service user.
+- Add documentation comments to D-Bus interface XML.
+- Fix various compiler warnings.
+- Switch to Fedora's geoip server until we've our server setup.
+- Minor fixes to pkgconfig file.
+- Setup a glib log domain.
+- Some optimizations.
+- More debug logging.
+
+Dependency-related changes:
+
+- Require libsoup-2.4
+
+All contributors to this release:
+
+Bastien Nocera <hadess@hadess.net>
+Dominique Leuenberger <dimstar@opensuse.org>
+Kalev Lember <kalevlember@gmail.com>
+Stefan Sauer <ensonic@users.sf.net>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 1.99.3
 ======
 

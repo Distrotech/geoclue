@@ -31,6 +31,8 @@
 #include "geoip-server/geoip-server.h"
 #include "geocode-location.h"
 
+#define GEOIP_SERVER "http://geoip.fedoraproject.org/city"
+
 /**
  * SECTION:gclue-ipclient
  * @short_description: GeoIP client
@@ -50,72 +52,10 @@ struct _GClueIpclientPrivate {
         SoupSession *soup_session;
 
         char *ip;
-        char *server;
-        gboolean compat_mode;
 
 };
 
 G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, G_TYPE_OBJECT)
-
-static void
-gclue_ipclient_set_server (GClueIpclient *ipclient,
-                           const char      *server)
-{
-        g_return_if_fail (server != NULL);
-        g_return_if_fail (g_str_has_prefix (server, "http://") ||
-                          g_str_has_prefix (server, "https://"));
-
-        g_free (ipclient->priv->server);
-        ipclient->priv->server = g_strdup (server);
-}
-
-static void
-gclue_ipclient_set_property (GObject      *gipclient,
-                             guint         property_id,
-                             const GValue *value,
-                             GParamSpec   *pspec)
-{
-        GClueIpclient *ipclient = (GClueIpclient *) gipclient;
-
-        switch (property_id) {
-                case PROP_SERVER:
-                        gclue_ipclient_set_server (ipclient,
-                                                   g_value_get_string (value));
-                        break;
-                case PROP_COMPAT_MODE:
-                        ipclient->priv->compat_mode = g_value_get_boolean (value);
-                        break;
-                default:
-                        G_OBJECT_WARN_INVALID_PROPERTY_ID (gipclient,
-                                                           property_id,
-                                                           pspec);
-                        break;
-        }
-}
-
-static void
-gclue_ipclient_get_property (GObject           *gipclient,
-                             guint              property_id,
-                             GValue            *value,
-                             GParamSpec        *pspec)
-{
-        GClueIpclient *ipclient = (GClueIpclient *) gipclient;
-        switch (property_id) {
-                case PROP_SERVER:
-                        g_value_set_string (value, ipclient->priv->server);
-                        break;
-
-                case PROP_COMPAT_MODE:
-                        g_value_set_boolean (value, ipclient->priv->compat_mode);
-                        break;
-
-                default:
-                        G_OBJECT_WARN_INVALID_PROPERTY_ID (gipclient,
-                                                           property_id,
-                                                           pspec);
-                        break;
-        }
-}
 
 static void
 gclue_ipclient_finalize (GObject *gipclient)
@@ -124,7 +64,6 @@ gclue_ipclient_finalize (GObject *gipclient)
 
         g_clear_object (&ipclient->priv->soup_session);
         g_free (ipclient->priv->ip);
-        g_free (ipclient->priv->server);
 
         G_OBJECT_CLASS (gclue_ipclient_parent_class)->finalize (gipclient);
 }
@@ -135,31 +74,8 @@ gclue_ipclient_class_init (GClueIpclientClass *klass)
         GObjectClass *gipclient_class = G_OBJECT_CLASS (klass);
 
         gipclient_class->finalize = gclue_ipclient_finalize;
-        gipclient_class->set_property = gclue_ipclient_set_property;
-        gipclient_class->get_property = gclue_ipclient_get_property;
 
         g_type_class_add_private (klass, sizeof (GClueIpclientPrivate));
-
-        g_object_class_install_property (gipclient_class,
-                                         PROP_SERVER,
-                                         g_param_spec_string ("server",
-                                                              "server uri",
-                                                              "server uri",
-                                                              "http://127.0.0.1:12345/cgi-bin/geoip-lookup",
-                                                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
-
-        /**
-         * GClueIpclient:compatibility-mode:
-         *
-         * Enable this mode if you are using freegeoip's (or a compatible) service.
-         */
-        g_object_class_install_property (gipclient_class,
-                                         PROP_COMPAT_MODE,
-                                         g_param_spec_boolean ("compatibility-mode",
-                                                               "compatiblity mode",
-                                                               "compatiblity Mode",
-                                                               FALSE,
-                                                               G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
 }
 
 static void
@@ -210,34 +126,21 @@ static SoupMessage *
 get_search_query (GClueIpclient *ipclient)
 {
         SoupMessage *ret;
-        GHashTable *ht;
-        char *query_string;
         char *uri;
-        const char *ipaddress;
 
-        ipaddress = ipclient->priv->ip;
-        if (ipaddress) {
-                if (ipclient->priv->compat_mode) {
-                        char *escaped;
+        if (ipclient->priv->ip) {
+                GHashTable *ht;
+                char *query_string;
 
-                        escaped = soup_uri_encode (ipaddress, NULL);
-                        uri = g_strdup_printf ("%s/%s",
-                                               ipclient->priv->server,
-                                               escaped);
-                        g_free (escaped);
-                } else {
-                        ht = g_hash_table_new (g_str_hash, g_str_equal);
-                        g_hash_table_insert (ht, "ip", g_strdup (ipaddress));
-                        query_string = soup_form_encode_hash (ht);
-                        g_hash_table_destroy (ht);
+                ht = g_hash_table_new (g_str_hash, g_str_equal);
+                g_hash_table_insert (ht, "ip", g_strdup (ipclient->priv->ip));
+                query_string = soup_form_encode_hash (ht);
+                g_hash_table_destroy (ht);
 
-                        uri = g_strdup_printf ("%s?%s",
-                                               ipclient->priv->server,
-                                               query_string);
-                        g_free (query_string);
-                }
+                uri = g_strdup_printf ("%s?%s", GEOIP_SERVER, query_string);
+                g_free (query_string);
         } else
-                uri = g_strdup (ipclient->priv->server);
+                uri = g_strdup (GEOIP_SERVER);
 
         ret = soup_message_new ("GET", uri);
         g_free (uri);
@@ -334,7 +237,6 @@ gclue_ipclient_search_async (GClueIpclient      *ipclient,
         QueryCallbackData *data;
 
         g_return_if_fail (GCLUE_IS_IPCLIENT (ipclient));
-        g_return_if_fail (ipclient->priv->server != NULL);
 
         data = g_slice_new0 (QueryCallbackData);
         data->simple = g_simple_async_result_new (g_object_ref (ipclient),
@@ -542,7 +444,6 @@ gclue_ipclient_search (GClueIpclient *ipclient,
         GeocodeLocation *location;
 
         g_return_val_if_fail (GCLUE_IS_IPCLIENT (ipclient), NULL);
-        g_return_val_if_fail (ipclient->priv->server != NULL, NULL);
 
         query = get_search_query (ipclient);
 

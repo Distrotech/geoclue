@@ -209,10 +209,6 @@ gclue_locator_start (GClueLocator        *locator,
                 return; /* Already started */
 
         locator->priv->ipclient = gclue_ipclient_new ();
-        g_object_set (locator->priv->ipclient,
-                      "server", "http://geoip.fedoraproject.org/city",
-                      "compatibility-mode", TRUE,
-                      NULL);
 
         monitor = g_network_monitor_get_default ();
         locator->priv->network_changed_id =

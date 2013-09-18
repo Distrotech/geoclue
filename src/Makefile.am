@@ -18,6 +18,7 @@ geoclue-interface.h: Makefile.am $(interface_DATA)
 		--interface-prefix org.freedesktop.GeoClue2.	\
 		--c-namespace GClue				\
 		--generate-c-code geoclue-interface		\
+    		--generate-docbook=docs				\
 		$(srcdir)/$(interface_DATA)
 
 BUILT_SOURCES = 		\

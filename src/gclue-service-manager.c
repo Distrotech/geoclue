@@ -24,6 +24,7 @@
 
 #include "gclue-service-manager.h"
 #include "gclue-service-client.h"
+#include "gclue-client-info.h"
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
@@ -57,14 +58,69 @@ enum
 static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
-on_peer_vanished (GClueServiceClient *client,
-                  gpointer            user_data)
+on_peer_vanished (GClueClientInfo *info,
+                  gpointer         user_data)
 {
         GClueServiceManager *manager = GCLUE_SERVICE_MANAGER (user_data);
 
         g_hash_table_remove (manager->priv->clients,
-                             gclue_service_client_get_peer (client));
+                             gclue_client_info_get_bus_name (info));
         g_object_notify (G_OBJECT (manager), "connected-clients");
+}
+
+typedef struct
+{
+        GClueManager *manager;
+        GDBusMethodInvocation *invocation;
+} OnClientInfoNewReadyData;
+
+static void
+on_client_info_new_ready (GObject      *source_object,
+                          GAsyncResult *res,
+                          gpointer      user_data)
+{
+        OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
+        GClueServiceClient *client;
+        GClueClientInfo *info = NULL;
+        GError *error = NULL;
+        char *path;
+
+        info = gclue_client_info_new_finish (res, &error);
+        if (info == NULL)
+                goto error_out;
+
+        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%u",
+                                ++priv->num_clients);
+
+        client = gclue_service_client_new (info, path, priv->connection, &error);
+        if (client == NULL)
+                goto error_out;
+
+        g_hash_table_insert (priv->clients,
+                             g_strdup (gclue_client_info_get_bus_name (info)),
+                             client);
+        g_object_notify (G_OBJECT (data->manager), "connected-clients");
+
+        g_signal_connect (info,
+                          "peer-vanished",
+                          G_CALLBACK (on_peer_vanished),
+                          data->manager);
+
+        gclue_manager_complete_get_client (data->manager,
+                                           data->invocation,
+                                           path);
+        goto out;
+
+error_out:
+        g_dbus_method_invocation_return_error (data->invocation,
+                                               G_DBUS_ERROR,
+                                               G_DBUS_ERROR_FAILED,
+                                               "%s", error->message);
+out:
+        g_clear_error (&error);
+        g_clear_object (&info);
+        g_slice_free (OnClientInfoNewReadyData, data);
 }
 
 static gboolean
@@ -75,8 +131,7 @@ gclue_service_manager_handle_get_client (GClueManager          *manager,
         GClueServiceManagerPrivate *priv = self->priv;
         GClueServiceClient *client;
         const char *peer;
-        char *path;
-        GError *error = NULL;
+        OnClientInfoNewReadyData *data;
 
         peer = g_dbus_method_invocation_get_sender (invocation);
         client = g_hash_table_lookup (priv->clients, peer);
@@ -90,28 +145,14 @@ gclue_service_manager_handle_get_client (GClueManager          *manager,
                 return TRUE;
         }
 
-        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%u",
-                                ++priv->num_clients);
-
-        client = gclue_service_client_new (peer, path, priv->connection, &error);
-        if (client == NULL) {
-                g_dbus_method_invocation_return_error (invocation,
-                                                       G_DBUS_ERROR,
-                                                       G_DBUS_ERROR_FAILED,
-                                                       "%s", error->message);
-                return TRUE;
-        }
-
-        g_hash_table_insert (priv->clients, g_strdup (peer), client);
-        g_object_notify (G_OBJECT (manager), "connected-clients");
-
-        g_signal_connect (client,
-                          "peer-vanished",
-                          G_CALLBACK (on_peer_vanished),
-                          manager);
-
-        gclue_manager_complete_get_client (manager, invocation, path);
-
+        data = g_slice_new (OnClientInfoNewReadyData);
+        data->manager = manager;
+        data->invocation = invocation;
+        gclue_client_info_new_async (peer,
+                                     priv->connection,
+                                     NULL,
+                                     on_client_info_new_ready,
+                                     data);
         return TRUE;
 }
 

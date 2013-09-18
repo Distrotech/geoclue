@@ -143,7 +143,6 @@ on_locator_location_changed (GObject    *gobject,
         GeocodeLocation *location_info;
         char *path = NULL;
         const char *prev_path;
-        const char *peer;
         GError *error = NULL;
 
         location_info = gclue_locator_get_location (locator);
@@ -160,8 +159,7 @@ on_locator_location_changed (GObject    *gobject,
         priv->prev_location = priv->location;
 
         path = next_location_path (client);
-        peer = gclue_client_info_get_bus_name (priv->client_info);
-        priv->location = gclue_service_location_new (peer,
+        priv->location = gclue_service_location_new (priv->client_info,
                                                      path,
                                                      priv->connection,
                                                      location_info,

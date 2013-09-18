@@ -28,6 +28,8 @@ BUILT_SOURCES = 		\
 geoclue_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \
 	gclue-main.c	 	 \
+	gclue-client-info.h 	 \
+	gclue-client-info.c 	 \
 	gclue-error.h 	 	 \
 	gclue-error.c 	 	 \
 	gclue-ipclient.h 	 \

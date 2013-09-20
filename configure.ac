@@ -101,6 +101,23 @@ else
 fi
 AM_CONDITIONAL([BUILD_GEOIP_SERVER], [test "x$build_geoip_server" = "xyes"])
 
+# Demo agent
+AC_ARG_ENABLE(demo-agent,
+              AS_HELP_STRING([--enable-demo-agent=yes|no],
+                             [Build demo agent (default=no)]),
+              [enable_demo_agent=$enableval],
+              [enable_demo_agent=no])
+if test "x$enable_demo_agent" = "xyes"; then
+    PKG_CHECK_MODULES(DEMO_AGENT, [
+                      glib-2.0 >= $GLIB_MIN_VERSION
+                      gio-2.0 >= $GLIB_MIN_VERSION
+                      gio-unix-2.0 >= $GLIB_MIN_VERSION
+                      libnotify])
+else
+    AC_DEFINE([BUILD_DEMO_AGENT], [0], [Build demo agent?])
+fi
+AM_CONDITIONAL([BUILD_DEMO_AGENT], [test "x$enable_demo_agent" = "xyes"])
+
 GNOME_COMPILE_WARNINGS([maximum])
 
 dnl Debugging

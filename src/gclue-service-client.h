@@ -59,6 +59,7 @@ GType gclue_service_client_get_type (void) G_GNUC_CONST;
 GClueServiceClient * gclue_service_client_new             (GClueClientInfo *info,
                                                            const char      *path,
                                                            GDBusConnection *connection,
+                                                           GDBusProxy      *agent_proxy,
                                                            GError         **error);
 const char *         gclue_service_client_get_path        (GClueServiceClient *client);
 GClueClientInfo *    gclue_service_client_get_client_info (GClueServiceClient *client);

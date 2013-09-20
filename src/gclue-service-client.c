@@ -44,6 +44,7 @@ struct _GClueServiceClientPrivate
         GClueClientInfo *client_info;
         const char *path;
         GDBusConnection *connection;
+        GDBusProxy *agent_proxy;
 
         GClueServiceLocation *location;
         GClueServiceLocation *prev_location;
@@ -63,6 +64,7 @@ enum
         PROP_CLIENT_INFO,
         PROP_PATH,
         PROP_CONNECTION,
+        PROP_AGENT_PROXY,
         LAST_PROP
 };
 
@@ -192,6 +194,14 @@ typedef struct
 } StartData;
 
 static void
+start_data_free (StartData *data)
+{
+        g_object_unref (data->client);
+        g_object_unref (data->invocation);
+        g_slice_free (StartData, data);
+}
+
+static void
 on_start_ready (GObject      *source_object,
                 GAsyncResult *res,
                 gpointer      user_data)
@@ -216,9 +226,52 @@ error_out:
         g_error_free (error);
 
 out:
-        g_object_unref (data->client);
-        g_object_unref (data->invocation);
-        g_slice_free (StartData, data);
+        start_data_free (data);
+}
+
+static void
+on_authorize_app_ready (GObject      *source_object,
+                        GAsyncResult *res,
+                        gpointer      user_data)
+{
+        StartData *data = (StartData *) user_data;
+        GClueServiceClientPrivate *priv = data->client->priv;
+        GError *error = NULL;
+        GVariant *results = NULL;
+        gboolean authorized = FALSE;
+
+        results = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
+                                            res,
+                                            &error);
+        if (results == NULL)
+                goto error_out;
+
+        g_variant_get_child (results, 0, "b", &authorized);
+        g_variant_unref (results);
+
+        if (!authorized) {
+                g_set_error_literal (&error,
+                                     G_DBUS_ERROR,
+                                     G_DBUS_ERROR_ACCESS_DENIED,
+                                     "Access denied");
+                goto error_out;
+        }
+
+        priv->location_change_id =
+                g_signal_connect (priv->locator,
+                                  "notify::location",
+                                  G_CALLBACK (on_locator_location_changed),
+                                  data->client);
+
+        gclue_locator_start (priv->locator,
+                             NULL,
+                             on_start_ready,
+                             data);
+        return;
+
+error_out:
+        g_dbus_method_invocation_take_error (data->invocation, error);
+        start_data_free (data);
 }
 
 static gboolean
@@ -227,28 +280,29 @@ gclue_service_client_handle_start (GClueClient           *client,
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         StartData *data;
+        const char *bus_name;
+        const char *title;
 
         if (priv->location_change_id)
                 /* Already started */
                 return TRUE;
 
-        /* TODO: We need some kind of mechanism to ask user if location info can
-         *       be shared with peer app.
-         */
-
-        priv->location_change_id =
-                g_signal_connect (priv->locator,
-                                  "notify::location",
-                                  G_CALLBACK (on_locator_location_changed),
-                                  client);
-
         data = g_slice_new (StartData);
         data->client = g_object_ref (client);
         data->invocation =  g_object_ref (invocation);
-        gclue_locator_start (priv->locator,
-                             NULL,
-                             on_start_ready,
-                             data);
+
+        bus_name = gclue_client_info_get_bus_name (priv->client_info);
+        title = gclue_client_get_title (client);
+        if (title == NULL)
+                title = bus_name;
+        g_dbus_proxy_call (priv->agent_proxy,
+                           "AuthorizeApp",
+                           g_variant_new ("(ss)", bus_name, title),
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL,
+                           on_authorize_app_ready,
+                           data);
 
         return TRUE;
 }
@@ -283,6 +337,7 @@ gclue_service_client_finalize (GObject *object)
 
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
+        g_clear_object (&priv->agent_proxy);
         g_clear_object (&priv->locator);
         g_clear_object (&priv->location);
         g_clear_object (&priv->prev_location);
@@ -313,6 +368,10 @@ gclue_service_client_get_property (GObject    *object,
                 g_value_set_object (value, client->priv->connection);
                 break;
 
+        case PROP_AGENT_PROXY:
+                g_value_set_object (value, client->priv->agent_proxy);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -337,6 +396,10 @@ gclue_service_client_set_property (GObject      *object,
 
         case PROP_CONNECTION:
                 client->priv->connection = g_value_dup_object (value);
+                break;
+
+        case PROP_AGENT_PROXY:
+                client->priv->agent_proxy = g_value_dup_object (value);
                 break;
 
         default:
@@ -511,6 +574,16 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_CONNECTION,
                                          gParamSpecs[PROP_CONNECTION]);
+
+        gParamSpecs[PROP_AGENT_PROXY] = g_param_spec_object ("agent-proxy",
+                                                             "AgentProxy",
+                                                             "Proxy to app authorization agent",
+                                                             G_TYPE_DBUS_PROXY,
+                                                             G_PARAM_READWRITE |
+                                                             G_PARAM_CONSTRUCT);
+        g_object_class_install_property (object_class,
+                                         PROP_AGENT_PROXY,
+                                         gParamSpecs[PROP_AGENT_PROXY]);
 }
 
 static void
@@ -555,6 +628,7 @@ GClueServiceClient *
 gclue_service_client_new (GClueClientInfo *info,
                           const char      *path,
                           GDBusConnection *connection,
+                          GDBusProxy      *agent_proxy,
                           GError         **error)
 {
         return g_initable_new (GCLUE_TYPE_SERVICE_CLIENT,
@@ -563,6 +637,7 @@ gclue_service_client_new (GClueClientInfo *info,
                                "client-info", info,
                                "path", path,
                                "connection", connection,
+                               "agent-proxy", agent_proxy,
                                NULL);
 }
 

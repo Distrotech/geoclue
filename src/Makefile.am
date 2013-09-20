@@ -46,10 +46,11 @@ geoclue_SOURCES =	 	 \
 	geocode-location.h       \
 	$(NULL)
 
-geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     \
-		 $(WARN_CFLAGS)			     \
-		 -DLOCALEDIR="\"$(datadir)/locale\"" \
-		 -DG_LOG_DOMAIN=\""Geoclue"\"
+geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
+		 $(WARN_CFLAGS)			     	  \
+		 -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
+		 -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
+		 -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\"
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)

@@ -26,6 +26,9 @@
 #include "gclue-service-client.h"
 #include "gclue-client-info.h"
 
+/* A whitelist of agent commandlines */
+static char *whitelisted_agents[] = { ABS_TOP_SRCDIR "/demo/agent" };
+
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
 static void
@@ -84,17 +87,36 @@ on_client_info_new_ready (GObject      *source_object,
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueServiceClient *client;
         GClueClientInfo *info = NULL;
+        GDBusProxy *agent_proxy = NULL;
         GError *error = NULL;
         char *path;
+        guint32 user_id;
 
         info = gclue_client_info_new_finish (res, &error);
         if (info == NULL)
                 goto error_out;
 
+        user_id = gclue_client_info_get_user_id (info);
+        agent_proxy = g_hash_table_lookup (priv->agents,
+                                           GINT_TO_POINTER (user_id));
+        if (agent_proxy == NULL) {
+                g_dbus_method_invocation_return_error
+                        (data->invocation,
+                         G_DBUS_ERROR,
+                         G_DBUS_ERROR_ACCESS_DENIED,
+                         "No authorization agent available for user ID %u",
+                         user_id);
+                goto out;
+        }
+
         path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%u",
                                 ++priv->num_clients);
 
-        client = gclue_service_client_new (info, path, priv->connection, &error);
+        client = gclue_service_client_new (info,
+                                           path,
+                                           priv->connection,
+                                           agent_proxy,
+                                           &error);
         if (client == NULL)
                 goto error_out;
 
@@ -231,6 +253,8 @@ on_agent_info_new_ready (GObject      *source_object,
         AddAgentData *data = (AddAgentData *) user_data;
         GError *error = NULL;
         char *path;
+        gboolean allowed = FALSE;
+        guint8 i;
 
         data->info = gclue_client_info_new_finish (res, &error);
         if (data->info == NULL) {
@@ -239,6 +263,25 @@ on_agent_info_new_ready (GObject      *source_object,
                                                        G_DBUS_ERROR_FAILED,
                                                        "%s", error->message);
                 g_error_free (error);
+                add_agent_data_free (data);
+
+                return;
+        }
+
+        for (i = 0; i < G_N_ELEMENTS (whitelisted_agents); i++) {
+                const char *cmd = gclue_client_info_get_cmdline (data->info);
+
+                if (g_strcmp0 (whitelisted_agents[i], cmd) == 0) {
+                        allowed = TRUE;
+
+                        break;
+                }
+        }
+        if (!allowed) {
+                g_dbus_method_invocation_return_error (data->invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "Not whitelisted");
                 add_agent_data_free (data);
 
                 return;

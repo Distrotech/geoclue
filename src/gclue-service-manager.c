@@ -43,6 +43,7 @@ struct _GClueServiceManagerPrivate
 {
         GDBusConnection *connection;
         GHashTable *clients;
+        GHashTable *agents;
 
         guint num_clients;
 };
@@ -156,6 +157,129 @@ gclue_service_manager_handle_get_client (GClueManager          *manager,
         return TRUE;
 }
 
+typedef struct
+{
+        GClueManager *manager;
+        GDBusMethodInvocation *invocation;
+        GClueClientInfo *info;
+} AddAgentData;
+
+static void
+add_agent_data_free (AddAgentData *data)
+{
+        g_clear_object (&data->info);
+        g_slice_free (AddAgentData, data);
+}
+
+static void
+on_agent_vanished (GClueClientInfo *info,
+                   gpointer         user_data)
+{
+        GClueServiceManager *manager = GCLUE_SERVICE_MANAGER (user_data);
+        guint32 user_id;
+
+        user_id = gclue_client_info_get_user_id (info);
+        g_debug ("Agent for user '%u' vanished", user_id);
+        g_hash_table_remove (manager->priv->agents, GINT_TO_POINTER (user_id));
+}
+
+static void
+on_agent_proxy_ready (GObject      *source_object,
+                      GAsyncResult *res,
+                      gpointer      user_data)
+{
+        AddAgentData *data = (AddAgentData *) user_data;
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
+        guint32 user_id;
+        GDBusProxy *agent;
+        GError *error = NULL;
+
+        agent = g_dbus_proxy_new_for_bus_finish (res, &error);
+        if (agent == NULL)
+            goto error_out;
+
+        user_id = gclue_client_info_get_user_id (data->info);
+        g_debug ("New agent for user ID '%u'", user_id);
+        g_hash_table_replace (priv->agents, GINT_TO_POINTER (user_id), agent);
+
+        g_signal_connect (data->info,
+                          "peer-vanished",
+                          G_CALLBACK (on_agent_vanished),
+                          data->manager);
+
+        gclue_manager_complete_add_agent (data->manager, data->invocation);
+
+        goto out;
+
+error_out:
+        g_dbus_method_invocation_return_error (data->invocation,
+                                               G_DBUS_ERROR,
+                                               G_DBUS_ERROR_FAILED,
+                                               "%s", error->message);
+out:
+        g_clear_error (&error);
+        add_agent_data_free (data);
+}
+
+#define AGENT_PATH "/org/freedesktop/GeoClue2/Agent/%u"
+
+static void
+on_agent_info_new_ready (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+        AddAgentData *data = (AddAgentData *) user_data;
+        GError *error = NULL;
+        char *path;
+
+        data->info = gclue_client_info_new_finish (res, &error);
+        if (data->info == NULL) {
+                g_dbus_method_invocation_return_error (data->invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_FAILED,
+                                                       "%s", error->message);
+                g_error_free (error);
+                add_agent_data_free (data);
+
+                return;
+        }
+
+        path = g_strdup_printf (AGENT_PATH,
+                                gclue_client_info_get_user_id (data->info));
+        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                                  G_DBUS_PROXY_FLAGS_NONE,
+                                  NULL,
+                                  gclue_client_info_get_bus_name (data->info),
+                                  path,
+                                  "org.freedesktop.GeoClue2.Agent",
+                                  NULL,
+                                  on_agent_proxy_ready,
+                                  user_data);
+        g_free (path);
+}
+
+static gboolean
+gclue_service_manager_handle_add_agent (GClueManager          *manager,
+                                        GDBusMethodInvocation *invocation)
+{
+        GClueServiceManager *self = GCLUE_SERVICE_MANAGER (manager);
+        GClueServiceManagerPrivate *priv = self->priv;
+        const char *peer;
+        AddAgentData *data;
+
+        peer = g_dbus_method_invocation_get_sender (invocation);
+
+        data = g_slice_new0 (AddAgentData);
+        data->manager = manager;
+        data->invocation = invocation;
+        gclue_client_info_new_async (peer,
+                                     priv->connection,
+                                     NULL,
+                                     on_agent_info_new_ready,
+                                     data);
+        return TRUE;
+}
+
 static void
 gclue_service_manager_finalize (GObject *object)
 {
@@ -163,6 +287,7 @@ gclue_service_manager_finalize (GObject *object)
 
         g_clear_object (&priv->connection);
         g_clear_pointer (&priv->clients, g_hash_table_unref);
+        g_clear_pointer (&priv->agents, g_hash_table_unref);
 
         /* Chain up to the parent class */
         G_OBJECT_CLASS (gclue_service_manager_parent_class)->finalize (object);
@@ -260,6 +385,10 @@ gclue_service_manager_init (GClueServiceManager *manager)
                                                         g_str_equal,
                                                         g_free,
                                                         g_object_unref);
+        manager->priv->agents = g_hash_table_new_full (g_direct_hash,
+                                                       g_direct_equal,
+                                                       NULL,
+                                                       g_object_unref);
 }
 
 static gboolean
@@ -278,6 +407,7 @@ static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface)
 {
         iface->handle_get_client = gclue_service_manager_handle_get_client;
+        iface->handle_add_agent = gclue_service_manager_handle_add_agent;
 }
 
 static void

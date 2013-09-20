@@ -30,6 +30,15 @@
     <method name="GetClient">
       <arg name="client" type="o" direction="out"/>
     </method>
+
+    <!--
+        AddAgent:
+
+        An API for user authorization agents to register themselves. Each agent
+        is responsible for the user it is running as. Application developers
+        can and should simply ignore this API.
+    -->
+    <method name="AddAgent" />
   </interface>
 
   <!--

@@ -1,3 +1,15 @@
+2.0.0
+=====
+
+- Generate docs for D-Bus interface. Online version:
+  http://www.freedesktop.org/software/geoclue/docs/
+- Fix build against Automake 1.13.
+- Two minor fixes/cleanups.
+
+All contributors to this release:
+
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 1.99.4
 ======
 

@@ -68,6 +68,14 @@
     <property name="DistanceThreshold" type="u" access="readwrite"/>
 
     <!--
+        Title:
+
+        Localized human-readable title for the client that is presented to the user
+        for authorizing the app for location access.
+    -->
+    <property name="Title" type="s" access="readwrite"/>
+
+    <!--
         Start:
 
         Start receiving events about the current location. Applications should

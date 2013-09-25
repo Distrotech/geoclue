@@ -1,0 +1,11 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.freedesktop.GeoClue2.Agent">
+    <method name="AuthorizeApp">
+      <arg name="bus_name" type="s" direction="in"/>
+      <arg name="title" type="s" direction="in"/>
+      <arg name="authorized" type="b" direction="out"/>
+    </method>
+  </interface>
+</node>

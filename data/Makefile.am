@@ -8,7 +8,9 @@ $(service_DATA): $(service_in_files) Makefile
 
 # DBus Service policy file
 dbusservicedir = $(DBUS_SYS_DIR)
-dbusservice_DATA = org.freedesktop.GeoClue2.conf
+dbusservice_DATA = org.freedesktop.GeoClue2.conf \
+		   org.freedesktop.GeoClue2.Agent.conf
 
 DISTCLEANFILES = $(service_DATA)
-EXTRA_DIST = $(service_in_files)
+EXTRA_DIST = $(service_in_files) \
+	     org.freedesktop.GeoClue2.Agent.conf

@@ -131,6 +131,7 @@ AC_CONFIG_FILES([
   Makefile
   src/Makefile
   src/geoclue-2.0.pc
+  src/agent/Makefile
   src/geoip-server/Makefile
   po/Makefile.in
   data/org.freedesktop.GeoClue2.conf

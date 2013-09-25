@@ -2,10 +2,10 @@ include $(top_srcdir)/Makefile.decl
 
 libexec_PROGRAMS = geoclue
 
+SUBDIRS = agent
+
 if BUILD_GEOIP_SERVER
-SUBDIRS = geoip-server
-else
-SUBDIRS =
+SUBDIRS += geoip-server
 endif # BUILD_GEOIP_SERVER
 
 interfacedir = $(datadir)/geoclue-2.0

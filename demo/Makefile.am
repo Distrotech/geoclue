@@ -1,4 +1,4 @@
-noinst_PROGRAMS = where-am-i agent
+noinst_PROGRAMS = where-am-i
 
 where_am_i_SOURCES = where-am-i.c
 where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
@@ -7,6 +7,8 @@ where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
 where_am_i_LDADD = $(GEOCLUE_LIBS)
 
 if BUILD_DEMO_AGENT
+
+noinst_PROGRAMS += agent
 
 interface_data = $(top_builddir)/src/agent/geoclue-agent-interface.xml
 dbus_built_sources = geoclue-agent-interface.c geoclue-agent-interface.h

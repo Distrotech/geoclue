@@ -21,6 +21,7 @@
  */
 
 #include <glib/gi18n.h>
+#include <config.h>
 
 #include "gclue-service-manager.h"
 #include "gclue-service-client.h"
@@ -99,7 +100,7 @@ on_client_info_new_ready (GObject      *source_object,
         user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
                                            GINT_TO_POINTER (user_id));
-        if (agent_proxy == NULL) {
+        if (REQUIRE_AUTH && agent_proxy == NULL) {
                 g_dbus_method_invocation_return_error
                         (data->invocation,
                          G_DBUS_ERROR,

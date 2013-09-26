@@ -120,6 +120,18 @@ AM_CONDITIONAL([BUILD_DEMO_AGENT], [test "x$enable_demo_agent" = "xyes"])
 
 GNOME_COMPILE_WARNINGS([maximum])
 
+dnl Require agent?
+AC_ARG_ENABLE(require-auth,
+	      AS_HELP_STRING([--enable-require-auth=yes|no],
+                             [Require apps to be authorized by agent (default=no)]),
+              [require_auth=$enableval],
+              [require_auth=no])
+if test "x$require_auth" = "xyes"; then
+    AC_DEFINE([REQUIRE_AUTH], [1], [Require apps to be authorized by agent?])
+else
+    AC_DEFINE([REQUIRE_AUTH], [0], [Require apps to be authorized by agent?])
+fi
+
 dnl Debugging
 AC_ARG_ENABLE(debug,
 	AS_HELP_STRING([--enable-debug],[enable debugging]),,

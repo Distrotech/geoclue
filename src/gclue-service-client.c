@@ -291,6 +291,22 @@ gclue_service_client_handle_start (GClueClient           *client,
         data->client = g_object_ref (client);
         data->invocation =  g_object_ref (invocation);
 
+        if (priv->agent_proxy == NULL) {
+                /* No agent == No authorization needed */
+                priv->location_change_id = g_signal_connect
+                        (priv->locator,
+                         "notify::location",
+                         G_CALLBACK (on_locator_location_changed),
+                         data->client);
+
+                gclue_locator_start (priv->locator,
+                                     NULL,
+                                     on_start_ready,
+                                     data);
+
+                return TRUE;
+        }
+
         bus_name = gclue_client_info_get_bus_name (priv->client_info);
         title = gclue_client_get_title (client);
         if (title == NULL)

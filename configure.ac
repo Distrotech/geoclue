@@ -167,6 +167,16 @@ else
 	ifelse([$1],,[:],[$1])
 fi
 
+# systemd
+AC_ARG_WITH([systemdsystemunitdir],
+            AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
+            [],
+            [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+if test "x$with_systemdsystemunitdir" != "xno"; then
+  AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
+fi
+AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$systemdsystemunitdir"])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
@@ -191,4 +201,5 @@ AC_MSG_NOTICE([
 
         prefix:                   ${prefix}
         c compiler:               ${CC} ${CFLAGS}
+        systemdsystemunitdir:     ${systemdsystemunitdir}
 ])

@@ -11,8 +11,20 @@ dbusservicedir = $(DBUS_SYS_DIR)
 dbusservice_DATA = org.freedesktop.GeoClue2.conf \
 		   org.freedesktop.GeoClue2.Agent.conf
 
+systemdservice_in_files = geoclue.service.in
+
+if HAVE_SYSTEMD
+systemdservicedir       = $(systemdsystemunitdir)
+systemdservice_DATA     = $(systemdservice_in_files:.service.in=.service)
+
+$(systemdservice_DATA): $(systemdservice_in_files) Makefile
+	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< | \
+	sed -e "s|\@dbus_srv_user\@|$(dbus_srv_user)|" > $@
+endif
+
 DISTCLEANFILES = $(service_DATA)
 EXTRA_DIST = $(service_in_files) \
+             $(systemdservice_in_files) \
              $(dbusservice_DATA)
 
 -include $(top_srcdir)/git.mk

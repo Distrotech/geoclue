@@ -31,7 +31,7 @@
 #include "geoip-server/geoip-server.h"
 #include "geocode-location.h"
 
-#define GEOIP_SERVER "http://geoip.fedoraproject.org/city"
+#define GEOIP_SERVER "https://geoip.fedoraproject.org/city"
 
 /**
  * SECTION:gclue-ipclient

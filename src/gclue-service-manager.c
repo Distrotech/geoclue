@@ -27,6 +27,8 @@
 #include "gclue-service-client.h"
 #include "gclue-client-info.h"
 
+#define AGENT_WAIT_TIMEOUT 1 /* seconds */
+
 /* A whitelist of agent commandlines */
 static char *whitelisted_agents[] = { ABS_TOP_SRCDIR "/demo/agent" };
 
@@ -77,25 +79,19 @@ typedef struct
 {
         GClueManager *manager;
         GDBusMethodInvocation *invocation;
+        GClueClientInfo *client_info;
 } OnClientInfoNewReadyData;
 
-static void
-on_client_info_new_ready (GObject      *source_object,
-                          GAsyncResult *res,
-                          gpointer      user_data)
+static gboolean
+complete_get_client (OnClientInfoNewReadyData *data)
 {
-        OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueServiceClient *client;
-        GClueClientInfo *info = NULL;
+        GClueClientInfo *info = data->client_info;
         GDBusProxy *agent_proxy = NULL;
         GError *error = NULL;
         char *path;
         guint32 user_id;
-
-        info = gclue_client_info_new_finish (res, &error);
-        if (info == NULL)
-                goto error_out;
 
         user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
@@ -131,9 +127,7 @@ on_client_info_new_ready (GObject      *source_object,
                           G_CALLBACK (on_peer_vanished),
                           data->manager);
 
-        gclue_manager_complete_get_client (data->manager,
-                                           data->invocation,
-                                           path);
+        gclue_manager_complete_get_client (data->manager, data->invocation, path);
         goto out;
 
 error_out:
@@ -145,6 +139,51 @@ out:
         g_clear_error (&error);
         g_clear_object (&info);
         g_slice_free (OnClientInfoNewReadyData, data);
+
+        return FALSE;
+}
+
+static void
+on_client_info_new_ready (GObject      *source_object,
+                          GAsyncResult *res,
+                          gpointer      user_data)
+{
+        OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
+        GClueClientInfo *info = NULL;
+        GDBusProxy *agent_proxy = NULL;
+        GError *error = NULL;
+        guint32 user_id;
+
+        info = gclue_client_info_new_finish (res, &error);
+        if (info == NULL) {
+                g_dbus_method_invocation_return_error (data->invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_FAILED,
+                                                       "%s", error->message);
+                g_error_free (error);
+                g_slice_free (OnClientInfoNewReadyData, data);
+
+                return;
+        }
+
+        data->client_info = info;
+
+        user_id = gclue_client_info_get_user_id (info);
+        agent_proxy = g_hash_table_lookup (priv->agents,
+                                           GINT_TO_POINTER (user_id));
+        if (REQUIRE_AUTH && agent_proxy == NULL) {
+                /* Its possible that geoclue was just launched on GetClient
+                 * call, in which case agents need some time to register
+                 * themselves to us.
+                 */
+                g_timeout_add_seconds (AGENT_WAIT_TIMEOUT,
+                                       (GSourceFunc) complete_get_client,
+                                       user_data);
+                return;
+        }
+
+        complete_get_client (data);
 }
 
 static gboolean

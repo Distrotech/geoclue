@@ -1,3 +1,5 @@
+sysconf_DATA = geoclue.conf
+
 servicedir       = $(datadir)/dbus-1/system-services
 service_in_files = org.freedesktop.GeoClue2.service.in
 service_DATA     = $(service_in_files:.service.in=.service)

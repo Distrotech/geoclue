@@ -26,12 +26,9 @@
 #include "gclue-service-manager.h"
 #include "gclue-service-client.h"
 #include "gclue-client-info.h"
+#include "gclue-config.h"
 
 #define AGENT_WAIT_TIMEOUT 1 /* seconds */
-
-/* A whitelist of agent commandlines */
-static char *whitelisted_agents[] = { ABS_TOP_SRCDIR "/demo/agent",
-                                      "/usr/bin/gnome-shell" };
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
@@ -294,8 +291,11 @@ on_agent_info_new_ready (GObject      *source_object,
         AddAgentData *data = (AddAgentData *) user_data;
         GError *error = NULL;
         char *path;
+        GClueConfig *config;
+        char **whitelisted_agents;
+        gsize num_agents;
         gboolean allowed = FALSE;
-        guint8 i;
+        gsize i;
 
         data->info = gclue_client_info_new_finish (res, &error);
         if (data->info == NULL) {
@@ -309,7 +309,9 @@ on_agent_info_new_ready (GObject      *source_object,
                 return;
         }
 
-        for (i = 0; i < G_N_ELEMENTS (whitelisted_agents); i++) {
+        config = gclue_config_get_singleton ();
+        whitelisted_agents = gclue_config_get_agents (config, &num_agents);
+        for (i = 0; i < num_agents; i++) {
                 const char *cmd = gclue_client_info_get_cmdline (data->info);
 
                 if (g_str_has_prefix (cmd, whitelisted_agents[i])) {
@@ -318,6 +320,7 @@ on_agent_info_new_ready (GObject      *source_object,
                         break;
                 }
         }
+        g_strfreev (whitelisted_agents);
         if (!allowed) {
                 g_dbus_method_invocation_return_error (data->invocation,
                                                        G_DBUS_ERROR,

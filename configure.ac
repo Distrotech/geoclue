@@ -185,6 +185,7 @@ AC_CONFIG_FILES([
   src/geoip-server/Makefile
   po/Makefile.in
   data/org.freedesktop.GeoClue2.conf
+  data/geoclue.conf
   data/Makefile
   demo/Makefile
   docs/Makefile

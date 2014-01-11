@@ -30,6 +30,8 @@ geoclue_SOURCES =	 	 \
 	gclue-main.c	 	 \
 	gclue-client-info.h 	 \
 	gclue-client-info.c 	 \
+	gclue-config.h 	 	 \
+	gclue-config.c 	 	 \
 	gclue-error.h 	 	 \
 	gclue-error.c 	 	 \
 	gclue-ipclient.h 	 \
@@ -50,7 +52,8 @@ geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 		 $(WARN_CFLAGS)			     	  \
 		 -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
 		 -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
-		 -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\"
+		 -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" \
+    		 -DSYSCONFDIR=\""$(sysconfdir)"\"
 geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)

@@ -311,7 +311,7 @@ on_agent_info_new_ready (GObject      *source_object,
         for (i = 0; i < G_N_ELEMENTS (whitelisted_agents); i++) {
                 const char *cmd = gclue_client_info_get_cmdline (data->info);
 
-                if (g_strcmp0 (whitelisted_agents[i], cmd) == 0) {
+                if (g_str_has_prefix (cmd, whitelisted_agents[i])) {
                         allowed = TRUE;
 
                         break;

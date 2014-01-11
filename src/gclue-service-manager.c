@@ -30,7 +30,8 @@
 #define AGENT_WAIT_TIMEOUT 1 /* seconds */
 
 /* A whitelist of agent commandlines */
-static char *whitelisted_agents[] = { ABS_TOP_SRCDIR "/demo/agent" };
+static char *whitelisted_agents[] = { ABS_TOP_SRCDIR "/demo/agent",
+                                      "/usr/bin/gnome-shell" };
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);

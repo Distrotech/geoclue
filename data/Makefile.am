@@ -1,9 +1,13 @@
 sysconf_in_files = geoclue.conf.in
 sysconf_DATA = $(sysconf_in_files:.conf.in=.conf)
 
-# abs_top_srcdir does not resolve symlinks so we need this
+if BUILD_DEMO_AGENT
 $(sysconf_DATA): $(sysconf_in_files) Makefile
-	@sed -e "s|\@abs_top_srcdir\@|`$(REALPATH) $(abs_top_srcdir)`|" $< > $@
+	@sed -e "s|\@demo_agent\@|`$(REALPATH) $(abs_top_srcdir)`/demo/agent;|" $< > $@
+else
+$(sysconf_DATA): $(sysconf_in_files) Makefile
+	@sed -e "s|\@demo_agent\@||" $< > $@
+endif
 
 servicedir       = $(datadir)/dbus-1/system-services
 service_in_files = org.freedesktop.GeoClue2.service.in

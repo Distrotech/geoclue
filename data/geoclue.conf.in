@@ -3,5 +3,5 @@
 # Agent configuration options
 [agent]
 
-# Whitelist of binary paths of all agents we recognise.
-whitelist=@abs_top_srcdir@/demo/agent;/usr/bin/gnome-shell
+# Whitelist of binary paths of all agents we recognise, separated by a ';'
+whitelist=@demo_agent@/usr/bin/gnome-shell

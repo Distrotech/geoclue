@@ -177,6 +177,8 @@ if test "x$with_systemdsystemunitdir" != "xno"; then
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$systemdsystemunitdir"])
 
+AC_PATH_PROG([REALPATH],[realpath])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
@@ -185,7 +187,6 @@ AC_CONFIG_FILES([
   src/geoip-server/Makefile
   po/Makefile.in
   data/org.freedesktop.GeoClue2.conf
-  data/geoclue.conf
   data/Makefile
   demo/Makefile
   docs/Makefile

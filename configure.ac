@@ -179,6 +179,8 @@ AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$systemdsystemunitdir"])
 
 AC_PATH_PROG([REALPATH],[realpath])
 
+AC_PATH_PROG([SETCAP],[setcap])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile

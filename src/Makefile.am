@@ -2,6 +2,9 @@ include $(top_srcdir)/Makefile.decl
 
 libexec_PROGRAMS = geoclue
 
+install-exec-hook:
+	$(SETCAP) cap_sys_ptrace+ep $(DESTDIR)$(libexecdir)/geoclue
+
 SUBDIRS = agent
 
 if BUILD_GEOIP_SERVER

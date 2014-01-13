@@ -42,8 +42,7 @@ struct _GClueClientInfoPrivate
         GDBusProxy *dbus_proxy;
         guint watch_id;
 
-        char cmdline[MAX_CMDLINE_LEN];
-        gsize cmdline_len;
+        gchar *bin_path;
         guint32 user_id;
 };
 
@@ -75,6 +74,7 @@ gclue_client_info_finalize (GObject *object)
         }
 
         g_clear_pointer (&priv->bus_name, g_free);
+        g_clear_pointer (&priv->bin_path, g_free);
         g_clear_object (&priv->connection);
 
         /* Chain up to the parent class */
@@ -220,43 +220,27 @@ on_get_user_id_ready (GObject      *source_object,
 }
 
 static void
-on_proc_stream_read_ready (GObject      *source_object,
-                           GAsyncResult *res,
-                           gpointer      user_data)
+on_proc_info_ready (GObject      *source_object,
+                    GAsyncResult *res,
+                    gpointer      user_data)
 {
-        GInputStream *proc_stream = G_INPUT_STREAM (source_object);
+        GFile *proc_file = G_FILE (source_object);
+        GFileInfo *proc_info;
         GTask *task = G_TASK (user_data);
         gpointer *info = g_task_get_source_object (task);
         GClueClientInfoPrivate *priv = GCLUE_CLIENT_INFO (info)->priv;
         GError *error = NULL;
-        gsize bytes_read, i;
 
-        bytes_read = g_input_stream_read_finish (proc_stream, res, &error);
-        if (bytes_read < 0) {
+        proc_info = g_file_query_info_finish (proc_file, res, &error);
+        g_object_unref (proc_file);
+        if (proc_info == NULL) {
                 g_task_return_error (task, error);
                 g_object_unref (task);
 
                 return;
         }
 
-        priv->cmdline_len += bytes_read;
-        if (bytes_read != 0 && priv->cmdline_len < MAX_CMDLINE_LEN) {
-                /* Keep reading */
-                g_input_stream_read_async (proc_stream,
-                                           priv->cmdline + priv->cmdline_len,
-                                           MAX_CMDLINE_LEN - priv->cmdline_len,
-                                           G_PRIORITY_DEFAULT,
-                                           g_task_get_cancellable (task),
-                                           on_proc_stream_read_ready,
-                                           task);
-                return;
-        }
-
-        priv->cmdline[priv->cmdline_len] = '\0';
-        for (i = 0; i < priv->cmdline_len - 1; i++) {
-                if (priv->cmdline[i] == '\0')
-                        priv->cmdline[i] = ' ';
-        }
+        priv->bin_path = g_strdup (g_file_info_get_symlink_target (proc_info));
 
         g_dbus_proxy_call (priv->dbus_proxy,
                            "GetConnectionUnixUser",
@@ -267,7 +251,7 @@ on_proc_stream_read_ready (GObject      *source_object,
                            on_get_user_id_ready,
                            task);
 
-        g_object_unref (proc_stream);
+        g_object_unref (proc_info);
 }
 
 static void
@@ -276,14 +260,11 @@ on_get_process_id_ready (GObject      *source_object,
                          gpointer      user_data)
 {
         GTask *task = G_TASK (user_data);
-        gpointer *info = g_task_get_source_object (task);
-        GClueClientInfoPrivate *priv = GCLUE_CLIENT_INFO (info)->priv;
         GError *error = NULL;
         GVariant *results = NULL;
         guint32 process_id;
         char *proc_path;
         GFile *proc_file;
-        GFileInputStream *proc_stream;
 
         results = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
                                             res,
@@ -295,21 +276,16 @@ on_get_process_id_ready (GObject      *source_object,
         g_variant_get_child (results, 0, "u", &process_id);
         g_variant_unref (results);
 
-        proc_path = g_strdup_printf ("/proc/%u/cmdline", process_id);
+        proc_path = g_strdup_printf ("/proc/%u/exe", process_id);
         proc_file = g_file_new_for_path (proc_path);
         g_free (proc_path);
-        proc_stream = g_file_read (proc_file, NULL, &error);
-        g_object_unref (proc_file);
-        if (proc_stream == NULL)
-                goto error_out;
-
-        g_input_stream_read_async (G_INPUT_STREAM (proc_stream),
-                                   priv->cmdline,
-                                   MAX_CMDLINE_LEN,
-                                   G_PRIORITY_DEFAULT,
-                                   g_task_get_cancellable (task),
-                                   on_proc_stream_read_ready,
-                                   task);
+        g_file_query_info_async (proc_file,
+                                 G_FILE_ATTRIBUTE_STANDARD_SYMLINK_TARGET,
+                                 G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                 G_PRIORITY_DEFAULT,
+                                 g_task_get_cancellable (task),
+                                 on_proc_info_ready,
+                                 task);
         return;
 
 error_out:
@@ -432,12 +408,12 @@ gclue_client_info_get_bus_name (GClueClientInfo *info)
         return info->priv->bus_name;
 }
 
-const gchar *
-gclue_client_info_get_cmdline (GClueClientInfo *info)
+const char *
+gclue_client_info_get_bin_path (GClueClientInfo *info)
 {
         g_return_val_if_fail (GCLUE_IS_CLIENT_INFO(info), NULL);
 
-        return info->priv->cmdline;
+        return info->priv->bin_path;
 }
 
 guint32

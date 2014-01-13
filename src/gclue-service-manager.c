@@ -312,9 +312,9 @@ on_agent_info_new_ready (GObject      *source_object,
         config = gclue_config_get_singleton ();
         whitelisted_agents = gclue_config_get_agents (config, &num_agents);
         for (i = 0; i < num_agents; i++) {
-                const char *cmd = gclue_client_info_get_cmdline (data->info);
+                const char *path = gclue_client_info_get_bin_path (data->info);
 
-                if (g_str_has_prefix (cmd, whitelisted_agents[i])) {
+                if (g_strcmp0 (path, whitelisted_agents[i]) == 0) {
                         allowed = TRUE;
 
                         break;

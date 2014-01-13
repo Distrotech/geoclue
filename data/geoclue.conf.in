@@ -3,7 +3,5 @@
 # Agent configuration options
 [agent]
 
-# Whitelist of all agents we recognise, as their commandlines. The commandlines
-# do not need to be complete and geoclue only checks if the actual commandline
-# has the specified prefix.
+# Whitelist of binary paths of all agents we recognise.
 whitelist=@abs_top_srcdir@/demo/agent;/usr/bin/gnome-shell

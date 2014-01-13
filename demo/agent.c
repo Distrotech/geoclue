@@ -115,12 +115,6 @@ main (int argc, char **argv)
                 exit (0);
         }
 
-        if (g_strcmp0 (ABS_PATH, argv[0]) != 0) {
-                g_print ("Must be run with absolute path to binary: %s\n",
-                         ABS_PATH);
-                exit (-4);
-        }
-
         g_bus_get (G_BUS_TYPE_SYSTEM,
                    NULL,
                    on_get_bus_ready,

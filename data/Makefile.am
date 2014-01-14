@@ -36,6 +36,7 @@ endif
 DISTCLEANFILES = $(service_DATA)
 EXTRA_DIST = $(service_in_files) \
              $(systemdservice_in_files) \
-             $(dbusservice_DATA)
+             $(dbusservice_DATA) \
+	     $(sysconf_in_files)
 
 -include $(top_srcdir)/git.mk

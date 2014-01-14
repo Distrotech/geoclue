@@ -230,7 +230,7 @@ typedef struct
         GDBusMethodInvocation *invocation;
         NotifyNotification *notification;
         char *bus_name;
-        char *title;
+        char *desktop_id;
         gboolean authorized;
 } NotificationData;
 
@@ -238,7 +238,7 @@ static void
 notification_data_free (NotificationData *data)
 {
         g_free (data->bus_name);
-        g_free (data->title);
+        g_free (data->desktop_id);
         g_object_unref (data->notification);
         g_slice_free (NotificationData, data);
 }
@@ -269,9 +269,9 @@ on_notify_closed (NotifyNotification *notification,
         NotificationData *data = (NotificationData *) user_data;
 
         if (data->authorized)
-                g_debug ("Authorized %s (%s)", data->title, data->bus_name);
+                g_debug ("Authorized %s (%s)", data->desktop_id, data->bus_name);
         else
-                g_debug ("%s (%s) not authorized", data->title, data->bus_name);
+                g_debug ("%s (%s) not authorized", data->desktop_id, data->bus_name);
         gclue_agent_complete_authorize_app (data->agent,
                                             data->invocation,
                                             data->authorized);
@@ -282,7 +282,7 @@ static gboolean
 gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
                                           GDBusMethodInvocation *invocation,
                                           const char            *bus_name,
-                                          const char            *title)
+                                          const char            *desktop_id)
 {
         NotifyNotification *notification;
         NotificationData *data;
@@ -290,7 +290,7 @@ gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
         char *msg;
 
         msg = g_strdup_printf (_("Allow %s to access your location information?"),
-                               title);
+                               desktop_id);
         notification = notify_notification_new (_("Geolocation"), msg, "dialog-question");
         g_free (msg);
 
@@ -298,7 +298,7 @@ gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
         data->invocation = invocation;
         data->notification = notification;
         data->bus_name = g_strdup (bus_name);
-        data->title = g_strdup (title);
+        data->desktop_id = g_strdup (desktop_id);
 
         notify_notification_add_action (notification,
                                         ACTION_YES,

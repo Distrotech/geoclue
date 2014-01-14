@@ -281,11 +281,20 @@ gclue_service_client_handle_start (GClueClient           *client,
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         StartData *data;
         const char *bus_name;
-        const char *title;
+        const char *desktop_id;
 
         if (priv->location_change_id)
                 /* Already started */
                 return TRUE;
+
+        desktop_id = gclue_client_get_desktop_id (client);
+        if (desktop_id == NULL) {
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "'DesktopId' property must be set");
+                return TRUE;
+        }
 
         data = g_slice_new (StartData);
         data->client = g_object_ref (client);
@@ -308,12 +317,9 @@ gclue_service_client_handle_start (GClueClient           *client,
         }
 
         bus_name = gclue_client_info_get_bus_name (priv->client_info);
-        title = gclue_client_get_title (client);
-        if (title == NULL)
-                title = bus_name;
         g_dbus_proxy_call (priv->agent_proxy,
                            "AuthorizeApp",
-                           g_variant_new ("(ss)", bus_name, title),
+                           g_variant_new ("(ss)", bus_name, desktop_id),
                            G_DBUS_CALL_FLAGS_NONE,
                            -1,
                            NULL,

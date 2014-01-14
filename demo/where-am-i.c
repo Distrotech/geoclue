@@ -147,9 +147,9 @@ on_client_proxy_ready (GObject      *source_object,
 }
 
 static void
-on_set_title_ready (GObject      *source_object,
-                    GAsyncResult *res,
-                    gpointer      user_data)
+on_set_desktop_id_ready (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
 {
         GDBusProxy *client_props = G_DBUS_PROXY (source_object);
         GVariant *results;
@@ -180,7 +180,7 @@ on_client_props_proxy_ready (GObject      *source_object,
                              gpointer      user_data)
 {
         GDBusProxy *client_props;
-        GVariant *title;
+        GVariant *desktop_id;
         GError *error = NULL;
 
         client_props = g_dbus_proxy_new_for_bus_finish (res, &error);
@@ -190,18 +190,19 @@ on_client_props_proxy_ready (GObject      *source_object,
             exit (-3);
         }
 
-        title = g_variant_new ("s", "Geoclue Demo App");
+        /* FIXME: We should provide a desktop file? */
+        desktop_id = g_variant_new ("s", "geoclue-demo-app");
 
         g_dbus_proxy_call (client_props,
                            "Set",
                            g_variant_new ("(ssv)",
                                           "org.freedesktop.GeoClue2.Client",
-                                          "Title",
-                                          title),
+                                          "DesktopId",
+                                          desktop_id),
                            G_DBUS_CALL_FLAGS_NONE,
                            -1,
                            NULL,
-                           on_set_title_ready,
+                           on_set_desktop_id_ready,
                            user_data);
 }
 

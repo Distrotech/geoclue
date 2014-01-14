@@ -68,12 +68,12 @@
     <property name="DistanceThreshold" type="u" access="readwrite"/>
 
     <!--
-        Title:
+        DesktopId:
 
-        Localized human-readable title for the client that is presented to the user
-        for authorizing the app for location access.
+        The desktop file id (the basename of the desktop file). This property
+        must be set by applications for authorization to work.
     -->
-    <property name="Title" type="s" access="readwrite"/>
+    <property name="DesktopId" type="s" access="readwrite"/>
 
     <!--
         Start:

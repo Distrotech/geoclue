@@ -7,8 +7,8 @@ where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
 where_am_i_LDADD = $(GEOCLUE_LIBS)
 
 if BUILD_DEMO_AGENT
-
 noinst_PROGRAMS += agent
+endif # BUILD_DEMO_AGENT
 
 interface_data = $(top_builddir)/src/agent/geoclue-agent-interface.xml
 dbus_built_sources = geoclue-agent-interface.c geoclue-agent-interface.h
@@ -33,7 +33,5 @@ agent_CFLAGS = $(DEMO_AGENT_CFLAGS)   		   \
  	       -DLOCALEDIR="\"$(datadir)/locale\"" \
 	       -DABS_SRCDIR=\""$(abs_srcdir)"\"
 agent_LDADD = $(DEMO_AGENT_LIBS)
-
-endif # BUILD_DEMO_AGENT
 
 -include $(top_srcdir)/git.mk

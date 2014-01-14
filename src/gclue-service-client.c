@@ -280,7 +280,6 @@ gclue_service_client_handle_start (GClueClient           *client,
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         StartData *data;
-        const char *bus_name;
         const char *desktop_id;
 
         if (priv->location_change_id)
@@ -316,10 +315,9 @@ gclue_service_client_handle_start (GClueClient           *client,
                 return TRUE;
         }
 
-        bus_name = gclue_client_info_get_bus_name (priv->client_info);
         g_dbus_proxy_call (priv->agent_proxy,
                            "AuthorizeApp",
-                           g_variant_new ("(ss)", bus_name, desktop_id),
+                           g_variant_new ("(s)", desktop_id),
                            G_DBUS_CALL_FLAGS_NONE,
                            -1,
                            NULL,

@@ -3,7 +3,6 @@
 <node>
   <interface name="org.freedesktop.GeoClue2.Agent">
     <method name="AuthorizeApp">
-      <arg name="bus_name" type="s" direction="in"/>
       <arg name="desktop_id" type="s" direction="in"/>
       <arg name="authorized" type="b" direction="out"/>
     </method>

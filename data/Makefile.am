@@ -33,7 +33,9 @@ $(systemdservice_DATA): $(systemdservice_in_files) Makefile
 	sed -e "s|\@dbus_srv_user\@|$(dbus_srv_user)|" > $@
 endif
 
-DISTCLEANFILES = $(service_DATA)
+DISTCLEANFILES = $(service_DATA) \
+                 $(sysconf_DATA) \
+                 $(systemdservice_DATA)
 EXTRA_DIST = $(service_in_files) \
              $(systemdservice_in_files) \
              $(dbusservice_DATA) \

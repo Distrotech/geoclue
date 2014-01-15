@@ -190,8 +190,7 @@ on_client_props_proxy_ready (GObject      *source_object,
             exit (-3);
         }
 
-        /* FIXME: We should provide a desktop file? */
-        desktop_id = g_variant_new ("s", "geoclue-demo-app");
+        desktop_id = g_variant_new ("s", "geoclue-where-am-i");
 
         g_dbus_proxy_call (client_props,
                            "Set",
@@ -272,7 +271,6 @@ main (gint argc, gchar *argv[])
         textdomain (GETTEXT_PACKAGE);
         bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-        g_set_application_name (_("Where Am I"));
 
         g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                   G_DBUS_PROXY_FLAGS_NONE,

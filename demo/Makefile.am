@@ -8,6 +8,14 @@ where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
 		    -DLOCALEDIR="\"$(datadir)/locale\""
 where_am_i_LDADD = $(GEOCLUE_LIBS)
 
+appsdir = $(datadir)/applications
+apps_DATA = geoclue-where-am-i.desktop
+
+@INTLTOOL_DESKTOP_RULE@
+
+geoclue-where-am-i.desktop.in: geoclue-where-am-i.desktop.in.in
+	$(AM_V_GEN) sed -e "s|[@]datadir@|$(datadir)|g" $< > $@
+
 if BUILD_DEMO_AGENT
 demo_PROGRAMS += agent
 endif # BUILD_DEMO_AGENT
@@ -37,3 +45,12 @@ agent_CFLAGS = $(DEMO_AGENT_CFLAGS)   		   \
 agent_LDADD = $(DEMO_AGENT_LIBS)
 
 -include $(top_srcdir)/git.mk
+
+EXTRA_DIST = \
+        geoclue-where-am-i.desktop.in.in \
+        $(NULL)
+
+CLEANFILES = \
+        geoclue-where-am-i.desktop.in \
+        $(NULL)
+

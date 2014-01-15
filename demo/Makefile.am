@@ -1,4 +1,6 @@
-noinst_PROGRAMS = where-am-i
+demodir = $(datadir)/geoclue-2.0/demos
+
+demo_PROGRAMS = where-am-i
 
 where_am_i_SOURCES = where-am-i.c
 where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
@@ -7,7 +9,7 @@ where_am_i_CFLAGS = $(GEOCLUE_CFLAGS)   		\
 where_am_i_LDADD = $(GEOCLUE_LIBS)
 
 if BUILD_DEMO_AGENT
-noinst_PROGRAMS += agent
+demo_PROGRAMS += agent
 endif # BUILD_DEMO_AGENT
 
 interface_data = $(top_builddir)/src/agent/geoclue-agent-interface.xml

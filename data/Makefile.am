@@ -3,7 +3,9 @@ sysconf_DATA = $(sysconf_in_files:.conf.in=.conf)
 
 if BUILD_DEMO_AGENT
 $(sysconf_DATA): $(sysconf_in_files) Makefile
-	@sed -e "s|\@demo_agent\@|`$(REALPATH) $(abs_top_srcdir)`/demo/agent;|" $< > $@
+	@sed -e \
+	"s|\@demo_agent\@|`$(REALPATH) $(datadir)`/geoclue-2.0/demos/agent;|" \
+	$< > $@
 else
 $(sysconf_DATA): $(sysconf_in_files) Makefile
 	@sed -e "s|\@demo_agent\@||" $< > $@

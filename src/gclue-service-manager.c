@@ -292,10 +292,6 @@ on_agent_info_new_ready (GObject      *source_object,
         GError *error = NULL;
         char *path;
         GClueConfig *config;
-        char **whitelisted_agents;
-        gsize num_agents;
-        gboolean allowed = FALSE;
-        gsize i;
 
         data->info = gclue_client_info_new_finish (res, &error);
         if (data->info == NULL) {
@@ -310,18 +306,7 @@ on_agent_info_new_ready (GObject      *source_object,
         }
 
         config = gclue_config_get_singleton ();
-        whitelisted_agents = gclue_config_get_agents (config, &num_agents);
-        for (i = 0; i < num_agents; i++) {
-                const char *path = gclue_client_info_get_bin_path (data->info);
-
-                if (g_strcmp0 (path, whitelisted_agents[i]) == 0) {
-                        allowed = TRUE;
-
-                        break;
-                }
-        }
-        g_strfreev (whitelisted_agents);
-        if (!allowed) {
+        if (!gclue_config_is_agent_allowed (config, data->info)) {
                 g_dbus_method_invocation_return_error (data->invocation,
                                                        G_DBUS_ERROR,
                                                        G_DBUS_ERROR_ACCESS_DENIED,

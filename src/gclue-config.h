@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 #include "geocode-location.h"
+#include "gclue-client-info.h"
 
 G_BEGIN_DECLS
 
@@ -55,9 +56,9 @@ struct _GClueConfigClass
 
 GType gclue_config_get_type (void) G_GNUC_CONST;
 
-GClueConfig *       gclue_config_get_singleton (void);
-gchar **            gclue_config_get_agents    (GClueConfig *config,
-                                                gsize       *num_agents);
+GClueConfig *       gclue_config_get_singleton    (void);
+gboolean            gclue_config_is_agent_allowed (GClueConfig     *config,
+                                                   GClueClientInfo *agent_info);
 
 G_END_DECLS
 

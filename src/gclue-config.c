@@ -88,23 +88,38 @@ gclue_config_get_singleton (void)
         return config;
 }
 
-gchar **
-gclue_config_get_agents (GClueConfig *config,
-                         gsize       *num_agents)
+gboolean
+gclue_config_is_agent_allowed (GClueConfig     *config,
+                               GClueClientInfo *agent_info)
 {
         GClueConfigPrivate *priv = config->priv;
-        gchar **ret;
+        const char *agent_path;
+        char **agents;
+        gsize num_agents, i;
+        gboolean allowed = FALSE;
         GError *error = NULL;
 
-        ret = g_key_file_get_string_list (priv->key_file,
-                                          "agent",
-                                          "whitelist",
-                                          num_agents,
-                                          &error);
+        agents = g_key_file_get_string_list (priv->key_file,
+                                             "agent",
+                                             "whitelist",
+                                             &num_agents,
+                                             &error);
         if (error != NULL) {
                 g_critical ("Failed to read 'agent/whitelist' key: %s", error->message);
                 g_error_free (error);
+
+                return FALSE;
         }
 
-        return ret;
+        agent_path = gclue_client_info_get_bin_path (agent_info);
+        for (i = 0; i < num_agents; i++) {
+                if (g_strcmp0 (agent_path, agents[i]) == 0) {
+                        allowed = TRUE;
+
+                        break;
+                }
+        }
+        g_strfreev (agents);
+
+        return allowed;
 }

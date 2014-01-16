@@ -7,3 +7,35 @@
 # For security reasons, its best to only allow agents that are installed
 # in privileged locations, e.g /usr/bin, /usr/sbin, /usr/libexec etc.
 whitelist=@demo_agent@/usr/bin/gnome-shell
+
+# Application configuration options
+#
+# Format:
+#
+# # Desktop ID of application without .desktop part
+# [random-app]
+#
+# # Allowed access to location information?
+# allowed=true|false
+#
+# # List of UIDs of all users for which this application is allowed location
+# # info access, separate by ';'. Keep it empty for allowing it for all users.
+# users=
+#
+# Path of binary
+# path=/usr/bin/random-app
+
+[gnome-settings-daemon]
+allowed=true
+users=
+path=/usr/libexec/gnome-settings-daemon
+
+[epiphany]
+allowed=true
+users=
+path=/usr/bin/epiphany
+
+[firefox]
+allowed=true
+users=
+path=/usr/bin/firefox

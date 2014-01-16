@@ -26,6 +26,7 @@
 #include "gclue-service-location.h"
 #include "gclue-locator.h"
 #include "gclue-enum-types.h"
+#include "gclue-config.h"
 
 #define DEFAULT_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_CITY
 
@@ -287,6 +288,7 @@ gclue_service_client_handle_start (GClueClient           *client,
                                    GDBusMethodInvocation *invocation)
 {
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
+        GClueConfig *config;
         StartData *data;
         const char *desktop_id;
         GClueAccuracyLevel accuracy_level;
@@ -308,8 +310,13 @@ gclue_service_client_handle_start (GClueClient           *client,
         data->client = g_object_ref (client);
         data->invocation =  g_object_ref (invocation);
 
-        if (priv->agent_proxy == NULL) {
-                /* No agent == No authorization needed */
+        config = gclue_config_get_singleton ();
+
+        /* No agent == No authorization needed */
+        if (priv->agent_proxy == NULL ||
+            gclue_config_is_app_allowed (config,
+                                         desktop_id,
+                                         priv->client_info)) {
                 priv->location_change_id = g_signal_connect
                         (priv->locator,
                          "notify::location",

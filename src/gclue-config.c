@@ -125,3 +125,76 @@ gclue_config_is_agent_allowed (GClueConfig     *config,
 
         return allowed;
 }
+
+gboolean
+gclue_config_is_app_allowed (GClueConfig     *config,
+                             const char      *desktop_id,
+                             GClueClientInfo *app_info)
+{
+        GClueConfigPrivate *priv = config->priv;
+        char *expected_app_path = NULL;
+        const char *app_path;
+        int* users = NULL;
+        guint64 uid;
+        gsize num_users, i;
+        gboolean allowed = FALSE;
+        GError *error = NULL;
+
+        g_return_val_if_fail (desktop_id != NULL, FALSE);
+
+        allowed = g_key_file_get_boolean (priv->key_file,
+                                          desktop_id,
+                                          "allowed",
+                                          &error);
+        if (error != NULL || !allowed) {
+                g_debug ("'%s' not in configuration or not allowed", desktop_id);
+                goto out;
+        }
+
+        expected_app_path = g_key_file_get_string (priv->key_file,
+                                                   desktop_id,
+                                                   "path",
+                                                   &error);
+        if (error != NULL || expected_app_path == NULL) {
+                g_warning ("Path not correctly setup for %s in configuration",
+                           desktop_id);
+                goto out;
+        }
+
+        app_path = gclue_client_info_get_bin_path (app_info);
+        if (g_strcmp0 (app_path, expected_app_path) != 0) {
+                g_debug ("Client %s has path '%s' while it should be '%s'",
+                         desktop_id, app_path, expected_app_path);
+                goto out;
+        }
+
+        uid = gclue_client_info_get_user_id (app_info);
+        users = g_key_file_get_integer_list (priv->key_file,
+                                             desktop_id,
+                                             "users",
+                                             &num_users,
+                                             &error);
+        if (error != NULL) {
+                g_warning ("%s", error->message);
+                goto out;
+        }
+        if (num_users == 0) {
+                allowed = TRUE;
+                goto out;
+        }
+
+        for (i = 0; i < num_users; i++) {
+                if (users[i] == uid) {
+                        allowed = TRUE;
+
+                        break;
+                }
+        }
+
+out:
+        g_clear_pointer (&users, g_free);
+        g_clear_pointer (&expected_app_path, g_free);
+        g_clear_error (&error);
+
+        return allowed;
+}

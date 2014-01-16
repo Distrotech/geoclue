@@ -72,7 +72,8 @@ gclue_config_init (GClueConfig *config)
                                    0,
                                    &error);
         if (error != NULL) {
-                g_critical ("Failed to load configuration file '%s': %s", CONFIG_FILE_PATH, error->message);
+                g_critical ("Failed to load configuration file '%s': %s",
+                            CONFIG_FILE_PATH, error->message);
                 g_error_free (error);
         }
 }
@@ -105,7 +106,8 @@ gclue_config_is_agent_allowed (GClueConfig     *config,
                                              &num_agents,
                                              &error);
         if (error != NULL) {
-                g_critical ("Failed to read 'agent/whitelist' key: %s", error->message);
+                g_critical ("Failed to read 'agent/whitelist' key: %s",
+                            error->message);
                 g_error_free (error);
 
                 return FALSE;

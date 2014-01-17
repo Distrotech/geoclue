@@ -71,9 +71,6 @@ gboolean            gclue_locator_stop_finish   (GClueLocator *locator,
                                                  GAsyncResult *res,
                                                  GError      **error);
 GeocodeLocation *   gclue_locator_get_location  (GClueLocator *locator);
-guint               gclue_locator_get_threshold (GClueLocator *locator);
-void                gclue_locator_set_threshold (GClueLocator *locator,
-                                                 guint         threshold);
 
 G_END_DECLS
 

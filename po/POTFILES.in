@@ -1,4 +1,5 @@
 demo/agent.c
 demo/gclue-service-agent.c
 demo/where-am-i.c
+demo/geoclue-where-am-i.desktop.in.in
 src/gclue-main.c

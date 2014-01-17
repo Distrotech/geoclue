@@ -28,6 +28,8 @@ geoclue-interface.h: Makefile.am $(interface_DATA)
 
 BUILT_SOURCES = 		\
 	$(dbus_built_sources)	\
+	gclue-enum-types.h	\
+	gclue-enum-types.c	\
 	$(NULL)
 
 geoclue_SOURCES =	 	 \
@@ -49,6 +51,7 @@ geoclue_SOURCES =	 	 \
 	gclue-service-client.c   \
 	gclue-service-location.h \
 	gclue-service-location.c \
+	gclue-enums.h		 \
 	geocode-location.c       \
 	geocode-location.h       \
 	$(NULL)
@@ -74,5 +77,22 @@ GEOCODEGLIBFILES=geocode-location.c geocode-location.h
 update-from-geocode-glib:
 	FILES="$(GEOCODEGLIBFILES)" DIR="$(GEOCODEGLIBDIR)" $(srcdir)/update-from-geocode-glib.sh && changed=true ; \
 	git commit -m "location: Update from geocode-glib" $(GEOCODEGLIBFILES)
+
+# Enum types
+GEOCLUE_ENUMS = \
+	$(srcdir)/gclue-enums.h
+
+gclue-enum-types.h: Makefile.am $(GEOCLUE_ENUMS) $(top_srcdir)/build-aux/gclue-enums-template.h
+	$(AM_V_GEN) $(GLIB_MKENUMS) \
+	    --fhead "#include \"gclue-enums.h\"\n#ifndef __GCLUE_ENUM_TYPES_H__\n#define __GCLUE_ENUM_TYPES_H__\n" \
+	    --template $(top_srcdir)/build-aux/gclue-enums-template.h \
+	    --ftail "#endif /* __GCLUE_ENUM_TYPES_H__ */\n" \
+	    $(GEOCLUE_ENUMS) > $@
+
+gclue-enum-types.c: Makefile.am $(top_srcdir)/build-aux/gclue-enums-template.c gclue-enum-types.h
+	$(AM_V_GEN) $(GLIB_MKENUMS) \
+	    --fhead "#include \"gclue-enum-types.h\"" \
+	    --template $(top_srcdir)/build-aux/gclue-enums-template.c \
+	    $(GEOCLUE_ENUMS) > $@
 
 -include $(top_srcdir)/git.mk

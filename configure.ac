@@ -181,6 +181,9 @@ AC_PATH_PROG([REALPATH],[realpath])
 
 AC_PATH_PROG([SETCAP],[setcap])
 
+GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
+AC_SUBST(GLIB_MKENUMS)
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile

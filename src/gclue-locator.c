@@ -24,6 +24,7 @@
 
 #include "gclue-locator.h"
 #include "gclue-ipclient.h"
+#include "gclue-enum-types.h"
 
 /* This class will be responsible for doing the actual geolocating. */
 
@@ -38,12 +39,15 @@ struct _GClueLocatorPrivate
         GCancellable *cancellable;
 
         gulong network_changed_id;
+
+        GClueAccuracyLevel accuracy_level;
 };
 
 enum
 {
         PROP_0,
         PROP_LOCATION,
+        PROP_ACCURACY_LEVEL,
         LAST_PROP
 };
 
@@ -79,6 +83,10 @@ gclue_locator_get_property (GObject    *object,
                 g_value_set_object (value, locator->priv->location);
                 break;
 
+        case PROP_ACCURACY_LEVEL:
+                g_value_set_enum (value, locator->priv->accuracy_level);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -90,7 +98,16 @@ gclue_locator_set_property (GObject      *object,
                             const GValue *value,
                             GParamSpec   *pspec)
 {
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        GClueLocator *locator = GCLUE_LOCATOR (object);
+
+        switch (prop_id) {
+        case PROP_ACCURACY_LEVEL:
+                locator->priv->accuracy_level = g_value_get_enum (value);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
 }
 
 static void
@@ -112,6 +129,16 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
                                          gParamSpecs[PROP_LOCATION]);
+
+        gParamSpecs[PROP_ACCURACY_LEVEL] = g_param_spec_enum ("accuracy-level",
+                                                              "AccuracyLevel",
+                                                              "Accuracy level",
+                                                              GCLUE_TYPE_ACCURACY_LEVEL,
+                                                              GCLUE_ACCURACY_LEVEL_CITY,
+                                                              G_PARAM_READWRITE);
+        g_object_class_install_property (object_class,
+                                         PROP_ACCURACY_LEVEL,
+                                         gParamSpecs[PROP_ACCURACY_LEVEL]);
 }
 
 static void
@@ -301,4 +328,23 @@ GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)
         g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), NULL);
 
         return locator->priv->location;
+}
+
+GClueAccuracyLevel
+gclue_locator_get_accuracy_level (GClueLocator *locator)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATOR (locator),
+                              GCLUE_ACCURACY_LEVEL_COUNTRY);
+
+        return locator->priv->accuracy_level;
+}
+
+void
+gclue_locator_set_accuracy_level (GClueLocator      *locator,
+                                  GClueAccuracyLevel level)
+{
+        g_return_if_fail (GCLUE_IS_LOCATOR (locator));
+
+        locator->priv->accuracy_level = level;
+        g_object_notify (G_OBJECT (locator), "accuracy-level");
 }

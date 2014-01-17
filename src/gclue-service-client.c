@@ -25,6 +25,9 @@
 #include "gclue-service-client.h"
 #include "gclue-service-location.h"
 #include "gclue-locator.h"
+#include "gclue-enum-types.h"
+
+#define DEFAULT_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_CITY
 
 static void
 gclue_service_client_client_iface_init (GClueClientIface *iface);
@@ -239,6 +242,7 @@ on_authorize_app_ready (GObject      *source_object,
         GError *error = NULL;
         GVariant *results = NULL;
         gboolean authorized = FALSE;
+        GClueAccuracyLevel accuracy_level;
 
         results = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
                                             res,
@@ -257,6 +261,9 @@ on_authorize_app_ready (GObject      *source_object,
                 goto error_out;
         }
 
+        accuracy_level = gclue_client_get_requested_accuracy_level
+                                (GCLUE_CLIENT (data->client));
+        gclue_locator_set_accuracy_level (priv->locator, accuracy_level);
         priv->location_change_id =
                 g_signal_connect (priv->locator,
                                   "notify::location",
@@ -642,6 +649,8 @@ gclue_service_client_init (GClueServiceClient *client)
                                                     GClueServiceClientPrivate);
 
         client->priv->locator = gclue_locator_new ();
+        gclue_client_set_requested_accuracy_level (GCLUE_CLIENT (client),
+                                                   DEFAULT_ACCURACY_LEVEL);
 }
 
 GClueServiceClient *

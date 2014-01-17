@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 #include "geocode-location.h"
+#include "gclue-enum-types.h"
 
 G_BEGIN_DECLS
 
@@ -71,6 +72,11 @@ gboolean            gclue_locator_stop_finish   (GClueLocator *locator,
                                                  GAsyncResult *res,
                                                  GError      **error);
 GeocodeLocation *   gclue_locator_get_location  (GClueLocator *locator);
+GClueAccuracyLevel  gclue_locator_get_accuracy_level
+                                                (GClueLocator *locator);
+void                gclue_locator_set_accuracy_level
+                                                (GClueLocator      *locator,
+                                                 GClueAccuracyLevel level);
 
 G_END_DECLS
 

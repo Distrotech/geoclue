@@ -25,7 +25,7 @@
 #include "gclue-service-client.h"
 #include "gclue-service-location.h"
 #include "gclue-locator.h"
-#include "gclue-enum-types.h"
+#include "public-api/gclue-enum-types.h"
 #include "gclue-config.h"
 
 #define DEFAULT_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_CITY

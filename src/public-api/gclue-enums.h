@@ -38,11 +38,11 @@ G_BEGIN_DECLS
  * Used to specify level of accuracy requested by, or allowed for a client.
  **/
 typedef enum {/*< underscore_name=gclue_accuracy_level>*/
-	GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
-	GCLUE_ACCURACY_LEVEL_CITY = 4,
+        GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
+        GCLUE_ACCURACY_LEVEL_CITY = 4,
         GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD = 5,
-	GCLUE_ACCURACY_LEVEL_STREET = 6,
-	GCLUE_ACCURACY_LEVEL_EXACT = 8,
+        GCLUE_ACCURACY_LEVEL_STREET = 6,
+        GCLUE_ACCURACY_LEVEL_EXACT = 8,
 } GClueAccuracyLevel;
 
 G_END_DECLS

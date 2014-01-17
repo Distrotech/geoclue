@@ -25,7 +25,7 @@
 
 #include <gio/gio.h>
 #include "geocode-glib/geocode-location.h"
-#include "gclue-enum-types.h"
+#include "public-api/gclue-enum-types.h"
 #include "gclue-location-source.h"
 
 G_BEGIN_DECLS

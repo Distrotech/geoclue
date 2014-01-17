@@ -27,7 +27,7 @@
 #include "gclue-wifi.h"
 #include "gclue-3g.h"
 #include "gclue-modem-gps.h"
-#include "gclue-enum-types.h"
+#include "public-api/gclue-enum-types.h"
 
 /* This class is like a master location source that hides all individual
  * location sources from rest of the code

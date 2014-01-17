@@ -180,6 +180,7 @@ AC_CONFIG_FILES([
   src/geoclue-2.0.pc
   src/agent/Makefile
   src/geocode-glib/Makefile
+  src/public-api/Makefile
   src/geoip-server/Makefile
   po/Makefile.in
   data/org.freedesktop.GeoClue2.conf

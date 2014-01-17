@@ -2,7 +2,7 @@ include $(top_srcdir)/Makefile.decl
 
 libexec_PROGRAMS = geoclue
 
-SUBDIRS = agent geocode-glib
+SUBDIRS = public-api agent geocode-glib
 
 if BUILD_GEOIP_SERVER
 SUBDIRS += geoip-server
@@ -23,8 +23,6 @@ geoclue-interface.h: Makefile.am $(interface_DATA)
 
 BUILT_SOURCES = 		\
 	$(dbus_built_sources)	\
-	gclue-enum-types.h	\
-	gclue-enum-types.c	\
 	$(NULL)
 
 noinst_LTLIBRARIES = libgeoclue.la
@@ -76,7 +74,8 @@ geoclue_SOURCES =	 	  \
 geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    \
 		$(LIBS) 		  		    \
 		$(builddir)/libgeoclue.la		    \
-		$(builddir)/geocode-glib/libgeocode-glib.la
+		$(builddir)/geocode-glib/libgeocode-glib.la \
+		$(builddir)/public-api/libgeoclue-public-api.la
 
 CLEANFILES = $(BUILT_SOURCES)
 EXTRA_DIST = $(interface_DATA) \
@@ -85,22 +84,5 @@ EXTRA_DIST = $(interface_DATA) \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-2.0.pc
-
-# Enum types
-GEOCLUE_ENUMS = \
-	$(srcdir)/gclue-enums.h
-
-gclue-enum-types.h: Makefile.am $(GEOCLUE_ENUMS) $(top_srcdir)/build-aux/gclue-enums-template.h
-	$(AM_V_GEN) $(GLIB_MKENUMS) \
-	    --fhead "#include \"gclue-enums.h\"\n#ifndef __GCLUE_ENUM_TYPES_H__\n#define __GCLUE_ENUM_TYPES_H__\n" \
-	    --template $(top_srcdir)/build-aux/gclue-enums-template.h \
-	    --ftail "#endif /* __GCLUE_ENUM_TYPES_H__ */\n" \
-	    $(GEOCLUE_ENUMS) > $@
-
-gclue-enum-types.c: Makefile.am $(top_srcdir)/build-aux/gclue-enums-template.c gclue-enum-types.h
-	$(AM_V_GEN) $(GLIB_MKENUMS) \
-	    --fhead "#include \"gclue-enum-types.h\"" \
-	    --template $(top_srcdir)/build-aux/gclue-enums-template.c \
-	    $(GEOCLUE_ENUMS) > $@
 
 -include $(top_srcdir)/git.mk

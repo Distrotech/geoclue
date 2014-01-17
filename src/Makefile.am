@@ -32,9 +32,17 @@ BUILT_SOURCES = 		\
 	gclue-enum-types.c	\
 	$(NULL)
 
-geoclue_SOURCES =	 	 \
+noinst_LTLIBRARIES = libgeoclue.la
+
+AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
+	      $(WARN_CFLAGS)			     	  \
+	      -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
+	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
+	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" \
+	      -DSYSCONFDIR=\""$(sysconfdir)"\"
+
+libgeoclue_la_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \
-	gclue-main.c	 	 \
 	gclue-client-info.h 	 \
 	gclue-client-info.c 	 \
 	gclue-config.h 	 	 \
@@ -55,14 +63,14 @@ geoclue_SOURCES =	 	 \
 	geocode-location.c       \
 	geocode-location.h       \
 	$(NULL)
+libgeoclue_la_LIBADD = $(GEOCLUE_LIBS) $(LIBS)
 
-geoclue_CFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
-		 $(WARN_CFLAGS)			     	  \
-		 -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
-		 -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
-		 -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" \
-    		 -DSYSCONFDIR=\""$(sysconfdir)"\"
-geoclue_LDADD = $(GEOCLUE_LIBS) $(LIBS)
+geoclue_SOURCES =	 	  \
+	gclue-main.c	 	  \
+	$(NULL)
+geoclue_LDADD = $(GEOCLUE_LIBS) 	  \
+		$(LIBS) 		  \
+		$(builddir)/libgeoclue.la
 
 CLEANFILES = $(BUILT_SOURCES)
 EXTRA_DIST = $(interface_DATA) \

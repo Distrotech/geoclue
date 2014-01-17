@@ -251,6 +251,9 @@ on_authorize_app_ready (GObject      *source_object,
                 goto error_out;
 
         g_variant_get_child (results, 0, "b", &authorized);
+        accuracy_level = gclue_client_get_requested_accuracy_level
+                                (GCLUE_CLIENT (data->client));
+        g_variant_get_child (results, 1, "u", &accuracy_level);
         g_variant_unref (results);
 
         if (!authorized) {
@@ -261,8 +264,6 @@ on_authorize_app_ready (GObject      *source_object,
                 goto error_out;
         }
 
-        accuracy_level = gclue_client_get_requested_accuracy_level
-                                (GCLUE_CLIENT (data->client));
         gclue_locator_set_accuracy_level (priv->locator, accuracy_level);
         priv->location_change_id =
                 g_signal_connect (priv->locator,
@@ -288,6 +289,7 @@ gclue_service_client_handle_start (GClueClient           *client,
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
         StartData *data;
         const char *desktop_id;
+        GClueAccuracyLevel accuracy_level;
 
         if (priv->location_change_id)
                 /* Already started */
@@ -322,9 +324,11 @@ gclue_service_client_handle_start (GClueClient           *client,
                 return TRUE;
         }
 
+        accuracy_level = gclue_client_get_requested_accuracy_level (client);
+
         g_dbus_proxy_call (priv->agent_proxy,
                            "AuthorizeApp",
-                           g_variant_new ("(s)", desktop_id),
+                           g_variant_new ("(su)", desktop_id, accuracy_level),
                            G_DBUS_CALL_FLAGS_NONE,
                            -1,
                            NULL,

@@ -25,6 +25,8 @@
 #include <gio/gio.h>
 #include <gio/gdesktopappinfo.h>
 
+#include <gclue-enums.h>
+
 #include "gclue-service-agent.h"
 
 static void
@@ -233,6 +235,7 @@ typedef struct
         NotifyNotification *notification;
         GAppInfo *app_info;
         gboolean authorized;
+        GClueAccuracyLevel accuracy_level;
 } NotificationData;
 
 static void
@@ -274,14 +277,16 @@ on_notify_closed (NotifyNotification *notification,
                 g_debug ("'%s' not authorized",  g_app_info_get_display_name (data->app_info));
         gclue_agent_complete_authorize_app (data->agent,
                                             data->invocation,
-                                            data->authorized);
+                                            data->authorized,
+                                            data->accuracy_level);
         notification_data_free (data);
 }
 
 static gboolean
 gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
                                           GDBusMethodInvocation *invocation,
-                                          const char            *desktop_id)
+                                          const char            *desktop_id,
+                                          GClueAccuracyLevel     accuracy_level)
 {
         NotifyNotification *notification;
         NotificationData *data;
@@ -294,7 +299,10 @@ gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
         app_info = G_APP_INFO (g_desktop_app_info_new (desktop_file));
         if (app_info == NULL) {
                 g_debug ("Failed to find %s", desktop_file);
-                gclue_agent_complete_authorize_app (agent, invocation, FALSE);
+                gclue_agent_complete_authorize_app (agent,
+                                                    invocation,
+                                                    FALSE,
+                                                    accuracy_level);
 
                 return TRUE;
         }
@@ -309,6 +317,7 @@ gclue_service_agent_handle_authorize_app (GClueAgent            *agent,
         data->invocation = invocation;
         data->notification = notification;
         data->app_info = app_info;
+        data->accuracy_level = accuracy_level;
 
         notify_notification_add_action (notification,
                                         ACTION_YES,

@@ -41,7 +41,8 @@ agent_SOURCES = $(BUILT_SOURCES)       \
 agent_CFLAGS = $(DEMO_AGENT_CFLAGS)   		   \
 	       $(WARN_CFLAGS)			   \
  	       -DLOCALEDIR="\"$(datadir)/locale\"" \
-	       -DABS_SRCDIR=\""$(abs_srcdir)"\"
+	       -DABS_SRCDIR=\""$(abs_srcdir)"\"	   \
+    	       -I$(top_builddir)/src
 agent_LDADD = $(DEMO_AGENT_LIBS)
 
 -include $(top_srcdir)/git.mk

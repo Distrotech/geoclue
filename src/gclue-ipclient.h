@@ -76,9 +76,6 @@ GeocodeLocation *gclue_ipclient_search_finish   (GClueIpclient *ipclient,
                                                  GAsyncResult  *res,
                                                  GError       **error);
 
-GeocodeLocation *gclue_ipclient_search          (GClueIpclient *ipclient,
-                                                 GError       **error);
-
 G_END_DECLS
 
 #endif /* GCLUE_IPCLIENT_H */

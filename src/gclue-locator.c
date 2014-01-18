@@ -24,6 +24,7 @@
 
 #include "gclue-locator.h"
 #include "gclue-ipclient.h"
+#include "gclue-wifi.h"
 #include "gclue-enum-types.h"
 
 /* This class will be responsible for doing the actual geolocating. */
@@ -32,7 +33,7 @@ G_DEFINE_TYPE (GClueLocator, gclue_locator, G_TYPE_OBJECT)
 
 struct _GClueLocatorPrivate
 {
-        GClueIpclient *ipclient;
+        GList *sources;
 
         GeocodeLocation *location;
 
@@ -159,6 +160,14 @@ gclue_locator_update_location (GClueLocator    *locator,
 
         if (priv->location == NULL)
                 priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
+        else if (geocode_location_get_accuracy (location) >=
+                 geocode_location_get_accuracy (priv->location)) {
+                /* We only take the new location if its more or as accurate as
+                 * the previous one.
+                 */
+                g_debug ("Ignoring less accurate new location");
+                return;
+        }
 
         g_object_set (priv->location,
                       "latitude", geocode_location_get_latitude (location),
@@ -171,7 +180,7 @@ gclue_locator_update_location (GClueLocator    *locator,
 }
 
 static void
-on_ipclient_search_ready (GObject      *source_object,
+on_location_search_ready (GObject      *source_object,
                           GAsyncResult *res,
                           gpointer      user_data)
 {
@@ -183,8 +192,7 @@ on_ipclient_search_ready (GObject      *source_object,
         location = gclue_location_source_search_finish (source, res, &error);
         if (location == NULL) {
                 if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-                        g_warning ("Error fetching location from geoip server: %s",
-                                   error->message);
+                        g_warning ("%s", error->message);
                 g_error_free (error);
                 return;
         }
@@ -201,6 +209,7 @@ on_network_changed (GNetworkMonitor *monitor,
 {
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
         GClueLocationSource *source;
+        GList *node;
 
         if (!available) {
                 g_debug ("Network unreachable");
@@ -210,11 +219,15 @@ on_network_changed (GNetworkMonitor *monitor,
 
         g_cancellable_cancel (locator->priv->cancellable);
         g_cancellable_reset (locator->priv->cancellable);
-        source = GCLUE_LOCATION_SOURCE (locator->priv->ipclient);
-        gclue_location_source_search_async (source,
-                                            locator->priv->cancellable,
-                                            on_ipclient_search_ready,
-                                            locator);
+
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                source = GCLUE_LOCATION_SOURCE (node->data);
+
+                gclue_location_source_search_async (source,
+                                                    locator->priv->cancellable,
+                                                    on_location_search_ready,
+                                                    locator);
+        }
 }
 
 void
@@ -225,13 +238,21 @@ gclue_locator_start (GClueLocator        *locator,
 {
         GSimpleAsyncResult *simple;
         GNetworkMonitor *monitor;
+        GClueIpclient *ipclient;
+        GClueWifi *wifi;
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
         if (locator->priv->network_changed_id)
                 return; /* Already started */
 
-        locator->priv->ipclient = gclue_ipclient_new ();
+        /* FIXME: Only use sources that provide <= requested accuracy level. */
+        ipclient = gclue_ipclient_new ();
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                ipclient);
+        wifi = gclue_wifi_new ();
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                wifi);
 
         monitor = g_network_monitor_get_default ();
         locator->priv->network_changed_id =
@@ -281,7 +302,8 @@ gclue_locator_stop_sync (GClueLocator *locator)
 
         g_cancellable_cancel (priv->cancellable);
         g_cancellable_reset (priv->cancellable);
-        g_clear_object (&priv->ipclient);
+        g_list_free_full (priv->sources, g_object_unref);
+        priv->sources = NULL;
         g_clear_object (&priv->location);
 }
 

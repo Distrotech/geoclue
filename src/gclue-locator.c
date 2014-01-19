@@ -277,15 +277,17 @@ gclue_locator_start_finish (GClueLocator  *locator,
 static void
 gclue_locator_stop_sync (GClueLocator *locator)
 {
-        if (locator->priv->network_changed_id) {
+        GClueLocatorPrivate *priv = locator->priv;
+
+        if (priv->network_changed_id) {
                 g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             locator->priv->network_changed_id);
-                locator->priv->network_changed_id = 0;
+                                             priv->network_changed_id);
+                priv->network_changed_id = 0;
         }
 
-        g_cancellable_cancel (locator->priv->cancellable);
-        g_cancellable_reset (locator->priv->cancellable);
-        g_clear_object (&locator->priv->ipclient);
+        g_cancellable_cancel (priv->cancellable);
+        g_cancellable_reset (priv->cancellable);
+        g_clear_object (&priv->ipclient);
 }
 
 void

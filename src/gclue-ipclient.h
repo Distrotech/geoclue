@@ -26,7 +26,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "geocode-location.h"
+#include "gclue-location-source.h"
 
 G_BEGIN_DECLS
 
@@ -66,15 +66,6 @@ struct _GClueIpclientClass {
 
 GClueIpclient *gclue_ipclient_new               (void);
 GClueIpclient *gclue_ipclient_new_for_ip        (const char *str);
-
-void gclue_ipclient_search_async                (GClueIpclient      *ipclient,
-                                                 GCancellable       *cancellable,
-                                                 GAsyncReadyCallback callback,
-                                                 gpointer            user_data);
-
-GeocodeLocation *gclue_ipclient_search_finish   (GClueIpclient *ipclient,
-                                                 GAsyncResult  *res,
-                                                 GError       **error);
 
 G_END_DECLS
 

@@ -29,7 +29,6 @@
 #include "gclue-ipclient.h"
 #include "gclue-error.h"
 #include "geoip-server/geoip-server.h"
-#include "geocode-location.h"
 
 #define GEOIP_SERVER "https://geoip.fedoraproject.org/city"
 
@@ -55,7 +54,12 @@ struct _GClueIpclientPrivate {
 
 };
 
-G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, G_TYPE_OBJECT)
+static void
+gclue_location_source_interface_init (GClueLocationSourceInterface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (GClueIpclient, gclue_ipclient, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (GCLUE_TYPE_LOCATION_SOURCE,
+                                                gclue_location_source_interface_init))
 
 static void
 gclue_ipclient_finalize (GObject *gipclient)
@@ -89,12 +93,26 @@ gclue_ipclient_init (GClueIpclient *ipclient)
                          NULL);
 }
 
+static void
+gclue_ipclient_search_async (GClueLocationSource *source,
+                             GCancellable        *cancellable,
+                             GAsyncReadyCallback  callback,
+                             gpointer             user_data);
+static GeocodeLocation *
+gclue_ipclient_search_finish (GClueLocationSource *source,
+                              GAsyncResult        *res,
+                              GError             **error);
+
+static void
+gclue_location_source_interface_init (GClueLocationSourceInterface *iface)
+{
+        iface->search_async = gclue_ipclient_search_async;
+        iface->search_finish = gclue_ipclient_search_finish;
+}
+
 /**
  * gclue_ipclient_new_for_ip:
  * @str: The IP address
- *
- * Creates a new #GClueIpclient to fetch the geolocation data
- * Use gclue_ipclient_search_async() to query the server
  *
  * Returns: a new #GClueIpclient. Use g_object_unref() when done.
  **/
@@ -115,7 +133,7 @@ gclue_ipclient_new_for_ip (const char *ip)
  * Creates a new #GClueIpclient to fetch the geolocation data.
  * Here the IP address is not provided the by client, hence the server
  * will try to get the IP address from various proxy variables.
- * Use gclue_ipclient_search_async() to query the server
+ * Use gclue_location_source_search_async() to query the server.
  *
  * Returns: a new #GClueIpclient. Use g_object_unref() when done.
  **/
@@ -217,29 +235,17 @@ query_callback (SoupSession *session,
         query_callback_data_free (data);
 }
 
-/**
- * gclue_ipclient_search_async:
- * @ipclient: a #GClueIpclient representing a query
- * @cancellable: optional #GCancellable forward, %NULL to ignore.
- * @callback: a #GAsyncReadyCallback to call when the request is satisfied
- * @user_data: the data to pass to callback function
- *
- * Asynchronously performs a query to get the geolocation information
- * from the server. Use gclue_ipclient_search() to do the same
- * thing synchronously.
- *
- * When the operation is finished, @callback will be called. You can then call
- * gclue_ipclient_search_finish() to get the result of the operation.
- **/
-void
-gclue_ipclient_search_async (GClueIpclient      *ipclient,
-                             GCancellable       *cancellable,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
+static void
+gclue_ipclient_search_async (GClueLocationSource *source,
+                             GCancellable        *cancellable,
+                             GAsyncReadyCallback  callback,
+                             gpointer             user_data)
 {
         QueryCallbackData *data;
+        GClueIpclient *ipclient;
 
-        g_return_if_fail (GCLUE_IS_IPCLIENT (ipclient));
+        g_return_if_fail (GCLUE_IS_IPCLIENT (source));
+        ipclient = GCLUE_IPCLIENT (source);
 
         data = g_slice_new0 (QueryCallbackData);
         data->simple = g_simple_async_result_new (g_object_ref (ipclient),
@@ -393,27 +399,16 @@ _gclue_ip_json_to_location (const char *json,
         return location;
 }
 
-/**
- * gclue_ipclient_search_finish:
- * @ipclient: a #GClueIpclient representing a query
- * @res: a #GAsyncResult
- * @error: a #GError
- *
- * Finishes a geolocation search operation. See gclue_ipclient_search_async().
- *
- * Returns: (transfer full): A #GeocodeLocation object or %NULL in case of
- * errors. Free the returned object with g_object_unref() when done.
- **/
-GeocodeLocation *
-gclue_ipclient_search_finish (GClueIpclient *ipclient,
-                              GAsyncResult  *res,
-                              GError       **error)
+static GeocodeLocation *
+gclue_ipclient_search_finish (GClueLocationSource *source,
+                              GAsyncResult        *res,
+                              GError             **error)
 {
         GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (res);
         char *contents = NULL;
         GeocodeLocation *location;
 
-        g_return_val_if_fail (GCLUE_IS_IPCLIENT (ipclient), NULL);
+        g_return_val_if_fail (GCLUE_IS_IPCLIENT (source), NULL);
 
         g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == gclue_ipclient_search_async);
 
@@ -423,7 +418,7 @@ gclue_ipclient_search_finish (GClueIpclient *ipclient,
         contents = g_simple_async_result_get_op_res_gpointer (simple);
         location = _gclue_ip_json_to_location (contents, error);
         g_free (contents);
-        g_object_unref (ipclient);
+        g_object_unref (G_OBJECT (source));
 
         return location;
 }

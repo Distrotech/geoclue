@@ -181,12 +181,12 @@ on_ipclient_search_ready (GObject      *source_object,
                           GAsyncResult *res,
                           gpointer      user_data)
 {
-        GClueIpclient *ipclient = GCLUE_IPCLIENT (source_object);
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (source_object);
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
         GeocodeLocation *location;
         GError *error = NULL;
 
-        location = gclue_ipclient_search_finish (ipclient, res, &error);
+        location = gclue_location_source_search_finish (source, res, &error);
         if (location == NULL) {
                 if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
                         g_warning ("Error fetching location from geoip server: %s",
@@ -206,6 +206,7 @@ on_network_changed (GNetworkMonitor *monitor,
                     gpointer         user_data)
 {
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
+        GClueLocationSource *source;
 
         if (!available) {
                 g_debug ("Network unreachable");
@@ -215,10 +216,11 @@ on_network_changed (GNetworkMonitor *monitor,
 
         g_cancellable_cancel (locator->priv->cancellable);
         g_cancellable_reset (locator->priv->cancellable);
-        gclue_ipclient_search_async (locator->priv->ipclient,
-                                     locator->priv->cancellable,
-                                     on_ipclient_search_ready,
-                                     locator);
+        source = GCLUE_LOCATION_SOURCE (locator->priv->ipclient);
+        gclue_location_source_search_async (source,
+                                            locator->priv->cancellable,
+                                            on_ipclient_search_ready,
+                                            locator);
 }
 
 void

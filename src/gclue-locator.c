@@ -59,13 +59,7 @@ gclue_locator_stop_sync (GClueLocator *locator);
 static void
 gclue_locator_finalize (GObject *object)
 {
-        GClueLocatorPrivate *priv;
-
-        priv = GCLUE_LOCATOR (object)->priv;
-
         gclue_locator_stop_sync (GCLUE_LOCATOR (object));
-        g_clear_object (&priv->ipclient);
-        g_clear_object (&priv->location);
 
         G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (object);
 }
@@ -288,6 +282,7 @@ gclue_locator_stop_sync (GClueLocator *locator)
         g_cancellable_cancel (priv->cancellable);
         g_cancellable_reset (priv->cancellable);
         g_clear_object (&priv->ipclient);
+        g_clear_object (&priv->location);
 }
 
 void

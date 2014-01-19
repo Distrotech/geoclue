@@ -28,14 +28,28 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
+#define LOCATION_TIMEOUT 30 /* seconds */
+
+GDBusProxy *manager;
 GMainLoop *main_loop;
+
+static gboolean
+on_location_timeout (gpointer user_data)
+{
+        GDBusProxy *client = G_DBUS_PROXY (user_data);
+
+        g_object_unref (client);
+        g_object_unref (manager);
+        g_main_loop_quit (main_loop);
+
+        return FALSE;
+}
 
 static void
 on_location_proxy_ready (GObject      *source_object,
                          GAsyncResult *res,
                          gpointer      user_data)
 {
-        GDBusProxy *manager = G_DBUS_PROXY (user_data);
         GDBusProxy *location = G_DBUS_PROXY (source_object);
         GVariant *value;
         gdouble latitude, longitude, accuracy;
@@ -57,6 +71,7 @@ on_location_proxy_ready (GObject      *source_object,
         value = g_dbus_proxy_get_cached_property (location, "Accuracy");
         accuracy = g_variant_get_double (value);
 
+        g_print ("\nNew location:\n");
         g_print ("Latitude: %f\nLongitude: %f\nAccuracy (in meters): %f\n",
                  latitude,
                  longitude,
@@ -68,9 +83,6 @@ on_location_proxy_ready (GObject      *source_object,
                 g_print ("Description: %s\n", desc);
 
         g_object_unref (location);
-        g_object_unref (manager);
-
-        g_main_loop_quit (main_loop);
 }
 
 static void
@@ -96,7 +108,6 @@ on_client_signal (GDBusProxy *client,
                                   NULL,
                                   on_location_proxy_ready,
                                   user_data);
-        g_object_unref (client);
 }
 
 static void
@@ -144,6 +155,8 @@ on_client_proxy_ready (GObject      *source_object,
                            NULL,
                            on_start_ready,
                            user_data);
+
+        g_timeout_add_seconds (LOCATION_TIMEOUT, on_location_timeout, client);
 }
 
 static void
@@ -210,7 +223,6 @@ on_get_client_ready (GObject      *source_object,
                      GAsyncResult *res,
                      gpointer      user_data)
 {
-        GDBusProxy *manager = G_DBUS_PROXY (source_object);
         GVariant *results;
         const char *client_path;
         GError *error = NULL;
@@ -244,7 +256,6 @@ on_manager_proxy_ready (GObject      *source_object,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
-        GDBusProxy *manager;
         GError *error = NULL;
 
         manager = g_dbus_proxy_new_for_bus_finish (res, &error);

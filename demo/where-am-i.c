@@ -160,9 +160,9 @@ on_client_proxy_ready (GObject      *source_object,
 }
 
 static void
-on_set_desktop_id_ready (GObject      *source_object,
-                         GAsyncResult *res,
-                         gpointer      user_data)
+on_set_accuracy_level_ready (GObject      *source_object,
+                             GAsyncResult *res,
+                             gpointer      user_data)
 {
         GDBusProxy *client_props = G_DBUS_PROXY (source_object);
         GVariant *results;
@@ -172,7 +172,7 @@ on_set_desktop_id_ready (GObject      *source_object,
         if (results == NULL) {
             g_critical ("Failed to start GeoClue2 client: %s", error->message);
 
-            exit (-4);
+            exit (-8);
         }
         g_variant_unref (results);
 
@@ -185,6 +185,46 @@ on_set_desktop_id_ready (GObject      *source_object,
                                   NULL,
                                   on_client_proxy_ready,
                                   user_data);
+}
+
+typedef enum {
+        GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
+        GCLUE_ACCURACY_LEVEL_CITY = 4,
+        GCLUE_ACCURACY_LEVEL_STREET = 6,
+        GCLUE_ACCURACY_LEVEL_EXACT = 8,
+} GClueAccuracyLevel;
+
+static void
+on_set_desktop_id_ready (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+        GDBusProxy *client_props = G_DBUS_PROXY (source_object);
+        GVariant *results;
+        GVariant *accuracy_level;
+        GError *error = NULL;
+
+        results = g_dbus_proxy_call_finish (client_props, res, &error);
+        if (results == NULL) {
+            g_critical ("Failed to start GeoClue2 client: %s", error->message);
+
+            exit (-4);
+        }
+        g_variant_unref (results);
+
+        accuracy_level = g_variant_new ("u", GCLUE_ACCURACY_LEVEL_EXACT);
+
+        g_dbus_proxy_call (client_props,
+                           "Set",
+                           g_variant_new ("(ssv)",
+                                          "org.freedesktop.GeoClue2.Client",
+                                          "RequestedAccuracyLevel",
+                                          accuracy_level),
+                           G_DBUS_CALL_FLAGS_NONE,
+                           -1,
+                           NULL,
+                           on_set_accuracy_level_ready,
+                           user_data);
 }
 
 static void

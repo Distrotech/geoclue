@@ -330,6 +330,7 @@ gclue_service_client_handle_stop (GClueClient           *client,
                 priv->location_change_id = 0;
         }
 
+        gclue_locator_stop (priv->locator);
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;

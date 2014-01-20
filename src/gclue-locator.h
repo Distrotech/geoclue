@@ -57,20 +57,8 @@ struct _GClueLocatorClass
 GType gclue_locator_get_type (void) G_GNUC_CONST;
 
 GClueLocator *      gclue_locator_new           (void);
-void                gclue_locator_start         (GClueLocator       *locator,
-                                                 GCancellable       *cancellable,
-                                                 GAsyncReadyCallback callback,
-                                                 gpointer            user_data);
-gboolean            gclue_locator_start_finish  (GClueLocator *locator,
-                                                 GAsyncResult *res,
-                                                 GError      **error);
-void                gclue_locator_stop          (GClueLocator       *locator,
-                                                 GCancellable       *cancellable,
-                                                 GAsyncReadyCallback callback,
-                                                 gpointer            user_data);
-gboolean            gclue_locator_stop_finish   (GClueLocator *locator,
-                                                 GAsyncResult *res,
-                                                 GError      **error);
+void                gclue_locator_start         (GClueLocator *locator);
+void                gclue_locator_stop          (GClueLocator *locator);
 GeocodeLocation *   gclue_locator_get_location  (GClueLocator *locator);
 GClueAccuracyLevel  gclue_locator_get_accuracy_level
                                                 (GClueLocator *locator);

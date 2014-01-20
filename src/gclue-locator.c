@@ -55,12 +55,9 @@ enum
 static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
-gclue_locator_stop_sync (GClueLocator *locator);
-
-static void
 gclue_locator_finalize (GObject *object)
 {
-        gclue_locator_stop_sync (GCLUE_LOCATOR (object));
+        gclue_locator_stop (GCLUE_LOCATOR (object));
 
         G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (object);
 }
@@ -231,12 +228,8 @@ on_network_changed (GNetworkMonitor *monitor,
 }
 
 void
-gclue_locator_start (GClueLocator        *locator,
-                     GCancellable        *cancellable,
-                     GAsyncReadyCallback  callback,
-                     gpointer             user_data)
+gclue_locator_start (GClueLocator *locator)
 {
-        GSimpleAsyncResult *simple;
         GNetworkMonitor *monitor;
         GClueIpclient *ipclient;
         GClueWifi *wifi;
@@ -263,34 +256,10 @@ gclue_locator_start (GClueLocator        *locator,
 
         if (g_network_monitor_get_network_available (monitor))
                 on_network_changed (monitor, TRUE, locator);
-
-        simple = g_simple_async_result_new (G_OBJECT (locator),
-                                            callback,
-                                            user_data,
-                                            gclue_locator_start);
-        g_simple_async_result_complete_in_idle (simple);
-
-        g_object_unref (simple);
 }
 
-gboolean
-gclue_locator_start_finish (GClueLocator  *locator,
-                            GAsyncResult  *res,
-                            GError       **error)
-{
-        GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (res);
-
-        g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), FALSE);
-        g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == gclue_locator_start);
-
-        if (g_simple_async_result_propagate_error (simple, error))
-                return FALSE;
-
-        return TRUE;
-}
-
-static void
-gclue_locator_stop_sync (GClueLocator *locator)
+void
+gclue_locator_stop (GClueLocator *locator)
 {
         GClueLocatorPrivate *priv = locator->priv;
 
@@ -305,43 +274,6 @@ gclue_locator_stop_sync (GClueLocator *locator)
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
         g_clear_object (&priv->location);
-}
-
-void
-gclue_locator_stop (GClueLocator        *locator,
-                    GCancellable        *cancellable,
-                    GAsyncReadyCallback  callback,
-                    gpointer             user_data)
-{
-        GSimpleAsyncResult *simple;
-
-        g_return_if_fail (GCLUE_IS_LOCATOR (locator));
-
-        gclue_locator_stop_sync (locator);
-
-        simple = g_simple_async_result_new (G_OBJECT (locator),
-                                            callback,
-                                            user_data,
-                                            gclue_locator_stop);
-        g_simple_async_result_complete_in_idle (simple);
-
-        g_object_unref (simple);
-}
-
-gboolean
-gclue_locator_stop_finish (GClueLocator  *locator,
-                            GAsyncResult  *res,
-                            GError       **error)
-{
-        GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (res);
-
-        g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), FALSE);
-        g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == gclue_locator_stop);
-
-        if (g_simple_async_result_propagate_error (simple, error))
-                return FALSE;
-
-        return TRUE;
 }
 
 GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)

@@ -206,34 +206,6 @@ start_data_free (StartData *data)
 }
 
 static void
-on_start_ready (GObject      *source_object,
-                GAsyncResult *res,
-                gpointer      user_data)
-{
-        StartData *data = (StartData *) user_data;
-        GClueLocator *locator = GCLUE_LOCATOR (source_object);
-        GError *error = NULL;
-
-        if (!gclue_locator_start_finish (locator, res, &error))
-                goto error_out;
-
-        gclue_client_complete_start (GCLUE_CLIENT (data->client),
-                                     data->invocation);
-        goto out;
-
-error_out:
-        g_dbus_method_invocation_return_error (data->invocation,
-                                               G_DBUS_ERROR,
-                                               G_DBUS_ERROR_FAILED,
-                                               "Failed to start: %s",
-                                               error->message);
-        g_error_free (error);
-
-out:
-        start_data_free (data);
-}
-
-static void
 on_authorize_app_ready (GObject      *source_object,
                         GAsyncResult *res,
                         gpointer      user_data)
@@ -271,11 +243,12 @@ on_authorize_app_ready (GObject      *source_object,
                                   "notify::location",
                                   G_CALLBACK (on_locator_location_changed),
                                   data->client);
+        gclue_locator_start (priv->locator);
 
-        gclue_locator_start (priv->locator,
-                             NULL,
-                             on_start_ready,
-                             data);
+        gclue_client_complete_start (GCLUE_CLIENT (data->client),
+                                     data->invocation);
+        start_data_free (data);
+
         return;
 
 error_out:
@@ -323,10 +296,10 @@ gclue_service_client_handle_start (GClueClient           *client,
                          G_CALLBACK (on_locator_location_changed),
                          data->client);
 
-                gclue_locator_start (priv->locator,
-                                     NULL,
-                                     on_start_ready,
-                                     data);
+                gclue_locator_start (priv->locator);
+                gclue_client_complete_start (GCLUE_CLIENT (client),
+                                             invocation);
+                start_data_free (data);
 
                 return TRUE;
         }

@@ -42,23 +42,15 @@ struct _GClueLocationSourceInterface
 {
         GTypeInterface parent_iface;
 
-        void              (*search_async) (GClueLocationSource *source,
-                                           GCancellable        *cancellable,
-                                           GAsyncReadyCallback  callback,
-                                           gpointer             user_data);
-
-        GeocodeLocation * (*search_finish) (GClueLocationSource *source,
-                                            GAsyncResult        *res,
-                                            GError             **error);
+        void              (*start)        (GClueLocationSource *source);
+        void              (*stop)         (GClueLocationSource *source);
+        GeocodeLocation * (*get_location) (GClueLocationSource *source);
 };
 
-void gclue_location_source_search_async              (GClueLocationSource *source,
-                                                      GCancellable        *cancellable,
-                                                      GAsyncReadyCallback  callback,
-                                                      gpointer             user_data);
-GeocodeLocation *gclue_location_source_search_finish (GClueLocationSource *source,
-                                                      GAsyncResult        *res,
-                                                      GError             **error);
+void              gclue_location_source_start (GClueLocationSource *source);
+void              gclue_location_source_stop  (GClueLocationSource *source);
+GeocodeLocation * gclue_location_source_get_location
+                                              (GClueLocationSource *source);
 
 G_END_DECLS
 

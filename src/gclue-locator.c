@@ -37,9 +37,7 @@ struct _GClueLocatorPrivate
 
         GeocodeLocation *location;
 
-        GCancellable *cancellable;
-
-        gulong network_changed_id;
+        gboolean active;
 
         GClueAccuracyLevel accuracy_level;
 };
@@ -140,7 +138,6 @@ gclue_locator_init (GClueLocator *locator)
                 G_TYPE_INSTANCE_GET_PRIVATE (locator,
                                             GCLUE_TYPE_LOCATOR,
                                             GClueLocatorPrivate);
-        locator->priv->cancellable = g_cancellable_new ();
 }
 
 GClueLocator *
@@ -150,10 +147,16 @@ gclue_locator_new (void)
 }
 
 static void
-gclue_locator_update_location (GClueLocator    *locator,
-                               GeocodeLocation *location)
+on_location_changed (GObject    *gobject,
+                     GParamSpec *pspec,
+                     gpointer    user_data)
 {
+        GClueLocator *locator = GCLUE_LOCATOR (user_data);
         GClueLocatorPrivate *priv = locator->priv;
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (gobject);
+        GeocodeLocation *location = gclue_location_source_get_location (source);
+
+        g_debug ("New location available");
 
         if (priv->location == NULL)
                 priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
@@ -176,68 +179,18 @@ gclue_locator_update_location (GClueLocator    *locator,
         g_object_notify (G_OBJECT (locator), "location");
 }
 
-static void
-on_location_search_ready (GObject      *source_object,
-                          GAsyncResult *res,
-                          gpointer      user_data)
-{
-        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (source_object);
-        GClueLocator *locator = GCLUE_LOCATOR (user_data);
-        GeocodeLocation *location;
-        GError *error = NULL;
-
-        location = gclue_location_source_search_finish (source, res, &error);
-        if (location == NULL) {
-                if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-                        g_warning ("%s", error->message);
-                g_error_free (error);
-                return;
-        }
-
-        g_debug ("New location available");
-        gclue_locator_update_location (locator, location);
-        g_object_unref (location);
-}
-
-static void
-on_network_changed (GNetworkMonitor *monitor,
-                    gboolean         available,
-                    gpointer         user_data)
-{
-        GClueLocator *locator = GCLUE_LOCATOR (user_data);
-        GClueLocationSource *source;
-        GList *node;
-
-        if (!available) {
-                g_debug ("Network unreachable");
-                return;
-        }
-        g_debug ("Network changed");
-
-        g_cancellable_cancel (locator->priv->cancellable);
-        g_cancellable_reset (locator->priv->cancellable);
-
-        for (node = locator->priv->sources; node != NULL; node = node->next) {
-                source = GCLUE_LOCATION_SOURCE (node->data);
-
-                gclue_location_source_search_async (source,
-                                                    locator->priv->cancellable,
-                                                    on_location_search_ready,
-                                                    locator);
-        }
-}
-
 void
 gclue_locator_start (GClueLocator *locator)
 {
-        GNetworkMonitor *monitor;
         GClueIpclient *ipclient;
         GClueWifi *wifi;
+        GList *node;
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
-        if (locator->priv->network_changed_id)
+        if (locator->priv->active)
                 return; /* Already started */
+        locator->priv->active = TRUE;
 
         /* FIXME: Only use sources that provide <= requested accuracy level. */
         ipclient = gclue_ipclient_new ();
@@ -247,33 +200,29 @@ gclue_locator_start (GClueLocator *locator)
         locator->priv->sources = g_list_append (locator->priv->sources,
                                                 wifi);
 
-        monitor = g_network_monitor_get_default ();
-        locator->priv->network_changed_id =
-                g_signal_connect (monitor,
-                                  "network-changed",
-                                  G_CALLBACK (on_network_changed),
-                                  locator);
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                GClueLocationSource *source = GCLUE_LOCATION_SOURCE (node->data);
 
-        if (g_network_monitor_get_network_available (monitor))
-                on_network_changed (monitor, TRUE, locator);
+                g_signal_connect (source,
+                                  "notify::location",
+                                  G_CALLBACK (on_location_changed),
+                                  locator);
+                gclue_location_source_start (source);
+        }
 }
 
 void
 gclue_locator_stop (GClueLocator *locator)
 {
         GClueLocatorPrivate *priv = locator->priv;
+        GList *node;
 
-        if (priv->network_changed_id) {
-                g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             priv->network_changed_id);
-                priv->network_changed_id = 0;
-        }
-
-        g_cancellable_cancel (priv->cancellable);
-        g_cancellable_reset (priv->cancellable);
+        for (node = locator->priv->sources; node != NULL; node = node->next)
+                gclue_location_source_stop (GCLUE_LOCATION_SOURCE (node->data));
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
         g_clear_object (&priv->location);
+        locator->priv->active = FALSE;
 }
 
 GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)

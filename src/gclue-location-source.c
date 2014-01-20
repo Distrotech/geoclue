@@ -35,55 +35,55 @@ G_DEFINE_INTERFACE (GClueLocationSource, gclue_location_source, 0);
 static void
 gclue_location_source_default_init (GClueLocationSourceInterface *iface)
 {
-        /* add properties and signals to the interface here */
+        GParamSpec *pspec;
+
+        pspec = g_param_spec_object ("location",
+                                     "Location",
+                                     "Location",
+                                     GEOCODE_TYPE_LOCATION,
+                                     G_PARAM_READABLE);
+        g_object_interface_install_property (iface, pspec);
 }
 
 /**
- * gclue_location_source_search_async:
+ * gclue_location_source_start:
  * @source: a #GClueLocationSource
- * @cancellable: optional #GCancellable forward, %NULL to ignore.
- * @callback: a #GAsyncReadyCallback to call when the request is satisfied
- * @user_data: the data to pass to callback function
  *
- * Asynchronously search for location.
- *
- * When the operation is finished, @callback will be called. You can then call
- * gclue_location_source_search_finish() to get the result of the operation.
+ * Start searching for location and keep an eye on location changes.
  **/
 void
-gclue_location_source_search_async (GClueLocationSource *source,
-                                    GCancellable        *cancellable,
-                                    GAsyncReadyCallback  callback,
-                                    gpointer             user_data)
+gclue_location_source_start (GClueLocationSource *source)
 {
         g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
 
-        GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->search_async (source,
-                                                                    cancellable,
-                                                                    callback,
-                                                                    user_data);
+        GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->start (source);
 }
 
 /**
- * gclue_location_source_search_finish:
- * @source: a #GClueLocationSourc
- * @res: a #GAsyncResult
- * @error: a #GError
+ * gclue_location_source_stop:
+ * @source: a #GClueLocationSource
  *
- * Finishes a geolocation search operation. See
- * gclue_location_source_search_async().
+ * Stop searching for location and no need to keep an eye on location changes
+ * anymore.
+ **/
+void
+gclue_location_source_stop (GClueLocationSource *source)
+{
+        g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
+
+        GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->stop (source);
+}
+
+/**
+ * gclue_location_source_get_location:
+ * @source: a #GClueLocationSource
  *
- * Returns: (transfer full): A #GeocodeLocation object or %NULL in case of
- * errors. Free the returned object with g_object_unref() when done.
+ * Returns: (transfer none): The location, or NULL if unknown.
  **/
 GeocodeLocation *
-gclue_location_source_search_finish (GClueLocationSource *source,
-                                     GAsyncResult        *res,
-                                     GError             **error)
+gclue_location_source_get_location (GClueLocationSource *source)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), NULL);
 
-        return GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->search_finish (source,
-                                                                            res,
-                                                                            error);
+        return GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->get_location (source);
 }

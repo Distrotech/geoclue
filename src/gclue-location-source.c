@@ -30,19 +30,98 @@
  * The interface all geolocation sources must implement.
  **/
 
-G_DEFINE_INTERFACE (GClueLocationSource, gclue_location_source, 0);
+G_DEFINE_ABSTRACT_TYPE (GClueLocationSource, gclue_location_source, G_TYPE_OBJECT)
+
+struct _GClueLocationSourcePrivate
+{
+        GeocodeLocation *location;
+};
+
+enum
+{
+        PROP_0,
+        PROP_LOCATION,
+        LAST_PROP
+};
+
+static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
-gclue_location_source_default_init (GClueLocationSourceInterface *iface)
+gclue_location_source_finalize (GObject *object)
 {
-        GParamSpec *pspec;
+        gclue_location_source_stop (GCLUE_LOCATION_SOURCE (object));
 
-        pspec = g_param_spec_object ("location",
-                                     "Location",
-                                     "Location",
-                                     GEOCODE_TYPE_LOCATION,
-                                     G_PARAM_READABLE);
-        g_object_interface_install_property (iface, pspec);
+        G_OBJECT_CLASS (gclue_location_source_parent_class)->finalize (object);
+}
+
+static void
+gclue_location_source_get_property (GObject    *object,
+                                    guint       prop_id,
+                                    GValue     *value,
+                                    GParamSpec *pspec)
+{
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (object);
+
+        switch (prop_id) {
+        case PROP_LOCATION:
+                g_value_set_object (value, source->priv->location);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
+gclue_location_source_set_property (GObject      *object,
+                                    guint         prop_id,
+                                    const GValue *value,
+                                    GParamSpec   *pspec)
+{
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (object);
+
+        switch (prop_id) {
+        case PROP_LOCATION:
+        {
+                GeocodeLocation *location = g_value_get_object (value);
+
+                gclue_location_source_set_location (source, location);
+                break;
+        }
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
+gclue_location_source_class_init (GClueLocationSourceClass *klass)
+{
+        GObjectClass *object_class;
+
+        object_class = G_OBJECT_CLASS (klass);
+        object_class->finalize = gclue_location_source_finalize;
+        object_class->get_property = gclue_location_source_get_property;
+        object_class->set_property = gclue_location_source_set_property;
+        g_type_class_add_private (object_class, sizeof (GClueLocationSourcePrivate));
+
+        gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
+                                                          "Location",
+                                                          "Location",
+                                                          GEOCODE_TYPE_LOCATION,
+                                                          G_PARAM_READWRITE);
+        g_object_class_install_property (object_class,
+                                         PROP_LOCATION,
+                                         gParamSpecs[PROP_LOCATION]);
+}
+
+static void
+gclue_location_source_init (GClueLocationSource *source)
+{
+        source->priv =
+                G_TYPE_INSTANCE_GET_PRIVATE (source,
+                                             GCLUE_TYPE_LOCATION_SOURCE,
+                                             GClueLocationSourcePrivate);
 }
 
 /**
@@ -56,7 +135,7 @@ gclue_location_source_start (GClueLocationSource *source)
 {
         g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
 
-        GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->start (source);
+        GCLUE_LOCATION_SOURCE_GET_CLASS (source)->start (source);
 }
 
 /**
@@ -71,7 +150,7 @@ gclue_location_source_stop (GClueLocationSource *source)
 {
         g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
 
-        GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->stop (source);
+        GCLUE_LOCATION_SOURCE_GET_CLASS (source)->stop (source);
 }
 
 /**
@@ -85,5 +164,31 @@ gclue_location_source_get_location (GClueLocationSource *source)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), NULL);
 
-        return GCLUE_LOCATION_SOURCE_GET_INTERFACE (source)->get_location (source);
+        return source->priv->location;
+}
+
+/**
+ * gclue_location_source_set_location:
+ * @source: a #GClueLocationSource
+ *
+ * Set the current location to @location. Its meant to be only used by
+ * subclasses.
+ **/
+void
+gclue_location_source_set_location (GClueLocationSource *source,
+                                    GeocodeLocation     *location)
+{
+        GClueLocationSourcePrivate *priv = source->priv;
+
+        if (priv->location == NULL)
+                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
+
+        g_object_set (priv->location,
+                      "latitude", geocode_location_get_latitude (location),
+                      "longitude", geocode_location_get_longitude (location),
+                      "accuracy", geocode_location_get_accuracy (location),
+                      "description", geocode_location_get_description (location),
+                      NULL);
+
+        g_object_notify (G_OBJECT (source), "location");
 }

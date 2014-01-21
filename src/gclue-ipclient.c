@@ -40,18 +40,10 @@
  * Contains functions to get the geolocation corresponding to IP addresses from a server.
  **/
 
-enum {
-        PROP_0,
-        PROP_LOCATION,
-        N_PROPERTIES
-};
-
 struct _GClueIpclientPrivate {
         SoupSession *soup_session;
 
         char *ip;
-
-        GeocodeLocation *location;
 
         SoupMessage *query;
 
@@ -62,22 +54,14 @@ static void
 gclue_ipclient_start (GClueLocationSource *source);
 static void
 gclue_ipclient_stop (GClueLocationSource *source);
-static GeocodeLocation *
-gclue_ipclient_get_location (GClueLocationSource *source);
 
-static void
-gclue_location_source_interface_init (GClueLocationSourceInterface *iface);
-
-G_DEFINE_TYPE_WITH_CODE (GClueIpclient, gclue_ipclient, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (GCLUE_TYPE_LOCATION_SOURCE,
-                                                gclue_location_source_interface_init))
+G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, GCLUE_TYPE_LOCATION_SOURCE)
 
 static void
 gclue_ipclient_finalize (GObject *gipclient)
 {
         GClueIpclient *ipclient = (GClueIpclient *) gipclient;
 
-        gclue_ipclient_stop (GCLUE_LOCATION_SOURCE (ipclient));
         g_clear_object (&ipclient->priv->soup_session);
         g_free (ipclient->priv->ip);
 
@@ -85,36 +69,16 @@ gclue_ipclient_finalize (GObject *gipclient)
 }
 
 static void
-gclue_ipclient_get_property (GObject    *object,
-                             guint       prop_id,
-                             GValue     *value,
-                             GParamSpec *pspec)
-{
-        GClueIpclient *ipclient = GCLUE_IPCLIENT (object);
-
-        switch (prop_id) {
-        case PROP_LOCATION:
-                g_value_set_object (value, ipclient->priv->location);
-                break;
-
-        default:
-                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        }
-}
-
-static void
 gclue_ipclient_class_init (GClueIpclientClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *gipclient_class = G_OBJECT_CLASS (klass);
 
+        source_class->start = gclue_ipclient_start;
+        source_class->stop = gclue_ipclient_stop;
         gipclient_class->finalize = gclue_ipclient_finalize;
-        gipclient_class->get_property = gclue_ipclient_get_property;
 
         g_type_class_add_private (klass, sizeof (GClueIpclientPrivate));
-
-        g_object_class_override_property (gipclient_class,
-                                          PROP_LOCATION,
-                                          "location");
 }
 
 static void
@@ -126,14 +90,6 @@ gclue_ipclient_init (GClueIpclient *ipclient)
                         (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
                          SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
                          NULL);
-}
-
-static void
-gclue_location_source_interface_init (GClueLocationSourceInterface *iface)
-{
-        iface->start = gclue_ipclient_start;
-        iface->stop = gclue_ipclient_stop;
-        iface->get_location = gclue_ipclient_get_location;
 }
 
 /**
@@ -327,25 +283,6 @@ _gclue_ip_json_to_location (const char *json,
 }
 
 static void
-gclue_ipclient_update_location (GClueIpclient   *ipclient,
-                                GeocodeLocation *location)
-{
-        GClueIpclientPrivate *priv = ipclient->priv;
-
-        if (priv->location == NULL)
-                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
-
-        g_object_set (priv->location,
-                      "latitude", geocode_location_get_latitude (location),
-                      "longitude", geocode_location_get_longitude (location),
-                      "accuracy", geocode_location_get_accuracy (location),
-                      "description", geocode_location_get_description (location),
-                      NULL);
-
-        g_object_notify (G_OBJECT (ipclient), "location");
-}
-
-static void
 query_callback (SoupSession *session,
                 SoupMessage *query,
                 gpointer     user_data)
@@ -370,7 +307,8 @@ query_callback (SoupSession *session,
                 return;
         }
 
-        gclue_ipclient_update_location (ipclient, location);
+        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (ipclient),
+                                            location);
 }
 
 static void
@@ -438,12 +376,4 @@ gclue_ipclient_stop (GClueLocationSource *source)
                                      priv->query,
                                      SOUP_STATUS_CANCELLED);
         priv->query = NULL;
-}
-
-static GeocodeLocation *
-gclue_ipclient_get_location (GClueLocationSource *source)
-{
-        g_return_val_if_fail (GCLUE_IS_IPCLIENT (source), NULL);
-
-        return GCLUE_IPCLIENT (source)->priv->location;
 }

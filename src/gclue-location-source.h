@@ -28,29 +28,43 @@
 
 G_BEGIN_DECLS
 
-GType gclue_location_source_get_type (void) G_GNUC_CONST;
+#define GCLUE_TYPE_LOCATION_SOURCE            (gclue_location_source_get_type())
+#define GCLUE_LOCATION_SOURCE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSource))
+#define GCLUE_LOCATION_SOURCE_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSource const))
+#define GCLUE_LOCATION_SOURCE_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSourceClass))
+#define GCLUE_IS_LOCATION_SOURCE(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GCLUE_TYPE_LOCATION_SOURCE))
+#define GCLUE_IS_LOCATION_SOURCE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GCLUE_TYPE_LOCATION_SOURCE))
+#define GCLUE_LOCATION_SOURCE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSourceClass))
 
-#define GCLUE_TYPE_LOCATION_SOURCE                  (gclue_location_source_get_type ())
-#define GCLUE_LOCATION_SOURCE(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSource))
-#define GCLUE_IS_LOCATION_SOURCE(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GCLUE_TYPE_LOCATION_SOURCE))
-#define GCLUE_LOCATION_SOURCE_GET_INTERFACE(obj)    (G_TYPE_INSTANCE_GET_INTERFACE ((obj), GCLUE_TYPE_LOCATION_SOURCE, GClueLocationSourceInterface))
+typedef struct _GClueLocationSource        GClueLocationSource;
+typedef struct _GClueLocationSourceClass   GClueLocationSourceClass;
+typedef struct _GClueLocationSourcePrivate GClueLocationSourcePrivate;
 
-typedef struct _GClueLocationSource GClueLocationSource;  /* dummy object */
-typedef struct _GClueLocationSourceInterface GClueLocationSourceInterface;
-
-struct _GClueLocationSourceInterface
+struct _GClueLocationSource
 {
-        GTypeInterface parent_iface;
+        GObject parent;
+
+        /*< private >*/
+        GClueLocationSourcePrivate *priv;
+};
+
+struct _GClueLocationSourceClass
+{
+        GObjectClass parent_class;
 
         void              (*start)        (GClueLocationSource *source);
         void              (*stop)         (GClueLocationSource *source);
-        GeocodeLocation * (*get_location) (GClueLocationSource *source);
 };
+
+GType gclue_location_source_get_type (void) G_GNUC_CONST;
 
 void              gclue_location_source_start (GClueLocationSource *source);
 void              gclue_location_source_stop  (GClueLocationSource *source);
 GeocodeLocation * gclue_location_source_get_location
                                               (GClueLocationSource *source);
+void              gclue_location_source_set_location
+                                              (GClueLocationSource *source,
+                                               GeocodeLocation     *location);
 
 G_END_DECLS
 

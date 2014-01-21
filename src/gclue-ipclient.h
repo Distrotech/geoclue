@@ -50,7 +50,7 @@ typedef struct _GClueIpclientPrivate GClueIpclientPrivate;
 
 struct _GClueIpclient {
         /* <private> */
-        GObject parent_instance;
+        GClueLocationSource parent_instance;
         GClueIpclientPrivate *priv;
 };
 
@@ -61,7 +61,7 @@ struct _GClueIpclient {
 **/
 struct _GClueIpclientClass {
         /* <private> */
-        GObjectClass parent_class;
+        GClueLocationSourceClass parent_class;
 };
 
 GClueIpclient *gclue_ipclient_new               (void);

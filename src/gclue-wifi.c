@@ -46,16 +46,8 @@
  * Location Service</ulink> to achieve that.
  **/
 
-enum {
-        PROP_0,
-        PROP_LOCATION,
-        N_PROPERTIES
-};
-
 struct _GClueWifiPrivate {
         SoupSession *soup_session;
-
-        GeocodeLocation *location;
 
         SoupMessage *query;
 
@@ -66,58 +58,30 @@ static void
 gclue_wifi_start (GClueLocationSource *source);
 static void
 gclue_wifi_stop (GClueLocationSource *source);
-static GeocodeLocation *
-gclue_wifi_get_location (GClueLocationSource *source);
 
-static void
-gclue_location_source_interface_init (GClueLocationSourceInterface *iface);
-
-G_DEFINE_TYPE_WITH_CODE (GClueWifi, gclue_wifi, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (GCLUE_TYPE_LOCATION_SOURCE,
-                                                gclue_location_source_interface_init))
+G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_LOCATION_SOURCE)
 
 static void
 gclue_wifi_finalize (GObject *gwifi)
 {
         GClueWifi *wifi = (GClueWifi *) gwifi;
 
-        gclue_wifi_stop (GCLUE_LOCATION_SOURCE (wifi));
         g_clear_object (&wifi->priv->soup_session);
 
         G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
 }
 
 static void
-gclue_wifi_get_property (GObject    *object,
-                         guint       prop_id,
-                         GValue     *value,
-                         GParamSpec *pspec)
-{
-        GClueWifi *wifi = GCLUE_WIFI (object);
-
-        switch (prop_id) {
-        case PROP_LOCATION:
-                g_value_set_object (value, wifi->priv->location);
-                break;
-
-        default:
-                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        }
-}
-
-static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
 
+        source_class->start = gclue_wifi_start;
+        source_class->stop = gclue_wifi_stop;
         gwifi_class->finalize = gclue_wifi_finalize;
-        gwifi_class->get_property = gclue_wifi_get_property;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
-
-        g_object_class_override_property (gwifi_class,
-                                          PROP_LOCATION,
-                                          "location");
 }
 
 static void
@@ -129,14 +93,6 @@ gclue_wifi_init (GClueWifi *wifi)
                         (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
                          SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
                          NULL);
-}
-
-static void
-gclue_location_source_interface_init (GClueLocationSourceInterface *iface)
-{
-        iface->start = gclue_wifi_start;
-        iface->stop = gclue_wifi_stop;
-        iface->get_location = gclue_wifi_get_location;
 }
 
 /**
@@ -295,25 +251,6 @@ _gclue_wifi_json_to_location (const char *json,
 }
 
 static void
-gclue_wifi_update_location (GClueWifi       *wifi,
-                            GeocodeLocation *location)
-{
-        GClueWifiPrivate *priv = wifi->priv;
-
-        if (priv->location == NULL)
-                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
-
-        g_object_set (priv->location,
-                      "latitude", geocode_location_get_latitude (location),
-                      "longitude", geocode_location_get_longitude (location),
-                      "accuracy", geocode_location_get_accuracy (location),
-                      "description", geocode_location_get_description (location),
-                      NULL);
-
-        g_object_notify (G_OBJECT (wifi), "location");
-}
-
-static void
 query_callback (SoupSession *session,
                 SoupMessage *query,
                 gpointer     user_data)
@@ -338,7 +275,8 @@ query_callback (SoupSession *session,
                 return;
         }
 
-        gclue_wifi_update_location (wifi, location);
+        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (wifi),
+                                            location);
 }
 
 static void
@@ -417,12 +355,4 @@ gclue_wifi_stop (GClueLocationSource *source)
                                      priv->query,
                                      SOUP_STATUS_CANCELLED);
         priv->query = NULL;
-}
-
-static GeocodeLocation *
-gclue_wifi_get_location (GClueLocationSource *source)
-{
-        g_return_val_if_fail (GCLUE_IS_WIFI (source), NULL);
-
-        return GCLUE_WIFI (source)->priv->location;
 }

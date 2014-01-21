@@ -48,7 +48,7 @@ typedef struct _GClueWifiPrivate GClueWifiPrivate;
 
 struct _GClueWifi {
         /* <private> */
-        GObject parent_instance;
+        GClueLocationSource parent_instance;
         GClueWifiPrivate *priv;
 };
 
@@ -59,7 +59,7 @@ struct _GClueWifi {
 **/
 struct _GClueWifiClass {
         /* <private> */
-        GObjectClass parent_class;
+        GClueLocationSourceClass parent_class;
 };
 
 GClueWifi * gclue_wifi_new (void);

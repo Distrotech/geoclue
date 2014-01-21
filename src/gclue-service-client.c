@@ -145,13 +145,13 @@ on_locator_location_changed (GObject    *gobject,
 {
         GClueServiceClient *client = GCLUE_SERVICE_CLIENT (user_data);
         GClueServiceClientPrivate *priv = client->priv;
-        GClueLocator *locator = GCLUE_LOCATOR (gobject);
+        GClueLocationSource *locator = GCLUE_LOCATION_SOURCE (gobject);
         GeocodeLocation *location_info;
         char *path = NULL;
         const char *prev_path;
         GError *error = NULL;
 
-        location_info = gclue_locator_get_location (locator);
+        location_info = gclue_location_source_get_location (locator);
 
         if (priv->location != NULL && below_threshold (client, location_info)) {
                 g_debug ("Updating location, below threshold");
@@ -243,7 +243,7 @@ on_authorize_app_ready (GObject      *source_object,
                                   "notify::location",
                                   G_CALLBACK (on_locator_location_changed),
                                   data->client);
-        gclue_locator_start (priv->locator);
+        gclue_location_source_start (GCLUE_LOCATION_SOURCE (priv->locator));
 
         gclue_client_complete_start (GCLUE_CLIENT (data->client),
                                      data->invocation);
@@ -296,7 +296,7 @@ gclue_service_client_handle_start (GClueClient           *client,
                          G_CALLBACK (on_locator_location_changed),
                          data->client);
 
-                gclue_locator_start (priv->locator);
+                gclue_location_source_start (GCLUE_LOCATION_SOURCE (priv->locator));
                 gclue_client_complete_start (GCLUE_CLIENT (client),
                                              invocation);
                 start_data_free (data);
@@ -330,7 +330,7 @@ gclue_service_client_handle_stop (GClueClient           *client,
                 priv->location_change_id = 0;
         }
 
-        gclue_locator_stop (priv->locator);
+        gclue_location_source_start (GCLUE_LOCATION_SOURCE (priv->locator));
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;

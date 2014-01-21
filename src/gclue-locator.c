@@ -29,13 +29,16 @@
 
 /* This class will be responsible for doing the actual geolocating. */
 
-G_DEFINE_TYPE (GClueLocator, gclue_locator, G_TYPE_OBJECT)
+static void
+gclue_locator_start (GClueLocationSource *source);
+static void
+gclue_locator_stop (GClueLocationSource *source);
+
+G_DEFINE_TYPE (GClueLocator, gclue_locator, GCLUE_TYPE_LOCATION_SOURCE)
 
 struct _GClueLocatorPrivate
 {
         GList *sources;
-
-        GeocodeLocation *location;
 
         gboolean active;
 
@@ -45,20 +48,11 @@ struct _GClueLocatorPrivate
 enum
 {
         PROP_0,
-        PROP_LOCATION,
         PROP_ACCURACY_LEVEL,
         LAST_PROP
 };
 
 static GParamSpec *gParamSpecs[LAST_PROP];
-
-static void
-gclue_locator_finalize (GObject *object)
-{
-        gclue_locator_stop (GCLUE_LOCATOR (object));
-
-        G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (object);
-}
 
 static void
 gclue_locator_get_property (GObject    *object,
@@ -69,10 +63,6 @@ gclue_locator_get_property (GObject    *object,
         GClueLocator *locator = GCLUE_LOCATOR (object);
 
         switch (prop_id) {
-        case PROP_LOCATION:
-                g_value_set_object (value, locator->priv->location);
-                break;
-
         case PROP_ACCURACY_LEVEL:
                 g_value_set_enum (value, locator->priv->accuracy_level);
                 break;
@@ -103,22 +93,16 @@ gclue_locator_set_property (GObject      *object,
 static void
 gclue_locator_class_init (GClueLocatorClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *object_class;
 
+        source_class->start = gclue_locator_start;
+        source_class->stop = gclue_locator_stop;
+
         object_class = G_OBJECT_CLASS (klass);
-        object_class->finalize = gclue_locator_finalize;
         object_class->get_property = gclue_locator_get_property;
         object_class->set_property = gclue_locator_set_property;
         g_type_class_add_private (object_class, sizeof (GClueLocatorPrivate));
-
-        gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
-                                                          "Location",
-                                                          "Location",
-                                                          GEOCODE_TYPE_LOCATION,
-                                                          G_PARAM_READABLE);
-        g_object_class_install_property (object_class,
-                                         PROP_LOCATION,
-                                         gParamSpecs[PROP_LOCATION]);
 
         gParamSpecs[PROP_ACCURACY_LEVEL] = g_param_spec_enum ("accuracy-level",
                                                               "AccuracyLevel",
@@ -151,17 +135,18 @@ on_location_changed (GObject    *gobject,
                      GParamSpec *pspec,
                      gpointer    user_data)
 {
-        GClueLocator *locator = GCLUE_LOCATOR (user_data);
-        GClueLocatorPrivate *priv = locator->priv;
+        GClueLocationSource *locator = GCLUE_LOCATION_SOURCE (user_data);
         GClueLocationSource *source = GCLUE_LOCATION_SOURCE (gobject);
-        GeocodeLocation *location = gclue_location_source_get_location (source);
+        GeocodeLocation *location, *cur_location;
+
+        cur_location = gclue_location_source_get_location (locator);
+        location = gclue_location_source_get_location (source);
 
         g_debug ("New location available");
 
-        if (priv->location == NULL)
-                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
-        else if (geocode_location_get_accuracy (location) >=
-                 geocode_location_get_accuracy (priv->location)) {
+        if (cur_location != NULL &&
+            geocode_location_get_accuracy (location) >=
+            geocode_location_get_accuracy (cur_location)) {
                 /* We only take the new location if its more or as accurate as
                  * the previous one.
                  */
@@ -169,19 +154,13 @@ on_location_changed (GObject    *gobject,
                 return;
         }
 
-        g_object_set (priv->location,
-                      "latitude", geocode_location_get_latitude (location),
-                      "longitude", geocode_location_get_longitude (location),
-                      "accuracy", geocode_location_get_accuracy (location),
-                      "description", geocode_location_get_description (location),
-                      NULL);
-
-        g_object_notify (G_OBJECT (locator), "location");
+        gclue_location_source_set_location (locator, location);
 }
 
-void
-gclue_locator_start (GClueLocator *locator)
+static void
+gclue_locator_start (GClueLocationSource *source)
 {
+        GClueLocator *locator = GCLUE_LOCATOR (source);
         GClueIpclient *ipclient;
         GClueWifi *wifi;
         GList *node;
@@ -211,9 +190,10 @@ gclue_locator_start (GClueLocator *locator)
         }
 }
 
-void
-gclue_locator_stop (GClueLocator *locator)
+static void
+gclue_locator_stop (GClueLocationSource *source)
 {
+        GClueLocator *locator = GCLUE_LOCATOR (source);
         GClueLocatorPrivate *priv = locator->priv;
         GList *node;
 
@@ -221,15 +201,7 @@ gclue_locator_stop (GClueLocator *locator)
                 gclue_location_source_stop (GCLUE_LOCATION_SOURCE (node->data));
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
-        g_clear_object (&priv->location);
         locator->priv->active = FALSE;
-}
-
-GeocodeLocation * gclue_locator_get_location (GClueLocator *locator)
-{
-        g_return_val_if_fail (GCLUE_IS_LOCATOR (locator), NULL);
-
-        return locator->priv->location;
 }
 
 GClueAccuracyLevel

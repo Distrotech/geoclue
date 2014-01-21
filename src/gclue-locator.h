@@ -26,6 +26,7 @@
 #include <gio/gio.h>
 #include "geocode-location.h"
 #include "gclue-enum-types.h"
+#include "gclue-location-source.h"
 
 G_BEGIN_DECLS
 
@@ -43,7 +44,7 @@ typedef struct _GClueLocatorPrivate GClueLocatorPrivate;
 
 struct _GClueLocator
 {
-        GObject parent;
+        GClueLocationSource parent;
 
         /*< private >*/
         GClueLocatorPrivate *priv;
@@ -51,15 +52,12 @@ struct _GClueLocator
 
 struct _GClueLocatorClass
 {
-        GObjectClass parent_class;
+        GClueLocationSourceClass parent_class;
 };
 
 GType gclue_locator_get_type (void) G_GNUC_CONST;
 
 GClueLocator *      gclue_locator_new           (void);
-void                gclue_locator_start         (GClueLocator *locator);
-void                gclue_locator_stop          (GClueLocator *locator);
-GeocodeLocation *   gclue_locator_get_location  (GClueLocator *locator);
 GClueAccuracyLevel  gclue_locator_get_accuracy_level
                                                 (GClueLocator *locator);
 void                gclue_locator_set_accuracy_level

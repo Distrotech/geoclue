@@ -130,6 +130,9 @@ on_network_changed (GNetworkMonitor *monitor,
         }
         g_debug ("Network changed");
 
+        if (web->priv->query != NULL)
+                return;
+
         web->priv->query = GCLUE_WEB_SOURCE_GET_CLASS (web)->create_query
                                         (web,
                                          &error);

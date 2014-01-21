@@ -65,6 +65,8 @@ GeocodeLocation * gclue_location_source_get_location
 void              gclue_location_source_set_location
                                               (GClueLocationSource *source,
                                                GeocodeLocation     *location);
+gboolean          gclue_location_source_get_active
+                                              (GClueLocationSource *source);
 
 G_END_DECLS
 

@@ -35,12 +35,15 @@ G_DEFINE_ABSTRACT_TYPE (GClueLocationSource, gclue_location_source, G_TYPE_OBJEC
 struct _GClueLocationSourcePrivate
 {
         GeocodeLocation *location;
+
+        gboolean active;
 };
 
 enum
 {
         PROP_0,
         PROP_LOCATION,
+        PROP_ACTIVE,
         LAST_PROP
 };
 
@@ -65,6 +68,10 @@ gclue_location_source_get_property (GObject    *object,
         switch (prop_id) {
         case PROP_LOCATION:
                 g_value_set_object (value, source->priv->location);
+                break;
+
+        case PROP_ACTIVE:
+                g_value_set_boolean (value, source->priv->active);
                 break;
 
         default:
@@ -113,6 +120,15 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
                                          gParamSpecs[PROP_LOCATION]);
+
+        gParamSpecs[PROP_ACTIVE] = g_param_spec_boolean ("active",
+                                                         "Active",
+                                                         "Active",
+                                                         FALSE,
+                                                         G_PARAM_READABLE);
+        g_object_class_install_property (object_class,
+                                         PROP_ACTIVE,
+                                         gParamSpecs[PROP_ACTIVE]);
 }
 
 static void
@@ -135,7 +151,12 @@ gclue_location_source_start (GClueLocationSource *source)
 {
         g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
 
+        if (source->priv->active)
+                return; /* Already started */
+
         GCLUE_LOCATION_SOURCE_GET_CLASS (source)->start (source);
+        source->priv->active = TRUE;
+        g_object_notify (G_OBJECT (source), "active");
 }
 
 /**
@@ -151,6 +172,8 @@ gclue_location_source_stop (GClueLocationSource *source)
         g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
 
         GCLUE_LOCATION_SOURCE_GET_CLASS (source)->stop (source);
+        source->priv->active = FALSE;
+        g_object_notify (G_OBJECT (source), "active");
 }
 
 /**
@@ -191,4 +214,18 @@ gclue_location_source_set_location (GClueLocationSource *source,
                       NULL);
 
         g_object_notify (G_OBJECT (source), "location");
+}
+
+/**
+ * gclue_location_source_get_active:
+ * @source: a #GClueLocationSource
+ *
+ * Returns: TRUE if source is active, FALSE otherwise.
+ **/
+gboolean
+gclue_location_source_get_active (GClueLocationSource *source)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
+
+        return source->priv->active;
 }

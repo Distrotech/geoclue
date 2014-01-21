@@ -42,8 +42,6 @@ struct _GClueLocatorPrivate
 {
         GList *sources;
 
-        gboolean active;
-
         GClueAccuracyLevel accuracy_level;
 };
 
@@ -169,10 +167,6 @@ gclue_locator_start (GClueLocationSource *source)
 
         g_return_if_fail (GCLUE_IS_LOCATOR (locator));
 
-        if (locator->priv->active)
-                return; /* Already started */
-        locator->priv->active = TRUE;
-
         /* FIXME: Only use sources that provide <= requested accuracy level. */
         ipclient = gclue_ipclient_new ();
         locator->priv->sources = g_list_append (locator->priv->sources,
@@ -203,7 +197,6 @@ gclue_locator_stop (GClueLocationSource *source)
                 gclue_location_source_stop (GCLUE_LOCATION_SOURCE (node->data));
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
-        locator->priv->active = FALSE;
 }
 
 GClueAccuracyLevel

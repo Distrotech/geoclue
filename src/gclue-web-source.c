@@ -155,9 +155,6 @@ gclue_web_source_start (GClueLocationSource *source)
         g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
         priv = GCLUE_WEB_SOURCE (source)->priv;
 
-        if (priv->network_changed_id)
-                return; /* Already started */
-
         monitor = g_network_monitor_get_default ();
         priv->network_changed_id =
                 g_signal_connect (monitor,

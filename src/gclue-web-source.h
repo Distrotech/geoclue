@@ -69,6 +69,8 @@ struct _GClueWebSourceClass {
                                              GError        **error);
 };
 
+void gclue_web_source_refresh (GClueWebSource *source);
+
 G_END_DECLS
 
 #endif /* GCLUE_WEB_SOURCE_H */

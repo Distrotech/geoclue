@@ -192,3 +192,29 @@ gclue_web_source_stop (GClueLocationSource *source)
                                      SOUP_STATUS_CANCELLED);
         priv->query = NULL;
 }
+
+/**
+ * gclue_web_source_refresh:
+ * @source: a #GClueWebSource
+ *
+ * Causes @source to refresh location. Its meant to be used by subclasses if
+ * they have reason to suspect location might have changed.
+ **/
+void
+gclue_web_source_refresh (GClueWebSource *source)
+{
+        GNetworkMonitor *monitor;
+        GClueWebSourcePrivate *priv;
+
+        g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
+        g_return_if_fail (gclue_location_source_get_active
+                                GCLUE_LOCATION_SOURCE (source));
+
+        priv = source->priv;
+        if (priv->query != NULL)
+                return;
+
+        monitor = g_network_monitor_get_default ();
+        if (g_network_monitor_get_network_available (monitor))
+                on_network_changed (monitor, TRUE, source);
+}

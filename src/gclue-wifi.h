@@ -24,7 +24,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "gclue-location-source.h"
+#include "gclue-web-source.h"
 
 G_BEGIN_DECLS
 
@@ -48,7 +48,7 @@ typedef struct _GClueWifiPrivate GClueWifiPrivate;
 
 struct _GClueWifi {
         /* <private> */
-        GClueLocationSource parent_instance;
+        GClueWebSource parent_instance;
         GClueWifiPrivate *priv;
 };
 
@@ -59,7 +59,7 @@ struct _GClueWifi {
 **/
 struct _GClueWifiClass {
         /* <private> */
-        GClueLocationSourceClass parent_class;
+        GClueWebSourceClass parent_class;
 };
 
 GClueWifi * gclue_wifi_new (void);

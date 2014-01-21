@@ -47,39 +47,25 @@
  **/
 
 struct _GClueWifiPrivate {
-        SoupSession *soup_session;
-
-        SoupMessage *query;
-
-        gulong network_changed_id;
 };
 
-static void
-gclue_wifi_start (GClueLocationSource *source);
-static void
-gclue_wifi_stop (GClueLocationSource *source);
+static SoupMessage *
+gclue_wifi_create_query (GClueWebSource *source,
+                         GError        **error);
+static GeocodeLocation *
+gclue_wifi_parse_response (GClueWebSource *source,
+                           const char     *json,
+                           GError        **error);
 
-G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_LOCATION_SOURCE)
-
-static void
-gclue_wifi_finalize (GObject *gwifi)
-{
-        GClueWifi *wifi = (GClueWifi *) gwifi;
-
-        g_clear_object (&wifi->priv->soup_session);
-
-        G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
-}
+G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_WEB_SOURCE)
 
 static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
-        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
-        GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
+        GClueWebSourceClass *source_class = GCLUE_WEB_SOURCE_CLASS (klass);
 
-        source_class->start = gclue_wifi_start;
-        source_class->stop = gclue_wifi_stop;
-        gwifi_class->finalize = gclue_wifi_finalize;
+        source_class->create_query = gclue_wifi_create_query;
+        source_class->parse_response = gclue_wifi_parse_response;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
 }
@@ -88,11 +74,6 @@ static void
 gclue_wifi_init (GClueWifi *wifi)
 {
         wifi->priv = G_TYPE_INSTANCE_GET_PRIVATE ((wifi), GCLUE_TYPE_WIFI, GClueWifiPrivate);
-
-        wifi->priv->soup_session = soup_session_new_with_options
-                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
-                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
-                         NULL);
 }
 
 /**
@@ -108,12 +89,12 @@ gclue_wifi_new (void)
         return g_object_new (GCLUE_TYPE_WIFI, NULL);
 }
 
+
 static SoupMessage *
-get_search_query (GClueWifi *wifi,
-                  NMClient  *client,
-                  GError   **error)
+gclue_wifi_create_query (GClueWebSource *source,
+                         GError        **error)
 {
-        SoupMessage *ret;
+        SoupMessage *ret = NULL;
         JsonBuilder *builder;
         JsonGenerator *generator;
         JsonNode *root_node;
@@ -121,8 +102,11 @@ get_search_query (GClueWifi *wifi,
         gsize data_len;
         const GPtrArray *devices;
         const GPtrArray *aps; /* As in Access Points */
+        NMClient *client;
         NMDeviceWifi *wifi_device = NULL;
         guint i;
+
+        client = nm_client_new (); /* FIXME: Use async variant */
 
         devices = nm_client_get_devices (client);
         for (i = 0; i < devices->len; i++) {
@@ -138,7 +122,7 @@ get_search_query (GClueWifi *wifi,
                                      G_IO_ERROR,
                                      G_IO_ERROR_FAILED,
                                      "No WiFi devices available");
-                return NULL;
+                goto out;
         }
 
         aps = nm_device_wifi_get_access_points (wifi_device);
@@ -147,7 +131,7 @@ get_search_query (GClueWifi *wifi,
                                      G_IO_ERROR,
                                      G_IO_ERROR_FAILED,
                                      "No WiFi access points around");
-                return NULL;
+                goto out;
         }
 
         builder = json_builder_new ();
@@ -192,6 +176,8 @@ get_search_query (GClueWifi *wifi,
                                   data_len);
         g_debug ("Sending following request to '%s':\n%s", SERVER, data);
 
+out:
+        g_object_unref (client);
         return ret;
 }
 
@@ -215,8 +201,9 @@ parse_server_error (JsonObject *object, GError **error)
 }
 
 static GeocodeLocation *
-_gclue_wifi_json_to_location (const char *json,
-                              GError    **error)
+gclue_wifi_parse_response (GClueWebSource *source,
+                           const char     *json,
+                           GError        **error)
 {
         JsonParser *parser;
         JsonNode *node;
@@ -248,111 +235,4 @@ _gclue_wifi_json_to_location (const char *json,
         g_object_unref (parser);
 
         return location;
-}
-
-static void
-query_callback (SoupSession *session,
-                SoupMessage *query,
-                gpointer     user_data)
-{
-        GClueWifi *wifi = GCLUE_WIFI (user_data);
-        GError *error = NULL;
-        char *contents;
-        GeocodeLocation *location;
-
-        wifi->priv->query = NULL;
-
-        if (query->status_code != SOUP_STATUS_OK) {
-                g_warning ("Failed to query location: %s", query->reason_phrase);
-		return;
-	}
-
-        contents = g_strndup (query->response_body->data, query->response_body->length);
-        location = _gclue_wifi_json_to_location (contents, &error);
-        g_free (contents);
-        if (error != NULL) {
-                g_warning ("Failed to query location: %s", error->message);
-                return;
-        }
-
-        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (wifi),
-                                            location);
-}
-
-static void
-on_network_changed (GNetworkMonitor *monitor,
-                    gboolean         available,
-                    gpointer         user_data)
-{
-        GClueWifi *wifi = GCLUE_WIFI (user_data);
-        NMClient *client;
-        GError *error = NULL;
-
-        if (!available) {
-                g_debug ("Network unreachable");
-                return;
-        }
-        g_debug ("Network changed");
-
-        client = nm_client_new (); /* FIXME: Use async variant */
-        wifi->priv->query = get_search_query (wifi, client, &error);
-        g_object_unref (client);
-
-        if (wifi->priv->query == NULL) {
-                g_warning ("Failed to create query: %s", error->message);
-                g_error_free (error);
-                return;
-        }
-
-        soup_session_queue_message (wifi->priv->soup_session,
-                                    wifi->priv->query,
-                                    query_callback,
-                                    wifi);
-}
-
-static void
-gclue_wifi_start (GClueLocationSource *source)
-{
-        GNetworkMonitor *monitor;
-        GClueWifi *wifi;
-
-        g_return_if_fail (GCLUE_IS_WIFI (source));
-        wifi = GCLUE_WIFI (source);
-
-        if (wifi->priv->network_changed_id)
-                return; /* Already started */
-
-        monitor = g_network_monitor_get_default ();
-        wifi->priv->network_changed_id =
-                g_signal_connect (monitor,
-                                  "network-changed",
-                                  G_CALLBACK (on_network_changed),
-                                  wifi);
-
-        if (g_network_monitor_get_network_available (monitor))
-                on_network_changed (monitor, TRUE, wifi);
-}
-
-static void
-gclue_wifi_stop (GClueLocationSource *source)
-{
-        GClueWifiPrivate *priv;
-
-        g_return_if_fail (GCLUE_IS_WIFI (source));
-        priv = GCLUE_WIFI (source)->priv;
-
-        if (priv->network_changed_id) {
-                g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             priv->network_changed_id);
-                priv->network_changed_id = 0;
-        }
-
-        if (priv->query == NULL)
-                return;
-
-        g_debug ("Cancelling query");
-        soup_session_cancel_message (priv->soup_session,
-                                     priv->query,
-                                     SOUP_STATUS_CANCELLED);
-        priv->query = NULL;
 }

@@ -63,6 +63,8 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-service-location.c \
 	gclue-wifi.h 	 	 \
 	gclue-wifi.c 	 	 \
+	gclue-web-source.c	 \
+	gclue-web-source.h	 \
 	gclue-enums.h		 \
 	geocode-location.c       \
 	geocode-location.h       \

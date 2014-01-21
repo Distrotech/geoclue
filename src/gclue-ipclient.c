@@ -41,28 +41,24 @@
  **/
 
 struct _GClueIpclientPrivate {
-        SoupSession *soup_session;
-
         char *ip;
-
-        SoupMessage *query;
-
-        gulong network_changed_id;
 };
 
-static void
-gclue_ipclient_start (GClueLocationSource *source);
-static void
-gclue_ipclient_stop (GClueLocationSource *source);
+static SoupMessage *
+gclue_ipclient_create_query (GClueWebSource *source,
+                             GError        **error);
+static GeocodeLocation *
+gclue_ipclient_parse_response (GClueWebSource *source,
+                               const char     *json,
+                               GError        **error);
 
-G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, GCLUE_TYPE_LOCATION_SOURCE)
+G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, GCLUE_TYPE_WEB_SOURCE)
 
 static void
 gclue_ipclient_finalize (GObject *gipclient)
 {
         GClueIpclient *ipclient = (GClueIpclient *) gipclient;
 
-        g_clear_object (&ipclient->priv->soup_session);
         g_free (ipclient->priv->ip);
 
         G_OBJECT_CLASS (gclue_ipclient_parent_class)->finalize (gipclient);
@@ -71,11 +67,11 @@ gclue_ipclient_finalize (GObject *gipclient)
 static void
 gclue_ipclient_class_init (GClueIpclientClass *klass)
 {
-        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
+        GClueWebSourceClass *source_class = GCLUE_WEB_SOURCE_CLASS (klass);
         GObjectClass *gipclient_class = G_OBJECT_CLASS (klass);
 
-        source_class->start = gclue_ipclient_start;
-        source_class->stop = gclue_ipclient_stop;
+        source_class->create_query = gclue_ipclient_create_query;
+        source_class->parse_response = gclue_ipclient_parse_response;
         gipclient_class->finalize = gclue_ipclient_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueIpclientPrivate));
@@ -85,11 +81,6 @@ static void
 gclue_ipclient_init (GClueIpclient *ipclient)
 {
         ipclient->priv = G_TYPE_INSTANCE_GET_PRIVATE ((ipclient), GCLUE_TYPE_IPCLIENT, GClueIpclientPrivate);
-
-        ipclient->priv->soup_session = soup_session_new_with_options
-                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
-                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
-                         NULL);
 }
 
 /**
@@ -126,17 +117,22 @@ gclue_ipclient_new (void)
 }
 
 static SoupMessage *
-get_search_query (GClueIpclient *ipclient)
+gclue_ipclient_create_query (GClueWebSource *source,
+                             GError        **error)
 {
+        GClueIpclientPrivate *priv;
         SoupMessage *ret;
         char *uri;
 
-        if (ipclient->priv->ip) {
+        g_return_val_if_fail (GCLUE_IS_IPCLIENT (source), NULL);
+        priv = GCLUE_IPCLIENT (source)->priv;
+
+        if (priv->ip) {
                 GHashTable *ht;
                 char *query_string;
 
                 ht = g_hash_table_new (g_str_hash, g_str_equal);
-                g_hash_table_insert (ht, "ip", g_strdup (ipclient->priv->ip));
+                g_hash_table_insert (ht, "ip", g_strdup (priv->ip));
                 query_string = soup_form_encode_hash (ht);
                 g_hash_table_destroy (ht);
 
@@ -227,8 +223,9 @@ get_accuracy_from_json_location (JsonObject *object)
 }
 
 static GeocodeLocation *
-_gclue_ip_json_to_location (const char *json,
-                            GError    **error)
+gclue_ipclient_parse_response (GClueWebSource *source,
+                               const char     *json,
+                               GError        **error)
 {
         JsonParser *parser;
         JsonNode *node;
@@ -280,100 +277,4 @@ _gclue_ip_json_to_location (const char *json,
         g_object_unref (parser);
 
         return location;
-}
-
-static void
-query_callback (SoupSession *session,
-                SoupMessage *query,
-                gpointer     user_data)
-{
-        GClueIpclient *ipclient = GCLUE_IPCLIENT (user_data);
-        GError *error = NULL;
-        char *contents;
-        GeocodeLocation *location;
-
-        ipclient->priv->query = NULL;
-
-        if (query->status_code != SOUP_STATUS_OK) {
-                g_warning ("Failed to query location: %s", query->reason_phrase);
-		return;
-	}
-
-        contents = g_strndup (query->response_body->data, query->response_body->length);
-        location = _gclue_ip_json_to_location (contents, &error);
-        g_free (contents);
-        if (error != NULL) {
-                g_warning ("Failed to query location: %s", error->message);
-                return;
-        }
-
-        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (ipclient),
-                                            location);
-}
-
-static void
-on_network_changed (GNetworkMonitor *monitor,
-                    gboolean         available,
-                    gpointer         user_data)
-{
-        GClueIpclient *ipclient = GCLUE_IPCLIENT (user_data);
-
-        if (!available) {
-                g_debug ("Network unreachable");
-                return;
-        }
-        g_debug ("Network changed");
-
-        ipclient->priv->query = get_search_query (ipclient);
-        soup_session_queue_message (ipclient->priv->soup_session,
-                                    ipclient->priv->query,
-                                    query_callback,
-                                    ipclient);
-}
-
-static void
-gclue_ipclient_start (GClueLocationSource *source)
-{
-        GNetworkMonitor *monitor;
-        GClueIpclient *ipclient;
-
-        g_return_if_fail (GCLUE_IS_IPCLIENT (source));
-        ipclient = GCLUE_IPCLIENT (source);
-
-        if (ipclient->priv->network_changed_id)
-                return; /* Already started */
-
-        monitor = g_network_monitor_get_default ();
-        ipclient->priv->network_changed_id =
-                g_signal_connect (monitor,
-                                  "network-changed",
-                                  G_CALLBACK (on_network_changed),
-                                  ipclient);
-
-        if (g_network_monitor_get_network_available (monitor))
-                on_network_changed (monitor, TRUE, ipclient);
-}
-
-static void
-gclue_ipclient_stop (GClueLocationSource *source)
-{
-        GClueIpclientPrivate *priv;
-
-        g_return_if_fail (GCLUE_IS_IPCLIENT (source));
-        priv = GCLUE_IPCLIENT (source)->priv;
-
-        if (priv->network_changed_id) {
-                g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             priv->network_changed_id);
-                priv->network_changed_id = 0;
-        }
-
-        if (priv->query == NULL)
-                return;
-
-        g_debug ("Cancelling query");
-        soup_session_cancel_message (priv->soup_session,
-                                     priv->query,
-                                     SOUP_STATUS_CANCELLED);
-        priv->query = NULL;
 }

@@ -26,7 +26,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "gclue-location-source.h"
+#include "gclue-web-source.h"
 
 G_BEGIN_DECLS
 
@@ -50,7 +50,7 @@ typedef struct _GClueIpclientPrivate GClueIpclientPrivate;
 
 struct _GClueIpclient {
         /* <private> */
-        GClueLocationSource parent_instance;
+        GClueWebSource parent_instance;
         GClueIpclientPrivate *priv;
 };
 
@@ -61,7 +61,7 @@ struct _GClueIpclient {
 **/
 struct _GClueIpclientClass {
         /* <private> */
-        GClueLocationSourceClass parent_class;
+        GClueWebSourceClass parent_class;
 };
 
 GClueIpclient *gclue_ipclient_new               (void);

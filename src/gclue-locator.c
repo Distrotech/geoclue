@@ -27,7 +27,9 @@
 #include "gclue-wifi.h"
 #include "gclue-enum-types.h"
 
-/* This class will be responsible for doing the actual geolocating. */
+/* This class is like a master location source that hides all individual
+ * location sources from rest of the code
+ */
 
 static void
 gclue_locator_start (GClueLocationSource *source);

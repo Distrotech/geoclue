@@ -313,7 +313,7 @@ gclue_wifi_create_query (GClueWebSource *source,
 
                 json_builder_begin_object (builder);
                 json_builder_set_member_name (builder, "macAddress");
-                mac = nm_access_point_get_hw_address (ap);
+                mac = nm_access_point_get_bssid (ap);
                 json_builder_add_string_value (builder, mac);
 
                 json_builder_set_member_name (builder, "signalStrength");

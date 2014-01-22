@@ -47,6 +47,14 @@
  **/
 
 struct _GClueWifiPrivate {
+        NMClient *client;
+        NMDeviceWifi *wifi_device;
+
+        gulong ap_added_id;
+        gulong ap_removed_id;
+        gulong active_id;
+
+        guint refresh_timeout;
 };
 
 static SoupMessage *
@@ -60,20 +68,191 @@ gclue_wifi_parse_response (GClueWebSource *source,
 G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_WEB_SOURCE)
 
 static void
+on_device_removed (NMClient *client,
+                   NMDevice *device,
+                   gpointer  user_data);
+
+static void
+gclue_wifi_finalize (GObject *gwifi)
+{
+        GClueWifi *wifi = (GClueWifi *) gwifi;
+
+        wifi->priv->active_id = 0;
+        if (wifi->priv->wifi_device != NULL)
+                on_device_removed (wifi->priv->client,
+                                   NM_DEVICE (wifi->priv->wifi_device),
+                                   wifi);
+        g_object_unref (wifi->priv->client);
+
+        G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
+}
+
+static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
         GClueWebSourceClass *source_class = GCLUE_WEB_SOURCE_CLASS (klass);
+        GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
 
         source_class->create_query = gclue_wifi_create_query;
         source_class->parse_response = gclue_wifi_parse_response;
+        gwifi_class->finalize = gclue_wifi_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
+}
+
+static gboolean
+on_refresh_timeout (gpointer user_data)
+{
+        g_debug ("Refreshing location..");
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (user_data));
+        GCLUE_WIFI (user_data)->priv->refresh_timeout = 0;
+
+        return FALSE;
+}
+
+static void
+on_ap_changed (NMDeviceWifi  *device,
+               NMAccessPoint *ap,
+               gpointer       user_data)
+{
+        GClueWifi *wifi = GCLUE_WIFI (user_data);
+
+        if (wifi->priv->refresh_timeout != 0)
+                return;
+        g_debug ("WiFi AP '%s' added or removed.",
+                 nm_access_point_get_bssid (ap));
+
+        /* There could be multiple devices being added/removed at the same time
+         * so we don't immediately call refresh but rather wait 1 second.
+         */
+        wifi->priv->refresh_timeout = g_timeout_add_seconds (1,
+                                                             on_refresh_timeout,
+                                                             wifi);
+}
+
+static void
+connect_ap_signals (GClueWifi  *wifi)
+{
+        if (wifi->priv->ap_added_id != 0)
+                return;
+
+        wifi->priv->ap_added_id =
+                g_signal_connect (wifi->priv->wifi_device,
+                                  "access-point-added",
+                                  G_CALLBACK (on_ap_changed),
+                                  wifi);
+        wifi->priv->ap_removed_id =
+                g_signal_connect (wifi->priv->wifi_device,
+                                  "access-point-removed",
+                                  G_CALLBACK (on_ap_changed),
+                                  wifi);
+}
+
+static void
+disconnect_ap_signals (GClueWifi  *wifi)
+{
+        GClueWifiPrivate *priv = wifi->priv;
+
+        if (priv->ap_added_id == 0)
+                return;
+
+        g_signal_handler_disconnect (priv->wifi_device, priv->ap_added_id);
+        g_signal_handler_disconnect (priv->wifi_device, priv->ap_removed_id);
+        priv->ap_added_id = 0;
+        priv->ap_removed_id = 0;
+
+        if (priv->refresh_timeout != 0) {
+                g_source_remove (priv->refresh_timeout);
+                priv->refresh_timeout = 0;
+        }
+}
+
+static void
+on_active_notify (GClueWifi  *wifi,
+                  GParamSpec *pspec,
+                  gpointer    user_data)
+{
+        gboolean active;
+
+        active = gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi));
+        if (active)
+                connect_ap_signals (wifi);
+        else
+                disconnect_ap_signals (wifi);
+}
+
+static void
+on_device_added (NMClient *client,
+                 NMDevice *device,
+                 gpointer  user_data)
+{
+        GClueWifi *wifi = GCLUE_WIFI (user_data);
+        gboolean active;
+
+        if (wifi->priv->wifi_device != NULL || !NM_IS_DEVICE_WIFI (device))
+                return;
+
+        wifi->priv->wifi_device = NM_DEVICE_WIFI (device);
+        g_debug ("WiFi device '%s' added.",
+                 nm_device_wifi_get_hw_address (wifi->priv->wifi_device));
+        wifi->priv->active_id = g_signal_connect (wifi,
+                                                  "notify::active",
+                                                  G_CALLBACK (on_active_notify),
+                                                  NULL);
+
+        active = gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi));
+        if (active)
+                connect_ap_signals (wifi);
+}
+
+static void
+on_device_removed (NMClient *client,
+                   NMDevice *device,
+                   gpointer  user_data)
+{
+        GClueWifi *wifi = GCLUE_WIFI (user_data);
+
+        if (wifi->priv->wifi_device == NULL ||
+            NM_DEVICE (wifi->priv->wifi_device) != device)
+                return;
+        g_debug ("WiFi device '%s' removed.",
+                 nm_device_wifi_get_hw_address (wifi->priv->wifi_device));
+
+        wifi->priv->wifi_device = NULL;
+        if (wifi->priv->active_id != 0) {
+                g_signal_handler_disconnect (wifi, wifi->priv->active_id);
+                wifi->priv->active_id = 0;
+        }
+        disconnect_ap_signals (wifi);
 }
 
 static void
 gclue_wifi_init (GClueWifi *wifi)
 {
+        const GPtrArray *devices;
+        guint i;
+
         wifi->priv = G_TYPE_INSTANCE_GET_PRIVATE ((wifi), GCLUE_TYPE_WIFI, GClueWifiPrivate);
+
+        wifi->priv->client = nm_client_new (); /* FIXME: We should be using async variant */
+        g_signal_connect (wifi->priv->client,
+                          "device-added",
+                          G_CALLBACK (on_device_added),
+                          wifi);
+        g_signal_connect (wifi->priv->client,
+                          "device-removed",
+                          G_CALLBACK (on_device_removed),
+                          wifi);
+
+        devices = nm_client_get_devices (wifi->priv->client);
+        for (i = 0; i < devices->len; i++) {
+                NMDevice *device = g_ptr_array_index (devices, i);
+                if (NM_IS_DEVICE_WIFI (device)) {
+                    on_device_added (wifi->priv->client, device, wifi);
+
+                    break;
+                }
+        }
 }
 
 /**
@@ -94,30 +273,17 @@ static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error)
 {
+        GClueWifi *wifi = GCLUE_WIFI (source);
         SoupMessage *ret = NULL;
         JsonBuilder *builder;
         JsonGenerator *generator;
         JsonNode *root_node;
         char *data;
         gsize data_len;
-        const GPtrArray *devices;
         const GPtrArray *aps; /* As in Access Points */
-        NMClient *client;
-        NMDeviceWifi *wifi_device = NULL;
         guint i;
 
-        client = nm_client_new (); /* FIXME: Use async variant */
-
-        devices = nm_client_get_devices (client);
-        for (i = 0; i < devices->len; i++) {
-                NMDevice *device = g_ptr_array_index (devices, i);
-                if (NM_IS_DEVICE_WIFI (device)) {
-                    wifi_device = NM_DEVICE_WIFI (device);
-
-                    break;
-                }
-        }
-        if (wifi_device == NULL) {
+        if (wifi->priv->wifi_device == NULL) {
                 g_set_error_literal (error,
                                      G_IO_ERROR,
                                      G_IO_ERROR_FAILED,
@@ -125,7 +291,7 @@ gclue_wifi_create_query (GClueWebSource *source,
                 goto out;
         }
 
-        aps = nm_device_wifi_get_access_points (wifi_device);
+        aps = nm_device_wifi_get_access_points (wifi->priv->wifi_device);
         if (aps->len == 0) {
                 g_set_error_literal (error,
                                      G_IO_ERROR,
@@ -177,7 +343,6 @@ gclue_wifi_create_query (GClueWebSource *source,
         g_debug ("Sending following request to '%s':\n%s", SERVER, data);
 
 out:
-        g_object_unref (client);
         return ret;
 }
 

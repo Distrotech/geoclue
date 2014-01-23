@@ -212,8 +212,7 @@ gclue_config_get_mozilla_key (GClueConfig *config)
         if (error != NULL) {
                 g_warning ("%s", error->message);
                 key = g_strdup ("geoclue");
-        } else
-                g_print ("got key from file: %s\n", key);
+        }
 
         return key;
 }

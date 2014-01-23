@@ -24,7 +24,7 @@
 #define GCLUE_CONFIG_H
 
 #include <gio/gio.h>
-#include "geocode-location.h"
+#include "geocode-glib/geocode-location.h"
 #include "gclue-client-info.h"
 #include "gclue-config.h"
 

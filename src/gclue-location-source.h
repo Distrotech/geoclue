@@ -24,7 +24,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "geocode-location.h"
+#include "geocode-glib/geocode-location.h"
 
 G_BEGIN_DECLS
 

@@ -29,7 +29,7 @@
 #include "gclue-wifi.h"
 #include "gclue-config.h"
 #include "gclue-error.h"
-#include "geocode-location.h"
+#include "geocode-glib/geocode-location.h"
 
 /* Since we use the Geolocate API (rather than Search), we could easily switch
  * to Google geolocation service in future, if such a need arises.

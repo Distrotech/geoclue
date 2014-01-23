@@ -26,7 +26,7 @@
 #include <string.h>
 #include "gclue-web-source.h"
 #include "gclue-error.h"
-#include "geocode-location.h"
+#include "geocode-glib/geocode-location.h"
 
 /**
  * SECTION:gclue-web-source

@@ -7,7 +7,7 @@ install-exec-hook:
 	echo "Unable to setcap cap_sys_ptrace+ep $(libexecdir)/geoclue. " \
 	     "Package systems may do this after installation."
 
-SUBDIRS = agent
+SUBDIRS = agent geocode-glib
 
 if BUILD_GEOIP_SERVER
 SUBDIRS += geoip-server
@@ -66,17 +66,16 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-web-source.c	 \
 	gclue-web-source.h	 \
 	gclue-enums.h		 \
-	geocode-location.c       \
-	geocode-location.h       \
 	$(NULL)
 libgeoclue_la_LIBADD = $(GEOCLUE_LIBS) $(LIBS)
 
 geoclue_SOURCES =	 	  \
 	gclue-main.c	 	  \
 	$(NULL)
-geoclue_LDADD = $(GEOCLUE_LIBS) 	  \
-		$(LIBS) 		  \
-		$(builddir)/libgeoclue.la
+geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    \
+		$(LIBS) 		  		    \
+		$(builddir)/libgeoclue.la		    \
+		$(builddir)/geocode-glib/libgeocode-glib.la
 
 CLEANFILES = $(BUILT_SOURCES)
 EXTRA_DIST = $(interface_DATA) \
@@ -85,12 +84,6 @@ EXTRA_DIST = $(interface_DATA) \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-2.0.pc
-
-GEOCODEGLIBDIR=$(top_srcdir)/../geocode-glib/geocode-glib/
-GEOCODEGLIBFILES=geocode-location.c geocode-location.h
-update-from-geocode-glib:
-	FILES="$(GEOCODEGLIBFILES)" DIR="$(GEOCODEGLIBDIR)" $(srcdir)/update-from-geocode-glib.sh && changed=true ; \
-	git commit -m "location: Update from geocode-glib" $(GEOCODEGLIBFILES)
 
 # Enum types
 GEOCLUE_ENUMS = \

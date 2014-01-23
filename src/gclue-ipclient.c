@@ -84,23 +84,6 @@ gclue_ipclient_init (GClueIpclient *ipclient)
 }
 
 /**
- * gclue_ipclient_new_for_ip:
- * @str: The IP address
- *
- * Returns: a new #GClueIpclient. Use g_object_unref() when done.
- **/
-GClueIpclient *
-gclue_ipclient_new_for_ip (const char *ip)
-{
-        GClueIpclient *ipclient;
-
-        ipclient = g_object_new (GCLUE_TYPE_IPCLIENT, NULL);
-        ipclient->priv->ip = g_strdup (ip);
-
-        return ipclient;
-}
-
-/**
  * gclue_ipclient_new:
  *
  * Creates a new #GClueIpclient to fetch the geolocation data.
@@ -113,7 +96,7 @@ gclue_ipclient_new_for_ip (const char *ip)
 GClueIpclient *
 gclue_ipclient_new (void)
 {
-        return gclue_ipclient_new_for_ip (NULL);
+        return g_object_new (GCLUE_TYPE_IPCLIENT, NULL);
 }
 
 static SoupMessage *

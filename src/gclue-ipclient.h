@@ -64,8 +64,7 @@ struct _GClueIpclientClass {
         GClueWebSourceClass parent_class;
 };
 
-GClueIpclient *gclue_ipclient_new               (void);
-GClueIpclient *gclue_ipclient_new_for_ip        (const char *str);
+GClueIpclient *gclue_ipclient_new (void);
 
 G_END_DECLS
 

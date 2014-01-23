@@ -176,13 +176,13 @@ gclue_locator_start (GClueLocationSource *source)
                                                 wifi);
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
-                GClueLocationSource *source = GCLUE_LOCATION_SOURCE (node->data);
+                GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
 
-                g_signal_connect (source,
+                g_signal_connect (src,
                                   "notify::location",
                                   G_CALLBACK (on_location_changed),
                                   locator);
-                gclue_location_source_start (source);
+                gclue_location_source_start (src);
         }
 }
 

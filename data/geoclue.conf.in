@@ -8,6 +8,13 @@
 # in privileged locations, e.g /usr/bin, /usr/sbin, /usr/libexec etc.
 whitelist=@demo_agent@/usr/bin/gnome-shell
 
+# WiFi source configuration options
+[wifi]
+
+# Our key for using Mozilla Location Service. Currenty it can be anything, as
+# long as its present but that is likely going to change in future.
+mozilla-key=geoclue
+
 # Application configuration options
 #
 # Format:

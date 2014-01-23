@@ -198,3 +198,22 @@ out:
 
         return allowed;
 }
+
+char *
+gclue_config_get_mozilla_key (GClueConfig *config)
+{
+        char *key;
+        GError *error = NULL;
+
+        key = g_key_file_get_string (config->priv->key_file,
+                                     "wifi",
+                                     "mozilla-key",
+                                     &error);
+        if (error != NULL) {
+                g_warning ("%s", error->message);
+                key = g_strdup ("geoclue");
+        } else
+                g_print ("got key from file: %s\n", key);
+
+        return key;
+}

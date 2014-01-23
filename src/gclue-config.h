@@ -60,9 +60,10 @@ GType gclue_config_get_type (void) G_GNUC_CONST;
 GClueConfig *       gclue_config_get_singleton    (void);
 gboolean            gclue_config_is_agent_allowed (GClueConfig     *config,
                                                    GClueClientInfo *agent_info);
-gboolean            gclue_config_is_app_allowed (GClueConfig     *config,
-                                                 const char      *desktop_id,
-                                                 GClueClientInfo *app_info);
+gboolean            gclue_config_is_app_allowed   (GClueConfig     *config,
+                                                   const char      *desktop_id,
+                                                   GClueClientInfo *app_info);
+char *              gclue_config_get_mozilla_key  (GClueConfig     *config);
 
 G_END_DECLS
 

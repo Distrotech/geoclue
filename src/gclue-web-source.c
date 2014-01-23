@@ -94,6 +94,7 @@ query_callback (SoupSession *session,
         GError *error = NULL;
         char *contents;
         GeocodeLocation *location;
+        SoupURI *uri;
 
         web->priv->query = NULL;
 
@@ -103,9 +104,13 @@ query_callback (SoupSession *session,
 	}
 
         contents = g_strndup (query->response_body->data, query->response_body->length);
+        uri = soup_message_get_uri (query);
+        g_debug ("Got following response from '%s':\n%s",
+                 soup_uri_to_string (uri, FALSE),
+                 contents);
         location = GCLUE_WEB_SOURCE_GET_CLASS (web)->parse_response (web,
-                                                                        contents,
-                                                                        &error);
+                                                                     contents,
+                                                                     &error);
         g_free (contents);
         if (error != NULL) {
                 g_warning ("Failed to query location: %s", error->message);

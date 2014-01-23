@@ -27,6 +27,7 @@
 #include <nm-client.h>
 #include <nm-device-wifi.h>
 #include "gclue-wifi.h"
+#include "gclue-config.h"
 #include "gclue-error.h"
 #include "geocode-location.h"
 
@@ -268,6 +269,19 @@ gclue_wifi_new (void)
         return g_object_new (GCLUE_TYPE_WIFI, NULL);
 }
 
+static char *
+create_uri (void)
+{
+        GClueConfig *config;
+        char *key, *uri;
+
+        config = gclue_config_get_singleton ();
+        key = gclue_config_get_mozilla_key (config);
+        uri = g_strjoin (NULL, SERVER, "?key=", key, NULL);
+        g_free (key);
+
+        return uri;
+}
 
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
@@ -282,6 +296,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         gsize data_len;
         const GPtrArray *aps; /* As in Access Points */
         guint i;
+        char *uri;
 
         if (wifi->priv->wifi_device == NULL) {
                 g_set_error_literal (error,
@@ -334,14 +349,16 @@ gclue_wifi_create_query (GClueWebSource *source,
         g_object_unref (builder);
         g_object_unref (generator);
 
-        ret = soup_message_new ("POST", SERVER);
+        uri = create_uri ();
+        ret = soup_message_new ("POST", uri);
         soup_message_set_request (ret,
                                   "application/json",
                                   SOUP_MEMORY_TAKE,
                                   data,
                                   data_len);
-        g_debug ("Sending following request to '%s':\n%s", SERVER, data);
+        g_debug ("Sending following request to '%s':\n%s", uri, data);
 
+        g_free (uri);
 out:
         return ret;
 }
@@ -375,8 +392,6 @@ gclue_wifi_parse_response (GClueWebSource *source,
         JsonObject *object, *loc_object;
         GeocodeLocation *location;
         gdouble latitude, longitude, accuracy;
-
-        g_debug ("Got following response from '%s':\n%s", SERVER, json);
 
         parser = json_parser_new ();
 

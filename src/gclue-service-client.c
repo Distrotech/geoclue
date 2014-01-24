@@ -150,6 +150,8 @@ on_locator_location_changed (GObject    *gobject,
         GError *error = NULL;
 
         location_info = gclue_location_source_get_location (locator);
+        if (location_info == NULL)
+                return; /* No location found yet */
 
         if (priv->location != NULL && below_threshold (client, location_info)) {
                 g_debug ("Updating location, below threshold");
@@ -213,6 +215,11 @@ complete_start (StartData *data, GClueAccuracyLevel accuracy_level)
                           "notify::location",
                           G_CALLBACK (on_locator_location_changed),
                           data->client);
+
+        /* In case locator already has a location */
+        on_locator_location_changed (G_OBJECT (priv->locator),
+                                     NULL,
+                                     data->client);
 
         gclue_client_complete_start (GCLUE_CLIENT (data->client),
                                      data->invocation);

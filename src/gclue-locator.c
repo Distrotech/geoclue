@@ -140,11 +140,20 @@ gclue_locator_constructed (GObject *object)
         locator->priv->sources = g_list_append (locator->priv->sources,
                                                 wifi);
 
-        for (node = locator->priv->sources; node != NULL; node = node->next)
-                g_signal_connect (G_OBJECT (node->data),
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
+                GeocodeLocation *location;
+
+                location = gclue_location_source_get_location (src);
+                if (location != NULL)
+                        gclue_location_source_set_location
+                                (GCLUE_LOCATION_SOURCE (locator), location);
+
+                g_signal_connect (G_OBJECT (src),
                                   "notify::location",
                                   G_CALLBACK (on_location_changed),
                                   locator);
+        }
 }
 
 static void

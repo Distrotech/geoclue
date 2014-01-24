@@ -55,6 +55,8 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-location-source.c	 \
 	gclue-locator.h 	 \
 	gclue-locator.c 	 \
+	gclue-modem-source.c	 \
+	gclue-modem-source.h	 \
 	gclue-service-manager.h  \
 	gclue-service-manager.c  \
 	gclue-service-client.h   \

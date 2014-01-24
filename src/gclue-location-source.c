@@ -35,27 +35,16 @@ G_DEFINE_ABSTRACT_TYPE (GClueLocationSource, gclue_location_source, G_TYPE_OBJEC
 struct _GClueLocationSourcePrivate
 {
         GeocodeLocation *location;
-
-        gboolean active;
 };
 
 enum
 {
         PROP_0,
         PROP_LOCATION,
-        PROP_ACTIVE,
         LAST_PROP
 };
 
 static GParamSpec *gParamSpecs[LAST_PROP];
-
-static void
-gclue_location_source_finalize (GObject *object)
-{
-        gclue_location_source_stop (GCLUE_LOCATION_SOURCE (object));
-
-        G_OBJECT_CLASS (gclue_location_source_parent_class)->finalize (object);
-}
 
 static void
 gclue_location_source_get_property (GObject    *object,
@@ -68,10 +57,6 @@ gclue_location_source_get_property (GObject    *object,
         switch (prop_id) {
         case PROP_LOCATION:
                 g_value_set_object (value, source->priv->location);
-                break;
-
-        case PROP_ACTIVE:
-                g_value_set_boolean (value, source->priv->active);
                 break;
 
         default:
@@ -107,7 +92,6 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         GObjectClass *object_class;
 
         object_class = G_OBJECT_CLASS (klass);
-        object_class->finalize = gclue_location_source_finalize;
         object_class->get_property = gclue_location_source_get_property;
         object_class->set_property = gclue_location_source_set_property;
         g_type_class_add_private (object_class, sizeof (GClueLocationSourcePrivate));
@@ -120,15 +104,6 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
                                          gParamSpecs[PROP_LOCATION]);
-
-        gParamSpecs[PROP_ACTIVE] = g_param_spec_boolean ("active",
-                                                         "Active",
-                                                         "Active",
-                                                         FALSE,
-                                                         G_PARAM_READABLE);
-        g_object_class_install_property (object_class,
-                                         PROP_ACTIVE,
-                                         gParamSpecs[PROP_ACTIVE]);
 }
 
 static void
@@ -138,42 +113,6 @@ gclue_location_source_init (GClueLocationSource *source)
                 G_TYPE_INSTANCE_GET_PRIVATE (source,
                                              GCLUE_TYPE_LOCATION_SOURCE,
                                              GClueLocationSourcePrivate);
-}
-
-/**
- * gclue_location_source_start:
- * @source: a #GClueLocationSource
- *
- * Start searching for location and keep an eye on location changes.
- **/
-void
-gclue_location_source_start (GClueLocationSource *source)
-{
-        g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
-
-        if (source->priv->active)
-                return; /* Already started */
-
-        GCLUE_LOCATION_SOURCE_GET_CLASS (source)->start (source);
-        source->priv->active = TRUE;
-        g_object_notify (G_OBJECT (source), "active");
-}
-
-/**
- * gclue_location_source_stop:
- * @source: a #GClueLocationSource
- *
- * Stop searching for location and no need to keep an eye on location changes
- * anymore.
- **/
-void
-gclue_location_source_stop (GClueLocationSource *source)
-{
-        g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
-
-        GCLUE_LOCATION_SOURCE_GET_CLASS (source)->stop (source);
-        source->priv->active = FALSE;
-        g_object_notify (G_OBJECT (source), "active");
 }
 
 /**
@@ -214,18 +153,4 @@ gclue_location_source_set_location (GClueLocationSource *source,
                       NULL);
 
         g_object_notify (G_OBJECT (source), "location");
-}
-
-/**
- * gclue_location_source_get_active:
- * @source: a #GClueLocationSource
- *
- * Returns: TRUE if source is active, FALSE otherwise.
- **/
-gboolean
-gclue_location_source_get_active (GClueLocationSource *source)
-{
-        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
-
-        return source->priv->active;
 }

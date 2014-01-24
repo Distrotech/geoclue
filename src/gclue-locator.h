@@ -57,12 +57,8 @@ struct _GClueLocatorClass
 
 GType gclue_locator_get_type (void) G_GNUC_CONST;
 
-GClueLocator *      gclue_locator_new           (void);
-GClueAccuracyLevel  gclue_locator_get_accuracy_level
-                                                (GClueLocator *locator);
-void                gclue_locator_set_accuracy_level
-                                                (GClueLocator      *locator,
-                                                 GClueAccuracyLevel level);
+GClueLocator *      gclue_locator_new                (GClueAccuracyLevel level);
+GClueAccuracyLevel  gclue_locator_get_accuracy_level (GClueLocator *locator);
 
 G_END_DECLS
 

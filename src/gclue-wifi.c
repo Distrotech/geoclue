@@ -53,7 +53,6 @@ struct _GClueWifiPrivate {
 
         gulong ap_added_id;
         gulong ap_removed_id;
-        gulong active_id;
 
         guint refresh_timeout;
 };
@@ -78,7 +77,6 @@ gclue_wifi_finalize (GObject *gwifi)
 {
         GClueWifi *wifi = (GClueWifi *) gwifi;
 
-        wifi->priv->active_id = 0;
         if (wifi->priv->wifi_device != NULL)
                 on_device_removed (wifi->priv->client,
                                    NM_DEVICE (wifi->priv->wifi_device),
@@ -169,26 +167,11 @@ disconnect_ap_signals (GClueWifi  *wifi)
 }
 
 static void
-on_active_notify (GClueWifi  *wifi,
-                  GParamSpec *pspec,
-                  gpointer    user_data)
-{
-        gboolean active;
-
-        active = gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi));
-        if (active)
-                connect_ap_signals (wifi);
-        else
-                disconnect_ap_signals (wifi);
-}
-
-static void
 on_device_added (NMClient *client,
                  NMDevice *device,
                  gpointer  user_data)
 {
         GClueWifi *wifi = GCLUE_WIFI (user_data);
-        gboolean active;
 
         if (wifi->priv->wifi_device != NULL || !NM_IS_DEVICE_WIFI (device))
                 return;
@@ -196,14 +179,8 @@ on_device_added (NMClient *client,
         wifi->priv->wifi_device = NM_DEVICE_WIFI (device);
         g_debug ("WiFi device '%s' added.",
                  nm_device_wifi_get_hw_address (wifi->priv->wifi_device));
-        wifi->priv->active_id = g_signal_connect (wifi,
-                                                  "notify::active",
-                                                  G_CALLBACK (on_active_notify),
-                                                  NULL);
 
-        active = gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi));
-        if (active)
-                connect_ap_signals (wifi);
+        connect_ap_signals (wifi);
 }
 
 static void
@@ -219,12 +196,8 @@ on_device_removed (NMClient *client,
         g_debug ("WiFi device '%s' removed.",
                  nm_device_wifi_get_hw_address (wifi->priv->wifi_device));
 
-        wifi->priv->wifi_device = NULL;
-        if (wifi->priv->active_id != 0) {
-                g_signal_handler_disconnect (wifi, wifi->priv->active_id);
-                wifi->priv->active_id = 0;
-        }
         disconnect_ap_signals (wifi);
+        wifi->priv->wifi_device = NULL;
 }
 
 static void

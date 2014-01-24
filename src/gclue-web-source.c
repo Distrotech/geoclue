@@ -44,46 +44,7 @@ struct _GClueWebSourcePrivate {
         gulong network_changed_id;
 };
 
-static void
-gclue_web_source_start (GClueLocationSource *source);
-static void
-gclue_web_source_stop (GClueLocationSource *source);
-
 G_DEFINE_ABSTRACT_TYPE (GClueWebSource, gclue_web_source, GCLUE_TYPE_LOCATION_SOURCE)
-
-static void
-gclue_web_source_finalize (GObject *gsource)
-{
-        GClueWebSource *web = (GClueWebSource *) gsource;
-
-        g_clear_object (&web->priv->soup_session);
-
-        G_OBJECT_CLASS (gclue_web_source_parent_class)->finalize (gsource);
-}
-
-static void
-gclue_web_source_class_init (GClueWebSourceClass *klass)
-{
-        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
-        GObjectClass *gsource_class = G_OBJECT_CLASS (klass);
-
-        source_class->start = gclue_web_source_start;
-        source_class->stop = gclue_web_source_stop;
-        gsource_class->finalize = gclue_web_source_finalize;
-
-        g_type_class_add_private (klass, sizeof (GClueWebSourcePrivate));
-}
-
-static void
-gclue_web_source_init (GClueWebSource *web)
-{
-        web->priv = G_TYPE_INSTANCE_GET_PRIVATE ((web), GCLUE_TYPE_WEB_SOURCE, GClueWebSourcePrivate);
-
-        web->priv->soup_session = soup_session_new_with_options
-                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
-                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
-                         NULL);
-}
 
 static void
 query_callback (SoupSession *session,
@@ -155,32 +116,9 @@ on_network_changed (GNetworkMonitor *monitor,
 }
 
 static void
-gclue_web_source_start (GClueLocationSource *source)
+gclue_web_source_finalize (GObject *gsource)
 {
-        GNetworkMonitor *monitor;
-        GClueWebSourcePrivate *priv;
-
-        g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
-        priv = GCLUE_WEB_SOURCE (source)->priv;
-
-        monitor = g_network_monitor_get_default ();
-        priv->network_changed_id =
-                g_signal_connect (monitor,
-                                  "network-changed",
-                                  G_CALLBACK (on_network_changed),
-                                  source);
-
-        if (g_network_monitor_get_network_available (monitor))
-                on_network_changed (monitor, TRUE, source);
-}
-
-static void
-gclue_web_source_stop (GClueLocationSource *source)
-{
-        GClueWebSourcePrivate *priv;
-
-        g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
-        priv = GCLUE_WEB_SOURCE (source)->priv;
+        GClueWebSourcePrivate *priv = GCLUE_WEB_SOURCE (gsource)->priv;
 
         if (priv->network_changed_id) {
                 g_signal_handler_disconnect (g_network_monitor_get_default (),
@@ -188,14 +126,55 @@ gclue_web_source_stop (GClueLocationSource *source)
                 priv->network_changed_id = 0;
         }
 
-        if (priv->query == NULL)
-                return;
+        if (priv->query != NULL) {
+                g_debug ("Cancelling query");
+                soup_session_cancel_message (priv->soup_session,
+                                             priv->query,
+                                             SOUP_STATUS_CANCELLED);
+        }
 
-        g_debug ("Cancelling query");
-        soup_session_cancel_message (priv->soup_session,
-                                     priv->query,
-                                     SOUP_STATUS_CANCELLED);
-        priv->query = NULL;
+        g_clear_object (&priv->soup_session);
+
+        G_OBJECT_CLASS (gclue_web_source_parent_class)->finalize (gsource);
+}
+
+static void
+gclue_web_source_constructed (GObject *object)
+{
+        GNetworkMonitor *monitor;
+        GClueWebSourcePrivate *priv = GCLUE_WEB_SOURCE (object)->priv;
+
+        priv->soup_session = soup_session_new_with_options
+                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
+                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
+                         NULL);
+
+        monitor = g_network_monitor_get_default ();
+        priv->network_changed_id =
+                g_signal_connect (monitor,
+                                  "network-changed",
+                                  G_CALLBACK (on_network_changed),
+                                  object);
+
+        if (g_network_monitor_get_network_available (monitor))
+                on_network_changed (monitor, TRUE, object);
+}
+
+static void
+gclue_web_source_class_init (GClueWebSourceClass *klass)
+{
+        GObjectClass *gsource_class = G_OBJECT_CLASS (klass);
+
+        gsource_class->finalize = gclue_web_source_finalize;
+        gsource_class->constructed = gclue_web_source_constructed;
+
+        g_type_class_add_private (klass, sizeof (GClueWebSourcePrivate));
+}
+
+static void
+gclue_web_source_init (GClueWebSource *web)
+{
+        web->priv = G_TYPE_INSTANCE_GET_PRIVATE ((web), GCLUE_TYPE_WEB_SOURCE, GClueWebSourcePrivate);
 }
 
 /**
@@ -212,8 +191,6 @@ gclue_web_source_refresh (GClueWebSource *source)
         GClueWebSourcePrivate *priv;
 
         g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
-        g_return_if_fail (gclue_location_source_get_active
-                                GCLUE_LOCATION_SOURCE (source));
 
         priv = source->priv;
         if (priv->query != NULL)

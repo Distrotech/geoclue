@@ -204,12 +204,27 @@ start_data_free (StartData *data)
 }
 
 static void
+complete_start (StartData *data, GClueAccuracyLevel accuracy_level)
+{
+        GClueServiceClientPrivate *priv = data->client->priv;
+
+        priv->locator = gclue_locator_new (accuracy_level);
+        g_signal_connect (priv->locator,
+                          "notify::location",
+                          G_CALLBACK (on_locator_location_changed),
+                          data->client);
+
+        gclue_client_complete_start (GCLUE_CLIENT (data->client),
+                                     data->invocation);
+        start_data_free (data);
+}
+
+static void
 on_authorize_app_ready (GObject      *source_object,
                         GAsyncResult *res,
                         gpointer      user_data)
 {
         StartData *data = (StartData *) user_data;
-        GClueServiceClientPrivate *priv = data->client->priv;
         GError *error = NULL;
         GVariant *results = NULL;
         gboolean authorized = FALSE;
@@ -235,15 +250,7 @@ on_authorize_app_ready (GObject      *source_object,
                 goto error_out;
         }
 
-        priv->locator = gclue_locator_new (accuracy_level);
-        g_signal_connect (priv->locator,
-                          "notify::location",
-                          G_CALLBACK (on_locator_location_changed),
-                          data->client);
-
-        gclue_client_complete_start (GCLUE_CLIENT (data->client),
-                                     data->invocation);
-        start_data_free (data);
+        complete_start (data, accuracy_level);
 
         return;
 
@@ -287,15 +294,7 @@ gclue_service_client_handle_start (GClueClient           *client,
             gclue_config_is_app_allowed (config,
                                          desktop_id,
                                          priv->client_info)) {
-                priv->locator = gclue_locator_new (accuracy_level);
-                g_signal_connect (priv->locator,
-                                  "notify::location",
-                                  G_CALLBACK (on_locator_location_changed),
-                                  data->client);
-
-                gclue_client_complete_start (GCLUE_CLIENT (client),
-                                             invocation);
-                start_data_free (data);
+                complete_start (data, accuracy_level);
 
                 return TRUE;
         }

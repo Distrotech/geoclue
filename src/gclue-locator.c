@@ -125,6 +125,29 @@ gclue_locator_finalize (GObject *gsource)
 }
 
 static void
+gclue_locator_constructed (GObject *object)
+{
+        GClueLocator *locator = GCLUE_LOCATOR (object);
+        GClueIpclient *ipclient;
+        GClueWifi *wifi;
+        GList *node;
+
+        /* FIXME: Only use sources that provide <= requested accuracy level. */
+        ipclient = gclue_ipclient_new ();
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                ipclient);
+        wifi = gclue_wifi_new ();
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                wifi);
+
+        for (node = locator->priv->sources; node != NULL; node = node->next)
+                g_signal_connect (G_OBJECT (node->data),
+                                  "notify::location",
+                                  G_CALLBACK (on_location_changed),
+                                  locator);
+}
+
+static void
 gclue_locator_class_init (GClueLocatorClass *klass)
 {
         GObjectClass *object_class;
@@ -133,6 +156,7 @@ gclue_locator_class_init (GClueLocatorClass *klass)
         object_class->get_property = gclue_locator_get_property;
         object_class->set_property = gclue_locator_set_property;
         object_class->finalize = gclue_locator_finalize;
+        object_class->constructed = gclue_locator_constructed;
         g_type_class_add_private (object_class, sizeof (GClueLocatorPrivate));
 
         gParamSpecs[PROP_ACCURACY_LEVEL] = g_param_spec_enum ("accuracy-level",
@@ -150,28 +174,10 @@ gclue_locator_class_init (GClueLocatorClass *klass)
 static void
 gclue_locator_init (GClueLocator *locator)
 {
-        GClueIpclient *ipclient;
-        GClueWifi *wifi;
-        GList *node;
-
         locator->priv =
                 G_TYPE_INSTANCE_GET_PRIVATE (locator,
                                             GCLUE_TYPE_LOCATOR,
                                             GClueLocatorPrivate);
-
-        /* FIXME: Only use sources that provide <= requested accuracy level. */
-        ipclient = gclue_ipclient_new ();
-        locator->priv->sources = g_list_append (locator->priv->sources,
-                                                ipclient);
-        wifi = gclue_wifi_new ();
-        locator->priv->sources = g_list_append (locator->priv->sources,
-                                                wifi);
-
-        for (node = locator->priv->sources; node != NULL; node = node->next)
-                g_signal_connect (G_OBJECT (node->data),
-                                  "notify::location",
-                                  G_CALLBACK (on_location_changed),
-                                  locator);
 }
 
 GClueLocator *

@@ -83,20 +83,37 @@ gclue_ipclient_init (GClueIpclient *ipclient)
         ipclient->priv = G_TYPE_INSTANCE_GET_PRIVATE ((ipclient), GCLUE_TYPE_IPCLIENT, GClueIpclientPrivate);
 }
 
+static void
+on_ipclient_destroyed (gpointer data,
+                       GObject *where_the_object_was)
+{
+        GClueIpclient **ipclient = (GClueIpclient **) data;
+
+        *ipclient = NULL;
+}
+
 /**
- * gclue_ipclient_new:
+ * gclue_ipclient_get_singleton:
  *
- * Creates a new #GClueIpclient to fetch the geolocation data.
- * Here the IP address is not provided the by client, hence the server
- * will try to get the IP address from various proxy variables.
- * Use gclue_location_source_search_async() to query the server.
+ * Get the #GClueIpclient singleton.
  *
- * Returns: a new #GClueIpclient. Use g_object_unref() when done.
+ * Returns: (transfer full): a new ref to #GClueIpclient. Use g_object_unref()
+ * when done.
  **/
 GClueIpclient *
-gclue_ipclient_new (void)
+gclue_ipclient_get_singleton (void)
 {
-        return g_object_new (GCLUE_TYPE_IPCLIENT, NULL);
+        static GClueIpclient *ipclient = NULL;
+
+        if (ipclient == NULL) {
+                ipclient = g_object_new (GCLUE_TYPE_IPCLIENT, NULL);
+                g_object_weak_ref (G_OBJECT (ipclient),
+                                   on_ipclient_destroyed,
+                                   &ipclient);
+        } else
+                g_object_ref (ipclient);
+
+        return ipclient;
 }
 
 static SoupMessage *

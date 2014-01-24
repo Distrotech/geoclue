@@ -229,17 +229,37 @@ gclue_wifi_init (GClueWifi *wifi)
         }
 }
 
+static void
+on_wifi_destroyed (gpointer data,
+                   GObject *where_the_object_was)
+{
+        GClueWifi **wifi = (GClueWifi **) data;
+
+        *wifi = NULL;
+}
+
 /**
  * gclue_wifi_new:
  *
- * Creates a new #GClueWifi to fetch the geolocation data.
+ * Get the #GClueWifi singleton.
  *
- * Returns: a new #GClueWifi. Use g_object_unref() when done.
+ * Returns: (transfer full): a new ref to #GClueWifi. Use g_object_unref()
+ * when done.
  **/
 GClueWifi *
-gclue_wifi_new (void)
+gclue_wifi_get_singleton (void)
 {
-        return g_object_new (GCLUE_TYPE_WIFI, NULL);
+        static GClueWifi *wifi = NULL;
+
+        if (wifi == NULL) {
+                wifi = g_object_new (GCLUE_TYPE_WIFI, NULL);
+                g_object_weak_ref (G_OBJECT (wifi),
+                                   on_wifi_destroyed,
+                                   &wifi);
+        } else
+                g_object_ref (wifi);
+
+        return wifi;
 }
 
 static char *

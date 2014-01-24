@@ -133,10 +133,10 @@ gclue_locator_constructed (GObject *object)
         GList *node;
 
         /* FIXME: Only use sources that provide <= requested accuracy level. */
-        ipclient = gclue_ipclient_new ();
+        ipclient = gclue_ipclient_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources,
                                                 ipclient);
-        wifi = gclue_wifi_new ();
+        wifi = gclue_wifi_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources,
                                                 wifi);
 

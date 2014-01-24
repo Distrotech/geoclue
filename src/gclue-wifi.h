@@ -62,7 +62,7 @@ struct _GClueWifiClass {
         GClueWebSourceClass parent_class;
 };
 
-GClueWifi * gclue_wifi_new (void);
+GClueWifi * gclue_wifi_get_singleton (void);
 
 G_END_DECLS
 

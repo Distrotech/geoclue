@@ -128,17 +128,19 @@ static void
 gclue_locator_constructed (GObject *object)
 {
         GClueLocator *locator = GCLUE_LOCATOR (object);
-        GClueIpclient *ipclient;
-        GClueWifi *wifi;
         GList *node;
 
         /* FIXME: Only use sources that provide <= requested accuracy level. */
-        ipclient = gclue_ipclient_get_singleton ();
-        locator->priv->sources = g_list_append (locator->priv->sources,
-                                                ipclient);
-        wifi = gclue_wifi_get_singleton ();
-        locator->priv->sources = g_list_append (locator->priv->sources,
-                                                wifi);
+        if (locator->priv->accuracy_level >= GCLUE_IPCLIENT_ACCURACY_LEVEL) {
+                GClueIpclient *ipclient = gclue_ipclient_get_singleton ();
+                locator->priv->sources = g_list_append (locator->priv->sources,
+                                                        ipclient);
+        }
+        if (locator->priv->accuracy_level >= GCLUE_WIFI_ACCURACY_LEVEL) {
+                GClueWifi *wifi = gclue_wifi_get_singleton ();
+                locator->priv->sources = g_list_append (locator->priv->sources,
+                                                        wifi);
+        }
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
                 GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);

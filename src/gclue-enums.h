@@ -31,6 +31,7 @@ G_BEGIN_DECLS
  * GClueAccuracyLevel:
  * @GCLUE_ACCURACY_LEVEL_COUNTRY: Country-level accuracy.
  * @GCLUE_ACCURACY_LEVEL_CITY: City-level accuracy.
+ * @GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD: neighborhood-level accuracy.
  * @GCLUE_ACCURACY_LEVEL_STREET: Street-level accuracy.
  * @GCLUE_ACCURACY_LEVEL_EXACT: Exact accuracy. Typically requires GPS receiver.
  *
@@ -39,6 +40,7 @@ G_BEGIN_DECLS
 typedef enum {/*< underscore_name=gclue_accuracy_level>*/
 	GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
 	GCLUE_ACCURACY_LEVEL_CITY = 4,
+        GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD = 5,
 	GCLUE_ACCURACY_LEVEL_STREET = 6,
 	GCLUE_ACCURACY_LEVEL_EXACT = 8,
 } GClueAccuracyLevel;

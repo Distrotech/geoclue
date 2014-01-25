@@ -25,6 +25,7 @@
 #include "gclue-locator.h"
 #include "gclue-ipclient.h"
 #include "gclue-wifi.h"
+#include "gclue-3g.h"
 #include "gclue-enum-types.h"
 
 /* This class is like a master location source that hides all individual
@@ -134,6 +135,11 @@ gclue_locator_constructed (GObject *object)
                 GClueIpclient *ipclient = gclue_ipclient_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         ipclient);
+        }
+        if (locator->priv->accuracy_level >= GCLUE_3G_ACCURACY_LEVEL) {
+                GClue3G *source = gclue_3g_get_singleton ();
+                locator->priv->sources = g_list_append (locator->priv->sources,
+                                                        source);
         }
         if (locator->priv->accuracy_level >= GCLUE_WIFI_ACCURACY_LEVEL) {
                 GClueWifi *wifi = gclue_wifi_get_singleton ();

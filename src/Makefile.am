@@ -67,6 +67,8 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-wifi.c 	 	 \
 	gclue-web-source.c	 \
 	gclue-web-source.h	 \
+	gclue-3g.c	 	 \
+	gclue-3g.h	 	 \
 	gclue-enums.h		 \
 	$(NULL)
 libgeoclue_la_LIBADD = $(GEOCLUE_LIBS) $(LIBS)

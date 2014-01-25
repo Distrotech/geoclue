@@ -130,7 +130,6 @@ gclue_locator_constructed (GObject *object)
         GClueLocator *locator = GCLUE_LOCATOR (object);
         GList *node;
 
-        /* FIXME: Only use sources that provide <= requested accuracy level. */
         if (locator->priv->accuracy_level >= GCLUE_IPCLIENT_ACCURACY_LEVEL) {
                 GClueIpclient *ipclient = gclue_ipclient_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,

@@ -41,6 +41,8 @@
  **/
 
 struct _GClue3GPrivate {
+        MMLocation3gpp *location_3gpp;
+
         SoupSession *soup_session;
         SoupMessage *query;
         GCancellable *cancellable;
@@ -87,6 +89,7 @@ gclue_3g_finalize (GObject *g3g)
         g_clear_object (&priv->soup_session);
         g_cancellable_cancel (priv->cancellable);
         g_clear_object (&priv->cancellable);
+        g_clear_object (&priv->location_3gpp);
 
         G_OBJECT_CLASS (gclue_3g_parent_class)->finalize (g3g);
 }
@@ -152,18 +155,18 @@ gclue_3g_get_singleton (void)
 }
 
 static SoupMessage *
-create_query (GClue3G        *source,
-              MMLocation3gpp *location_3gpp)
+create_query (GClue3G *source)
 {
+        GClue3GPrivate *priv = source->priv;
         SoupMessage *ret = NULL;
         char *uri;
         guint mcc, mnc;
         gulong lac, cell_id;
 
-        mcc = mm_location_3gpp_get_mobile_country_code (location_3gpp);
-        mnc = mm_location_3gpp_get_mobile_network_code (location_3gpp);
-        lac = mm_location_3gpp_get_location_area_code (location_3gpp);
-        cell_id = mm_location_3gpp_get_cell_id (location_3gpp);
+        mcc = mm_location_3gpp_get_mobile_country_code (priv->location_3gpp);
+        mnc = mm_location_3gpp_get_mobile_network_code (priv->location_3gpp);
+        lac = mm_location_3gpp_get_location_area_code (priv->location_3gpp);
+        cell_id = mm_location_3gpp_get_cell_id (priv->location_3gpp);
         uri = g_strdup_printf (URL,
                                mcc,
                                mnc,
@@ -289,6 +292,33 @@ on_network_changed (GNetworkMonitor *monitor,
                                     user_data);
 }
 
+static gboolean
+is_location_3gpp_same (GClue3G        *source,
+                       MMLocation3gpp *location_3gpp)
+{
+        GClue3GPrivate *priv = source->priv;
+        guint mcc, mnc, new_mcc, new_mnc;
+        gulong lac, cell_id, new_lac, new_cell_id;
+
+        if (priv->location_3gpp == NULL)
+                return FALSE;
+
+        mcc = mm_location_3gpp_get_mobile_country_code (priv->location_3gpp);
+        mnc = mm_location_3gpp_get_mobile_network_code (priv->location_3gpp);
+        lac = mm_location_3gpp_get_location_area_code (priv->location_3gpp);
+        cell_id = mm_location_3gpp_get_cell_id (priv->location_3gpp);
+
+        new_mcc = mm_location_3gpp_get_mobile_country_code (location_3gpp);
+        new_mnc = mm_location_3gpp_get_mobile_network_code (location_3gpp);
+        new_lac = mm_location_3gpp_get_location_area_code (location_3gpp);
+        new_cell_id = mm_location_3gpp_get_cell_id (location_3gpp);
+
+        return (mcc == new_mcc &&
+                mnc == new_mnc &&
+                lac == new_lac &&
+                cell_id == new_cell_id);
+}
+
 static void
 on_get_3gpp_ready (GObject      *source_object,
                    GAsyncResult *res,
@@ -316,10 +346,16 @@ on_get_3gpp_ready (GObject      *source_object,
                 return;
         }
 
+        if (is_location_3gpp_same (source, location_3gpp)) {
+                g_debug ("New 3GPP location is same as last one");
+                return;
+        }
+        g_clear_object (&priv->location_3gpp);
+        priv->location_3gpp = location_3gpp;
+
         cancel_pending_query (source);
 
-        priv->query = create_query (source, location_3gpp);
-        g_object_unref (location_3gpp);
+        priv->query = create_query (source);
 
         monitor = g_network_monitor_get_default ();
         if (!g_network_monitor_get_network_available (monitor)) {

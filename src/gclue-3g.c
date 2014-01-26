@@ -49,7 +49,8 @@ struct _GClue3GPrivate {
 };
 
 static MMModemLocationSource
-gclue_3g_get_req_modem_location_caps (GClueModemSource *source);
+gclue_3g_get_req_modem_location_caps (GClueModemSource *source,
+                                      const char      **caps_name);
 static void
 gclue_3g_modem_location_changed (GClueModemSource *source,
                                  MMModemLocation  *modem_location);
@@ -348,7 +349,12 @@ gclue_3g_modem_location_changed (GClueModemSource *source,
 }
 
 static MMModemLocationSource
-gclue_3g_get_req_modem_location_caps (GClueModemSource *source)
+gclue_3g_get_req_modem_location_caps (GClueModemSource *source,
+                                      const char      **caps_name)
+
 {
+        if (caps_name != NULL)
+                *caps_name = "3GPP";
+
         return MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI;
 }

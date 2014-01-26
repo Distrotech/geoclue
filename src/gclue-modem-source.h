@@ -62,7 +62,8 @@ struct _GClueModemSourceClass {
         GClueLocationSourceClass parent_class;
 
         MMModemLocationSource
-        (*get_req_modem_location_caps) (GClueModemSource *source);
+        (*get_req_modem_location_caps) (GClueModemSource *source,
+                                        const char      **caps_name);
 
         void (*modem_location_changed) (GClueModemSource *source,
                                         MMModemLocation  *modem_location);

@@ -54,7 +54,7 @@ reset_caps (GClueModemSource *source)
         if (priv->modem_location == NULL)
                 return;
 
-        req_caps = klass->get_req_modem_location_caps (source);
+        req_caps = klass->get_req_modem_location_caps (source, NULL);
         caps = mm_modem_location_get_enabled (priv->modem_location);
         caps &= ~req_caps;
 
@@ -154,7 +154,7 @@ on_modem_enabled (GObject      *source_object,
                           G_CALLBACK (on_location_changed),
                           user_data);
 
-        req_caps = klass->get_req_modem_location_caps (source);
+        req_caps = klass->get_req_modem_location_caps (source, NULL);
         caps = mm_modem_location_get_enabled (priv->modem_location);
 
         mm_modem_location_setup (priv->modem_location,
@@ -175,6 +175,7 @@ on_mm_object_added (GDBusObjectManager *manager,
         GClueModemSourceClass *klass = GCLUE_MODEM_SOURCE_GET_CLASS (source);
         MMModemLocation *modem_location;
         MMModemLocationSource req_caps, caps;
+        const char *caps_name;
 
         if (source->priv->mm_object != NULL)
                 return;
@@ -187,12 +188,13 @@ on_mm_object_added (GDBusObjectManager *manager,
         g_debug ("Modem '%s' has location capabilities",
                  mm_object_get_path (mm_object));
         caps = mm_modem_location_get_capabilities (modem_location);
-        req_caps = klass->get_req_modem_location_caps (source);
+        req_caps = klass->get_req_modem_location_caps (source, &caps_name);
         if ((caps & req_caps) == 0)
                 return;
 
-        g_debug ("Modem '%s' has the needed location capabilities",
-                 mm_object_get_path (mm_object));
+        g_debug ("Modem '%s' has %s capabilities",
+                 mm_object_get_path (mm_object),
+                 caps_name);
         source->priv->mm_object = g_object_ref (mm_object);
         source->priv->modem = mm_object_get_modem (mm_object);
         source->priv->modem_location = mm_object_get_modem_location (mm_object);

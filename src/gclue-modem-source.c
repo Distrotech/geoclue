@@ -44,23 +44,17 @@ struct _GClueModemSourcePrivate {
 };
 
 static void
-reset_caps (GClueModemSource *source)
+clear_caps (GClueModemSource *source)
 {
         GClueModemSourcePrivate *priv = source->priv;
-        GClueModemSourceClass *klass = GCLUE_MODEM_SOURCE_GET_CLASS (source);
-        MMModemLocationSource req_caps, caps;
         GError *error = NULL;
 
         if (priv->modem_location == NULL)
                 return;
 
-        req_caps = klass->get_req_modem_location_caps (source, NULL);
-        caps = mm_modem_location_get_enabled (priv->modem_location);
-        caps &= ~req_caps;
-
-        /* Remove the caps we enabled */
+        /* Remove all the caps */
         if (!mm_modem_location_setup_sync (priv->modem_location,
-                                           caps,
+                                           0,
                                            FALSE,
                                            priv->cancellable,
                                            &error)) {
@@ -76,7 +70,7 @@ gclue_modem_source_finalize (GObject *gsource)
         GClueModemSource *source = GCLUE_MODEM_SOURCE (gsource);
         GClueModemSourcePrivate *priv = source->priv;
 
-        reset_caps (source);
+        clear_caps (source);
 
         g_cancellable_cancel (priv->cancellable);
         g_clear_object (&priv->cancellable);
@@ -137,9 +131,8 @@ on_modem_enabled (GObject      *source_object,
                   gpointer      user_data)
 {
         GClueModemSource *source= GCLUE_MODEM_SOURCE (user_data);
-        GClueModemSourceClass *klass = GCLUE_MODEM_SOURCE_GET_CLASS (source);
         GClueModemSourcePrivate *priv = source->priv;
-        MMModemLocationSource req_caps, caps;
+        MMModemLocationSource caps;
         GError *error = NULL;
 
         if (!mm_modem_enable_finish (priv->modem, res, &error)) {
@@ -154,11 +147,10 @@ on_modem_enabled (GObject      *source_object,
                           G_CALLBACK (on_location_changed),
                           user_data);
 
-        req_caps = klass->get_req_modem_location_caps (source, NULL);
-        caps = mm_modem_location_get_enabled (priv->modem_location);
+        caps = mm_modem_location_get_capabilities (priv->modem_location);
 
         mm_modem_location_setup (priv->modem_location,
-                                 caps | req_caps,
+                                 caps,
                                  TRUE,
                                  priv->cancellable,
                                  on_modem_location_setup,

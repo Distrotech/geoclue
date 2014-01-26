@@ -136,7 +136,14 @@ on_modem_enabled (GObject      *source_object,
         GError *error = NULL;
 
         if (!mm_modem_enable_finish (priv->modem, res, &error)) {
-                g_warning ("Failed to enable modem: %s", error->message);
+                if (error->code == MM_CORE_ERROR_IN_PROGRESS)
+                        /* Seems another source instance is already on it */
+                        g_signal_connect (G_OBJECT (priv->modem_location),
+                                          "notify::location",
+                                          G_CALLBACK (on_location_changed),
+                                          user_data);
+                else
+                        g_warning ("Failed to enable modem: %s", error->message);
                 g_error_free (error);
 
                 return;

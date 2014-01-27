@@ -66,7 +66,7 @@ on_location_changed (GObject    *gobject,
         g_debug ("New location available");
 
         if (cur_location != NULL &&
-            geocode_location_get_accuracy (location) >=
+            geocode_location_get_accuracy (location) >
             geocode_location_get_accuracy (cur_location)) {
                 /* We only take the new location if its more or as accurate as
                  * the previous one.

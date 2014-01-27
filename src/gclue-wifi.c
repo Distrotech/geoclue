@@ -52,7 +52,6 @@ struct _GClueWifiPrivate {
         NMDeviceWifi *wifi_device;
 
         gulong ap_added_id;
-        gulong ap_removed_id;
 
         guint refresh_timeout;
 };
@@ -110,16 +109,15 @@ on_refresh_timeout (gpointer user_data)
 }
 
 static void
-on_ap_changed (NMDeviceWifi  *device,
-               NMAccessPoint *ap,
-               gpointer       user_data)
+on_ap_added (NMDeviceWifi  *device,
+             NMAccessPoint *ap,
+             gpointer       user_data)
 {
         GClueWifi *wifi = GCLUE_WIFI (user_data);
 
         if (wifi->priv->refresh_timeout != 0)
                 return;
-        g_debug ("WiFi AP '%s' added or removed.",
-                 nm_access_point_get_bssid (ap));
+        g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
 
         /* There could be multiple devices being added/removed at the same time
          * so we don't immediately call refresh but rather wait 1 second.
@@ -138,12 +136,7 @@ connect_ap_signals (GClueWifi  *wifi)
         wifi->priv->ap_added_id =
                 g_signal_connect (wifi->priv->wifi_device,
                                   "access-point-added",
-                                  G_CALLBACK (on_ap_changed),
-                                  wifi);
-        wifi->priv->ap_removed_id =
-                g_signal_connect (wifi->priv->wifi_device,
-                                  "access-point-removed",
-                                  G_CALLBACK (on_ap_changed),
+                                  G_CALLBACK (on_ap_added),
                                   wifi);
 }
 
@@ -156,9 +149,7 @@ disconnect_ap_signals (GClueWifi  *wifi)
                 return;
 
         g_signal_handler_disconnect (priv->wifi_device, priv->ap_added_id);
-        g_signal_handler_disconnect (priv->wifi_device, priv->ap_removed_id);
         priv->ap_added_id = 0;
-        priv->ap_removed_id = 0;
 
         if (priv->refresh_timeout != 0) {
                 g_source_remove (priv->refresh_timeout);

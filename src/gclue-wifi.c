@@ -361,10 +361,10 @@ parse_server_error (JsonObject *object, GError **error)
         int code;
         const char *message;
 
-        error_obj = json_object_get_object_member (object, "error");
-        if (error_obj == NULL)
+        if (!json_object_has_member (object, "error"))
             return FALSE;
 
+        error_obj = json_object_get_object_member (object, "error");
         code = json_object_get_int_member (error_obj, "code");
         message = json_object_get_string_member (error_obj, "message");
 

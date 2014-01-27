@@ -111,6 +111,33 @@ on_refresh_timeout (gpointer user_data)
 static void
 on_ap_added (NMDeviceWifi  *device,
              NMAccessPoint *ap,
+             gpointer       user_data);
+
+static void
+on_ap_strength_notify (GObject    *gobject,
+                       GParamSpec *pspec,
+                       gpointer    user_data)
+{
+        GClueWifi *wifi = GCLUE_WIFI (user_data);
+        NMAccessPoint *ap = NM_ACCESS_POINT (gobject);
+
+        if (nm_access_point_get_strength (ap) <= 20) {
+                g_debug ("WiFi AP '%s' still has very low strength (%u)"
+                         ", ignoring again..",
+                         nm_access_point_get_bssid (ap),
+                         nm_access_point_get_strength (ap));
+                return;
+        }
+
+        g_signal_handlers_disconnect_by_func (G_OBJECT (ap),
+                                              on_ap_strength_notify,
+                                              user_data);
+        on_ap_added (wifi->priv->wifi_device, ap, user_data);
+}
+
+static void
+on_ap_added (NMDeviceWifi  *device,
+             NMAccessPoint *ap,
              gpointer       user_data)
 {
         GClueWifi *wifi = GCLUE_WIFI (user_data);
@@ -120,9 +147,14 @@ on_ap_added (NMDeviceWifi  *device,
         g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
 
         if (nm_access_point_get_strength (ap) <= 20) {
-                g_debug ("WiFi AP '%s' has very low strength (%u), ignoring..",
+                g_debug ("WiFi AP '%s' has very low strength (%u)"
+                         ", ignoring for now..",
                          nm_access_point_get_bssid (ap),
                          nm_access_point_get_strength (ap));
+                g_signal_connect (G_OBJECT (ap),
+                                  "notify::strength",
+                                  G_CALLBACK (on_ap_strength_notify),
+                                  user_data);
                 return;
         }
 

@@ -119,6 +119,13 @@ on_ap_added (NMDeviceWifi  *device,
                 return;
         g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
 
+        if (nm_access_point_get_strength (ap) <= 20) {
+                g_debug ("WiFi AP '%s' has very low strength (%u), ignoring..",
+                         nm_access_point_get_bssid (ap),
+                         nm_access_point_get_strength (ap));
+                return;
+        }
+
         /* There could be multiple devices being added/removed at the same time
          * so we don't immediately call refresh but rather wait 1 second.
          */

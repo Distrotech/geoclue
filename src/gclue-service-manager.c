@@ -96,15 +96,6 @@ complete_get_client (OnClientInfoNewReadyData *data)
         user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
                                            GINT_TO_POINTER (user_id));
-        if (REQUIRE_AUTH && agent_proxy == NULL) {
-                g_dbus_method_invocation_return_error
-                        (data->invocation,
-                         G_DBUS_ERROR,
-                         G_DBUS_ERROR_ACCESS_DENIED,
-                         "No authorization agent available for user ID %u",
-                         user_id);
-                goto out;
-        }
 
         path = g_strdup_printf ("/org/freedesktop/GeoClue2/Client/%u",
                                 ++priv->num_clients);
@@ -151,11 +142,8 @@ on_client_info_new_ready (GObject      *source_object,
                           gpointer      user_data)
 {
         OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
-        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueClientInfo *info = NULL;
-        GDBusProxy *agent_proxy = NULL;
         GError *error = NULL;
-        guint32 user_id;
 
         info = gclue_client_info_new_finish (res, &error);
         if (info == NULL) {
@@ -171,19 +159,22 @@ on_client_info_new_ready (GObject      *source_object,
 
         data->client_info = info;
 
-        user_id = gclue_client_info_get_user_id (info);
+        /* We'd probably want to enable the following code when we have the
+         * ability to reliably identify agents and apps.
+         */
+        /*user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
                                            GINT_TO_POINTER (user_id));
-        if (REQUIRE_AUTH && agent_proxy == NULL) {
-                /* Its possible that geoclue was just launched on GetClient
+        if (agent_proxy == NULL) {
+                / * Its possible that geoclue was just launched on GetClient
                  * call, in which case agents need some time to register
                  * themselves to us.
-                 */
+                 * /
                 g_timeout_add_seconds (AGENT_WAIT_TIMEOUT,
                                        (GSourceFunc) complete_get_client,
                                        user_data);
                 return;
-        }
+        }*/
 
         complete_get_client (data);
 }

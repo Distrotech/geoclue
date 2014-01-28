@@ -171,8 +171,6 @@ if test "x$with_systemdsystemunitdir" != "xno"; then
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$systemdsystemunitdir"])
 
-AC_PATH_PROG([REALPATH],[realpath])
-
 AC_PATH_PROG([SETCAP],[setcap])
 
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`

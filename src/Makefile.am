@@ -2,11 +2,6 @@ include $(top_srcdir)/Makefile.decl
 
 libexec_PROGRAMS = geoclue
 
-install-exec-hook:
-	$(AM_V_GEN)$(SETCAP) cap_sys_ptrace+ep $(DESTDIR)$(libexecdir)/geoclue || \
-	echo "Unable to setcap cap_sys_ptrace+ep $(libexecdir)/geoclue. " \
-	     "Package systems may do this after installation."
-
 SUBDIRS = agent geocode-glib
 
 if BUILD_GEOIP_SERVER

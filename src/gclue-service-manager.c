@@ -71,6 +71,8 @@ on_peer_vanished (GClueClientInfo *info,
         g_hash_table_remove (manager->priv->clients,
                              gclue_client_info_get_bus_name (info));
         g_object_notify (G_OBJECT (manager), "connected-clients");
+        if (g_hash_table_size (manager->priv->clients) == 0)
+                gclue_manager_set_in_use (GCLUE_MANAGER (manager), FALSE);
 }
 
 typedef struct
@@ -119,6 +121,8 @@ complete_get_client (OnClientInfoNewReadyData *data)
                              g_strdup (gclue_client_info_get_bus_name (info)),
                              client);
         g_object_notify (G_OBJECT (data->manager), "connected-clients");
+        if (g_hash_table_size (priv->clients) == 1)
+                gclue_manager_set_in_use (data->manager, TRUE);
 
         g_signal_connect (info,
                           "peer-vanished",

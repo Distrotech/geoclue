@@ -19,6 +19,12 @@
       to get your application specific client object.
   -->
   <interface name="org.freedesktop.GeoClue2.Manager">
+    <!--
+        InUse:
+
+        Whether service is currently is use by any application.
+    -->
+    <property name="InUse" type="b" access="read"/>
 
     <!--
         GetClient:

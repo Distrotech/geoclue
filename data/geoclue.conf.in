@@ -28,21 +28,15 @@ mozilla-key=geoclue
 # # List of UIDs of all users for which this application is allowed location
 # # info access, separate by ';'. Keep it empty for allowing it for all users.
 # users=
-#
-# Path of binary
-# path=/usr/bin/random-app
 
 [gnome-settings-daemon]
 allowed=true
 users=
-path=/usr/libexec/gnome-settings-daemon
 
 [epiphany]
 allowed=true
 users=
-path=/usr/bin/epiphany
 
 [firefox]
 allowed=true
 users=
-path=/usr/bin/firefox

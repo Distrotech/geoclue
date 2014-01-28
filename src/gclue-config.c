@@ -91,10 +91,10 @@ gclue_config_get_singleton (void)
 
 gboolean
 gclue_config_is_agent_allowed (GClueConfig     *config,
+                               const char      *desktop_id,
                                GClueClientInfo *agent_info)
 {
         GClueConfigPrivate *priv = config->priv;
-        const char *agent_path;
         char **agents;
         gsize num_agents, i;
         gboolean allowed = FALSE;
@@ -113,9 +113,8 @@ gclue_config_is_agent_allowed (GClueConfig     *config,
                 return FALSE;
         }
 
-        agent_path = gclue_client_info_get_bin_path (agent_info);
         for (i = 0; i < num_agents; i++) {
-                if (g_strcmp0 (agent_path, agents[i]) == 0) {
+                if (g_strcmp0 (desktop_id, agents[i]) == 0) {
                         allowed = TRUE;
 
                         break;

@@ -226,12 +226,14 @@ typedef struct
         GClueManager *manager;
         GDBusMethodInvocation *invocation;
         GClueClientInfo *info;
+        char *desktop_id;
 } AddAgentData;
 
 static void
 add_agent_data_free (AddAgentData *data)
 {
         g_clear_object (&data->info);
+        g_clear_pointer (&data->desktop_id, g_free);
         g_slice_free (AddAgentData, data);
 }
 
@@ -310,7 +312,9 @@ on_agent_info_new_ready (GObject      *source_object,
         }
 
         config = gclue_config_get_singleton ();
-        if (!gclue_config_is_agent_allowed (config, data->info)) {
+        if (!gclue_config_is_agent_allowed (config,
+                                            data->desktop_id,
+                                            data->info)) {
                 g_dbus_method_invocation_return_error (data->invocation,
                                                        G_DBUS_ERROR,
                                                        G_DBUS_ERROR_ACCESS_DENIED,
@@ -336,7 +340,8 @@ on_agent_info_new_ready (GObject      *source_object,
 
 static gboolean
 gclue_service_manager_handle_add_agent (GClueManager          *manager,
-                                        GDBusMethodInvocation *invocation)
+                                        GDBusMethodInvocation *invocation,
+                                        const char            *id)
 {
         GClueServiceManager *self = GCLUE_SERVICE_MANAGER (manager);
         GClueServiceManagerPrivate *priv = self->priv;
@@ -348,6 +353,7 @@ gclue_service_manager_handle_add_agent (GClueManager          *manager,
         data = g_slice_new0 (AddAgentData);
         data->manager = manager;
         data->invocation = invocation;
+        data->desktop_id = g_strdup (id);
         gclue_client_info_new_async (peer,
                                      priv->connection,
                                      NULL,

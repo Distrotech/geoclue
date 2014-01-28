@@ -39,12 +39,15 @@
 
     <!--
         AddAgent:
+        @id: The Desktop ID (excluding .desktop) of the agent
 
         An API for user authorization agents to register themselves. Each agent
         is responsible for the user it is running as. Application developers
         can and should simply ignore this API.
     -->
-    <method name="AddAgent" />
+    <method name="AddAgent">
+      <arg name="id" type="s" direction="in"/>
+    </method>
   </interface>
 
   <!--

@@ -59,6 +59,7 @@ GType gclue_config_get_type (void) G_GNUC_CONST;
 
 GClueConfig *       gclue_config_get_singleton    (void);
 gboolean            gclue_config_is_agent_allowed (GClueConfig     *config,
+                                                   const char      *desktop_id,
                                                    GClueClientInfo *agent_info);
 gboolean            gclue_config_is_app_allowed   (GClueConfig     *config,
                                                    const char      *desktop_id,

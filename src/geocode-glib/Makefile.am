@@ -10,7 +10,7 @@ AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
 	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" 	  \
 	      -DSYSCONFDIR=\""$(sysconfdir)"\"		  \
-	      -I$(top_builddir)/src
+	      -I$(top_srcdir)/src
 
 libgeocode_glib_la_SOURCES = 				\
 	geocode-location.h				\

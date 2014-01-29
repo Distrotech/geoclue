@@ -42,6 +42,8 @@ struct _GClueWebSourcePrivate {
         SoupMessage *query;
 
         gulong network_changed_id;
+
+        guint64 last_submitted;
 };
 
 G_DEFINE_ABSTRACT_TYPE (GClueWebSource, gclue_web_source, GCLUE_TYPE_LOCATION_SOURCE)
@@ -199,4 +201,98 @@ gclue_web_source_refresh (GClueWebSource *source)
         monitor = g_network_monitor_get_default ();
         if (g_network_monitor_get_network_available (monitor))
                 on_network_changed (monitor, TRUE, source);
+}
+
+static void
+submit_query_callback (SoupSession *session,
+                       SoupMessage *query,
+                       gpointer     user_data)
+{
+        SoupURI *uri;
+
+        uri = soup_message_get_uri (query);
+        if (query->status_code != SOUP_STATUS_OK &&
+            query->status_code != SOUP_STATUS_NO_CONTENT) {
+                g_warning ("Failed to submit location data to '%s': %s",
+                           soup_uri_to_string (uri, FALSE),
+                           query->reason_phrase);
+		return;
+	}
+
+        g_debug ("Successfully submitted location data to '%s'",
+                 soup_uri_to_string (uri, FALSE));
+}
+
+#define SUBMISSION_ACCURACY_THRESHOLD 100
+#define SUBMISSION_TIME_THRESHOLD     60  /* seconds */
+
+static void
+on_submit_source_location_notify (GObject    *source_object,
+                                  GParamSpec *pspec,
+                                  gpointer    user_data)
+{
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (source_object);
+        GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
+        GNetworkMonitor *monitor;
+        GeocodeLocation *location;
+        SoupMessage *query;
+        GError *error = NULL;
+
+        location = gclue_location_source_get_location (source);
+        if (location == NULL ||
+            geocode_location_get_accuracy (location) >
+            SUBMISSION_ACCURACY_THRESHOLD ||
+            geocode_location_get_timestamp (location) <
+            web->priv->last_submitted + SUBMISSION_TIME_THRESHOLD)
+                return;
+
+        web->priv->last_submitted = geocode_location_get_timestamp (location);
+
+        monitor = g_network_monitor_get_default ();
+        if (!g_network_monitor_get_network_available (monitor))
+                return;
+
+        query = GCLUE_WEB_SOURCE_GET_CLASS (web)->create_submit_query
+                                        (web,
+                                         location,
+                                         &error);
+        if (query == NULL) {
+                if (error != NULL) {
+                        g_warning ("Failed to create submission query: %s",
+                                   error->message);
+                        g_error_free (error);
+                }
+
+                return;
+        }
+
+        soup_session_queue_message (web->priv->soup_session,
+                                    query,
+                                    submit_query_callback,
+                                    web);
+}
+
+/**
+ * gclue_web_source_set_submit_source:
+ * @source: a #GClueWebSource
+ *
+ * Use this function to provide a location source to @source that is used
+ * for submitting location data to resource being used by @source. This will be
+ * a #GClueModemGPS but we don't assume that here, in case we later add a
+ * non-modem GPS source and would like to pass that instead.
+ **/
+void
+gclue_web_source_set_submit_source (GClueWebSource      *web,
+                                    GClueLocationSource *submit_source)
+{
+        /* Not implemented by subclass */
+        if (GCLUE_WEB_SOURCE_GET_CLASS (web)->create_submit_query == NULL)
+                return;
+
+        g_signal_connect (G_OBJECT (submit_source),
+                          "notify::location", 
+                          G_CALLBACK (on_submit_source_location_notify),
+                          web);
+
+        on_submit_source_location_notify (G_OBJECT (submit_source), NULL, web);
 }

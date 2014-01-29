@@ -62,14 +62,19 @@ struct _GClueWebSourceClass {
         /* <private> */
         GClueLocationSourceClass parent_class;
 
-        SoupMessage *     (*create_query)   (GClueWebSource *source,
-                                             GError        **error);
-        GeocodeLocation * (*parse_response) (GClueWebSource *source,
-                                             const char     *response,
-                                             GError        **error);
+        SoupMessage *     (*create_query)        (GClueWebSource *source,
+                                                  GError        **error);
+        SoupMessage *     (*create_submit_query) (GClueWebSource  *source,
+                                                  GeocodeLocation *location,
+                                                  GError         **error);
+        GeocodeLocation * (*parse_response)      (GClueWebSource *source,
+                                                  const char     *response,
+                                                  GError        **error);
 };
 
-void gclue_web_source_refresh (GClueWebSource *source);
+void gclue_web_source_refresh           (GClueWebSource      *source);
+void gclue_web_source_set_submit_source (GClueWebSource      *source,
+                                         GClueLocationSource *submit_source);
 
 G_END_DECLS
 

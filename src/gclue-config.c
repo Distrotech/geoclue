@@ -192,7 +192,26 @@ gclue_config_get_wifi_url (GClueConfig *config)
                                      &error);
         if (error != NULL) {
                 g_warning ("%s", error->message);
+                g_error_free (error);
                 url = g_strdup (DEFAULT_WIFI_URL);
+        }
+
+        return url;
+}
+
+char *
+gclue_config_get_wifi_submit_url (GClueConfig *config)
+{
+        char *url;
+        GError *error = NULL;
+
+        url = g_key_file_get_string (config->priv->key_file,
+                                     "wifi",
+                                     "submission-url",
+                                     &error);
+        if (error != NULL) {
+                g_debug ("No wifi submission URL: %s", error->message);
+                g_error_free (error);
         }
 
         return url;

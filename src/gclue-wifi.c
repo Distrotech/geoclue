@@ -297,6 +297,32 @@ get_url (void)
         return gclue_config_get_wifi_url (config);
 }
 
+static const GPtrArray *
+get_ap_list (GClueWifi *wifi,
+             GError   **error)
+{
+        const GPtrArray *aps;
+
+        if (wifi->priv->wifi_device == NULL) {
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_FAILED,
+                                     "No WiFi devices available");
+                return NULL;
+        }
+
+        aps = nm_device_wifi_get_access_points (wifi->priv->wifi_device);
+        if (aps->len == 0) {
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_FAILED,
+                                     "No WiFi access points around");
+                return NULL;
+        }
+
+        return aps;
+}
+
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error)
@@ -312,22 +338,9 @@ gclue_wifi_create_query (GClueWebSource *source,
         guint i;
         char *uri;
 
-        if (wifi->priv->wifi_device == NULL) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_FAILED,
-                                     "No WiFi devices available");
+        aps = get_ap_list (wifi, error);
+        if (aps == NULL)
                 goto out;
-        }
-
-        aps = nm_device_wifi_get_access_points (wifi->priv->wifi_device);
-        if (aps->len == 0) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_FAILED,
-                                     "No WiFi access points around");
-                goto out;
-        }
 
         builder = json_builder_new ();
         json_builder_begin_object (builder);

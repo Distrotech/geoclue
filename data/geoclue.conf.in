@@ -10,9 +10,15 @@ whitelist=@demo_agent@gnome-shell
 # WiFi source configuration options
 [wifi]
 
-# Our key for using Mozilla Location Service. Currenty it can be anything, as
-# long as its present but that is likely going to change in future.
-mozilla-key=geoclue
+# URL to the wifi geolocation service. The key can currenty be anything, just
+# needs to be present but that is likely going to change in future.
+url=https://location.services.mozilla.com/v1/geolocate?key=geoclue
+
+# To use the Google geolocation service instead of mozilla's, simply uncomment
+# this url while changing API_KEY to your Google API key and comment out or
+# remove the url above.
+#
+#url=https://www.googleapis.com/geolocation/v1/geolocate?key=YOUR_KEY
 
 # Application configuration options
 #

@@ -64,7 +64,7 @@ gboolean            gclue_config_is_agent_allowed (GClueConfig     *config,
 gboolean            gclue_config_is_app_allowed   (GClueConfig     *config,
                                                    const char      *desktop_id,
                                                    GClueClientInfo *app_info);
-char *              gclue_config_get_mozilla_key  (GClueConfig     *config);
+char *              gclue_config_get_wifi_url     (GClueConfig     *config);
 
 G_END_DECLS
 

@@ -178,20 +178,22 @@ out:
         return allowed;
 }
 
+#define DEFAULT_WIFI_URL "https://location.services.mozilla.com/v1/geolocate?key=geoclue"
+
 char *
-gclue_config_get_mozilla_key (GClueConfig *config)
+gclue_config_get_wifi_url (GClueConfig *config)
 {
-        char *key;
+        char *url;
         GError *error = NULL;
 
-        key = g_key_file_get_string (config->priv->key_file,
+        url = g_key_file_get_string (config->priv->key_file,
                                      "wifi",
-                                     "mozilla-key",
+                                     "url",
                                      &error);
         if (error != NULL) {
                 g_warning ("%s", error->message);
-                key = g_strdup ("geoclue");
+                url = g_strdup (DEFAULT_WIFI_URL);
         }
 
-        return key;
+        return url;
 }

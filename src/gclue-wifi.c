@@ -31,12 +31,6 @@
 #include "gclue-error.h"
 #include "geocode-glib/geocode-location.h"
 
-/* Since we use the Geolocate API (rather than Search), we could easily switch
- * to Google geolocation service in future, if such a need arises.
- */
-#define SERVER "https://location.services.mozilla.com/v1/geolocate"
-/* #define SERVER "https://maps.googleapis.com/maps/api/browserlocation/json?browser=firefox&sensor=true" */
-
 /**
  * SECTION:gclue-wifi
  * @short_description: WiFi-based geolocation
@@ -44,7 +38,8 @@
  *
  * Contains functions to get the geolocation based on nearby WiFi networks. It
  * uses <ulink url="https://wiki.mozilla.org/CloudServices/Location">Mozilla
- * Location Service</ulink> to achieve that.
+ * Location Service</ulink> to achieve that. The URL is kept in our
+ * configuration file so its easy to switch to Google's API.
  **/
 
 struct _GClueWifiPrivate {
@@ -293,17 +288,13 @@ gclue_wifi_get_singleton (void)
 }
 
 static char *
-create_uri (void)
+get_url (void)
 {
         GClueConfig *config;
-        char *key, *uri;
 
         config = gclue_config_get_singleton ();
-        key = gclue_config_get_mozilla_key (config);
-        uri = g_strjoin (NULL, SERVER, "?key=", key, NULL);
-        g_free (key);
 
-        return uri;
+        return gclue_config_get_wifi_url (config);
 }
 
 static SoupMessage *
@@ -372,7 +363,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         g_object_unref (builder);
         g_object_unref (generator);
 
-        uri = create_uri ();
+        uri = get_url ();
         ret = soup_message_new ("POST", uri);
         soup_message_set_request (ret,
                                   "application/json",

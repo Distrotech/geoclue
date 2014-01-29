@@ -14,6 +14,11 @@ whitelist=@demo_agent@gnome-shell
 # needs to be present but that is likely going to change in future.
 url=https://location.services.mozilla.com/v1/geolocate?key=geoclue
 
+# URL to submission API of Mozilla Location Service
+# If uncommented, geoclue will automatically submit network data to Mozilla
+# each time it gets a GPS lock.
+#submission-url=https://location.services.mozilla.com/v1/submit?key=geoclue
+
 # To use the Google geolocation service instead of mozilla's, simply uncomment
 # this url while changing API_KEY to your Google API key and comment out or
 # remove the url above.

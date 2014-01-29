@@ -133,6 +133,7 @@ static void
 gclue_locator_constructed (GObject *object)
 {
         GClueLocator *locator = GCLUE_LOCATOR (object);
+        GClueModemGPS *gps = NULL;
         GList *node;
 
         if (locator->priv->accuracy_level >= GCLUE_IPCLIENT_ACCURACY_LEVEL) {
@@ -151,7 +152,7 @@ gclue_locator_constructed (GObject *object)
                                                         wifi);
         }
         if (locator->priv->accuracy_level >= GCLUE_MODEM_GPS_ACCURACY_LEVEL) {
-                GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
+                gps = gclue_modem_gps_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         gps);
         }
@@ -169,6 +170,11 @@ gclue_locator_constructed (GObject *object)
                                   "notify::location",
                                   G_CALLBACK (on_location_changed),
                                   locator);
+
+                if (gps != NULL && GCLUE_IS_WEB_SOURCE (src))
+                        gclue_web_source_set_submit_source
+                                (GCLUE_WEB_SOURCE (src),
+                                 GCLUE_LOCATION_SOURCE (gps));
         }
 }
 

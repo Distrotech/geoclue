@@ -54,6 +54,10 @@ struct _GClueWifiPrivate {
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error);
+static SoupMessage *
+gclue_wifi_create_submit_query (GClueWebSource  *source,
+                                GeocodeLocation *location,
+                                GError         **error);
 static GeocodeLocation *
 gclue_wifi_parse_response (GClueWebSource *source,
                            const char     *json,
@@ -87,6 +91,7 @@ gclue_wifi_class_init (GClueWifiClass *klass)
         GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
 
         source_class->create_query = gclue_wifi_create_query;
+        source_class->create_submit_query = gclue_wifi_create_submit_query;
         source_class->parse_response = gclue_wifi_parse_response;
         gwifi_class->finalize = gclue_wifi_finalize;
 
@@ -442,4 +447,124 @@ gclue_wifi_parse_response (GClueWebSource *source,
         g_object_unref (parser);
 
         return location;
+}
+
+static char *
+get_submit_url (void)
+{
+        GClueConfig *config;
+
+        config = gclue_config_get_singleton ();
+
+        return gclue_config_get_wifi_submit_url (config);
+}
+
+static SoupMessage *
+gclue_wifi_create_submit_query (GClueWebSource  *source,
+                                GeocodeLocation *location,
+                                GError         **error)
+{
+        GClueWifi *wifi = GCLUE_WIFI (source);
+        SoupMessage *ret = NULL;
+        JsonBuilder *builder;
+        JsonGenerator *generator;
+        JsonNode *root_node;
+        char *data, *timestamp, *url;
+        gsize data_len;
+        const GPtrArray *aps; /* As in Access Points */
+        guint i, frequency;
+        gdouble lat, lon, accuracy, altitude;
+        GTimeVal tv;
+
+        url = get_submit_url ();
+        if (url == NULL)
+                goto out;
+
+        aps = get_ap_list (wifi, error);
+        if (aps == NULL)
+                goto out;
+
+        builder = json_builder_new ();
+        json_builder_begin_object (builder);
+
+        json_builder_set_member_name (builder, "items");
+        json_builder_begin_array (builder);
+
+        json_builder_begin_object (builder);
+
+        lat = geocode_location_get_latitude (location);
+        json_builder_set_member_name (builder, "lat");
+        json_builder_add_double_value (builder, lat);
+
+        lon = geocode_location_get_longitude (location);
+        json_builder_set_member_name (builder, "lon");
+        json_builder_add_double_value (builder, lon);
+
+        accuracy = geocode_location_get_accuracy (location);
+        if (accuracy != GEOCODE_LOCATION_ACCURACY_UNKNOWN) {
+                json_builder_set_member_name (builder, "accuracy");
+                json_builder_add_double_value (builder, accuracy);
+        }
+
+        altitude = geocode_location_get_altitude (location);
+        if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN) {
+                json_builder_set_member_name (builder, "altitude");
+                json_builder_add_double_value (builder, altitude);
+        }
+
+        tv.tv_sec = geocode_location_get_timestamp (location);
+        tv.tv_usec = 0;
+        timestamp = g_time_val_to_iso8601 (&tv);
+        json_builder_set_member_name (builder, "time");
+        json_builder_add_string_value (builder, timestamp);
+        g_free (timestamp);
+
+        json_builder_set_member_name (builder, "wifi");
+        json_builder_begin_array (builder);
+
+        for (i = 0; i < aps->len; i++) {
+                NMAccessPoint *ap = g_ptr_array_index (aps, i);
+                const char *mac;
+                gint8 strength_dbm;
+
+                json_builder_begin_object (builder);
+                json_builder_set_member_name (builder, "key");
+                mac = nm_access_point_get_bssid (ap);
+                json_builder_add_string_value (builder, mac);
+
+                json_builder_set_member_name (builder, "signal");
+                strength_dbm = nm_access_point_get_strength (ap) / 2 - 100;
+                json_builder_add_int_value (builder, strength_dbm);
+
+                json_builder_set_member_name (builder, "frequency");
+                frequency = nm_access_point_get_frequency (ap);
+                json_builder_add_int_value (builder, frequency);
+                json_builder_end_object (builder);
+        }
+
+        json_builder_end_array (builder); /* wifi */
+        json_builder_end_object (builder);
+        json_builder_end_array (builder); /* items */
+        json_builder_end_object (builder);
+
+        generator = json_generator_new ();
+        root_node = json_builder_get_root (builder);
+        json_generator_set_root (generator, root_node);
+        data = json_generator_to_data (generator, &data_len);
+
+        json_node_free (root_node);
+        g_object_unref (builder);
+        g_object_unref (generator);
+
+        ret = soup_message_new ("POST", url);
+        soup_message_set_request (ret,
+                                  "application/json",
+                                  SOUP_MEMORY_TAKE,
+                                  data,
+                                  data_len);
+        g_debug ("Sending following request to '%s':\n%s", url, data);
+        g_free (url);
+
+out:
+        return ret;
 }

@@ -53,12 +53,16 @@ query_callback (SoupSession *session,
                 SoupMessage *query,
                 gpointer     user_data)
 {
-        GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
+        GClueWebSource *web;
         GError *error = NULL;
         char *contents;
         GeocodeLocation *location;
         SoupURI *uri;
 
+        if (query->status_code == SOUP_STATUS_CANCELLED)
+                return;
+
+        web = GCLUE_WEB_SOURCE (user_data);
         web->priv->query = NULL;
 
         if (query->status_code != SOUP_STATUS_OK) {
@@ -133,6 +137,7 @@ gclue_web_source_finalize (GObject *gsource)
                 soup_session_cancel_message (priv->soup_session,
                                              priv->query,
                                              SOUP_STATUS_CANCELLED);
+                priv->query = NULL;
         }
 
         g_clear_object (&priv->soup_session);

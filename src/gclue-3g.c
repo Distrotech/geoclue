@@ -69,6 +69,7 @@ cancel_pending_query (GClue3G *source)
                 soup_session_cancel_message (priv->soup_session,
                                              priv->query,
                                              SOUP_STATUS_CANCELLED);
+                priv->query = NULL;
         }
 
         if (priv->network_changed_id != 0) {
@@ -243,11 +244,15 @@ query_callback (SoupSession *session,
                 SoupMessage *query,
                 gpointer     user_data)
 {
-        GClue3G *source = GCLUE_3G (user_data);
+        GClue3G *source;
         char *contents;
         GeocodeLocation *location;
         SoupURI *uri;
 
+        if (query->status_code == SOUP_STATUS_CANCELLED)
+                return;
+
+        source = GCLUE_3G (user_data);
         source->priv->query = NULL;
 
         if (query->status_code != SOUP_STATUS_OK) {

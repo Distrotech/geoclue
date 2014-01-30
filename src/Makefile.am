@@ -31,8 +31,9 @@ AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 	      $(WARN_CFLAGS)			     	  \
 	      -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
 	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
-	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" \
-	      -DSYSCONFDIR=\""$(sysconfdir)"\"
+	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" 	  \
+	      -DSYSCONFDIR=\""$(sysconfdir)"\"		  \
+	      -I$(srcdir)/public-api
 
 libgeoclue_la_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \

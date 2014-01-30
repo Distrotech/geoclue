@@ -24,7 +24,7 @@ if BUILD_DEMO_AGENT
 demo_PROGRAMS += agent
 endif # BUILD_DEMO_AGENT
 
-interface_data = $(top_builddir)/src/agent/geoclue-agent-interface.xml
+interface_data = $(top_srcdir)/src/agent/geoclue-agent-interface.xml
 dbus_built_sources = geoclue-agent-interface.c geoclue-agent-interface.h
 geoclue-agent-interface.c: geoclue-agent-interface.h
 geoclue-agent-interface.h: Makefile.am $(interface_data)

@@ -317,7 +317,7 @@ get_ap_list (GClueWifi *wifi,
         }
 
         aps = nm_device_wifi_get_access_points (wifi->priv->wifi_device);
-        if (aps->len == 0) {
+        if (aps == NULL || aps->len == 0) {
                 g_set_error_literal (error,
                                      G_IO_ERROR,
                                      G_IO_ERROR_FAILED,

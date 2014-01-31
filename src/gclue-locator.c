@@ -20,14 +20,25 @@
  * Authors: Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
  */
 
+#include "config.h"
+
 #include <glib/gi18n.h>
 
 #include "gclue-locator.h"
 #include "gclue-ipclient.h"
-#include "gclue-wifi.h"
-#include "gclue-3g.h"
-#include "gclue-modem-gps.h"
 #include "public-api/gclue-enum-types.h"
+
+#if GCLUE_USE_WIFI_SOURCE
+#include "gclue-wifi.h"
+#endif
+
+#if GCLUE_USE_3G_SOURCE
+#include "gclue-3g.h"
+#endif
+
+#if GCLUE_USE_MODEM_GPS_SOURCE
+#include "gclue-modem-gps.h"
+#endif
 
 /* This class is like a master location source that hides all individual
  * location sources from rest of the code
@@ -133,7 +144,7 @@ static void
 gclue_locator_constructed (GObject *object)
 {
         GClueLocator *locator = GCLUE_LOCATOR (object);
-        GClueModemGPS *gps = NULL;
+        GClueLocationSource *submit_source = NULL;
         GList *node;
 
         if (locator->priv->accuracy_level >= GCLUE_IPCLIENT_ACCURACY_LEVEL) {
@@ -141,21 +152,28 @@ gclue_locator_constructed (GObject *object)
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         ipclient);
         }
+#if GCLUE_USE_3G_SOURCE
         if (locator->priv->accuracy_level >= GCLUE_3G_ACCURACY_LEVEL) {
                 GClue3G *source = gclue_3g_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         source);
         }
+#endif
+#if GCLUE_USE_WIFI_SOURCE
         if (locator->priv->accuracy_level >= GCLUE_WIFI_ACCURACY_LEVEL) {
                 GClueWifi *wifi = gclue_wifi_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         wifi);
         }
+#endif
+#if GCLUE_USE_MODEM_GPS_SOURCE
         if (locator->priv->accuracy_level >= GCLUE_MODEM_GPS_ACCURACY_LEVEL) {
-                gps = gclue_modem_gps_get_singleton ();
+                GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         gps);
+                submit_source = GCLUE_LOCATION_SOURCE (gps);
         }
+#endif
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
                 GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
@@ -171,10 +189,10 @@ gclue_locator_constructed (GObject *object)
                                   G_CALLBACK (on_location_changed),
                                   locator);
 
-                if (gps != NULL && GCLUE_IS_WEB_SOURCE (src))
+                if (submit_source != NULL && GCLUE_IS_WEB_SOURCE (src))
                         gclue_web_source_set_submit_source
                                 (GCLUE_WEB_SOURCE (src),
-                                 GCLUE_LOCATION_SOURCE (gps));
+                                 submit_source);
         }
 }
 

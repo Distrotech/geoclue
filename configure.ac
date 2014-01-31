@@ -56,8 +56,6 @@ PKG_CHECK_MODULES(GEOCLUE, [
   gio-unix-2.0 >= $GLIB_MIN_VERSION
   json-glib-1.0 >= $JSON_GLIB_MIN_VERSION
   libsoup-2.4
-  libnm-glib >= $LIBNM_GLIB_MIN_VERSION
-  mm-glib >= $LIBMM_GLIB_MIN_VERSION
   libxml-2.0 >= $LIBXML_MIN_VERSION
 ])
 
@@ -103,6 +101,58 @@ else
   AC_DEFINE([BUILD_GEOIP_SERVER], [0], [Build geoip server?])
 fi
 AM_CONDITIONAL([BUILD_GEOIP_SERVER], [test "x$build_geoip_server" = "xyes"])
+
+# 3G source
+AC_ARG_ENABLE(3g-source,
+              AS_HELP_STRING([--disable-3g-source], [Disable 3G backend (requires ModemManager)]),
+              [build_3g_source=$enableval], [build_3g_source=yes])
+if test "$build_3g_source" = "yes"; then
+  build_modem_source=yes
+  AC_DEFINE([GCLUE_USE_3G_SOURCE], [1], [Build 3G source?])
+else
+  AC_DEFINE([GCLUE_USE_3G_SOURCE], [0], [Build 3G source?])
+fi
+AM_CONDITIONAL([BUILD_3G_SOURCE], [test "$build_3g_source" = "yes"])
+
+# GPS source
+AC_ARG_ENABLE(modem-gps-source,
+              AS_HELP_STRING([--disable-gps-source], [Disable GPS backend (requires ModemManager)]),
+              [build_modem_gps_source=$enableval], [build_modem_gps_source=yes])
+if test "$build_modem_gps_source" = "yes"; then
+  build_modem_source=yes
+  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [1], [Build GPS source?])
+else
+  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [0], [Build GPS source?])
+fi
+AM_CONDITIONAL([BUILD_MODEM_GPS_SOURCE], [test "$build_modem_gps_source" = "yes"])
+
+# Wifi source
+AC_ARG_ENABLE(wifi-source,
+              AS_HELP_STRING([--disable-wifi-source], [Disable Wifi backend (requires ModemManager)]),
+              [build_wifi_source=$enableval], [build_wifi_source=yes])
+if test "$build_wifi_source" = "yes"; then
+  require_networkmanager=yes
+  AC_DEFINE([GCLUE_USE_WIFI_SOURCE], [1], [Build Wifi source?])
+else
+  AC_DEFINE([GCLUE_USE_WIFI_SOURCE], [0], [Build Wifi source?])
+fi
+AM_CONDITIONAL([BUILD_WIFI_SOURCE], [test "$build_wifi_source" = "yes"])
+
+# Modem source is used in common by GPS and 3G sources
+if test "$build_modem_source" = "yes"; then
+  require_modemmanager=yes
+fi
+AM_CONDITIONAL([BUILD_MODEM_SOURCE], [test "$build_modem_source" = "yes"])
+
+# Check for ModemManager if one of the sources requires it
+if test "$require_modemmanager" = "yes"; then
+  PKG_CHECK_MODULES(ModemManager, mm-glib >= $LIBMM_GLIB_MIN_VERSION)
+fi
+
+# Check for NetworkManager if one of the sources requires it
+if test "$require_networkmanager" = "yes"; then
+  PKG_CHECK_MODULES(NetworkManager, libnm-glib >= $LIBNM_GLIB_MIN_VERSION)
+fi
 
 # Demo agent
 AC_ARG_ENABLE(demo-agent,
@@ -201,4 +251,8 @@ AC_MSG_NOTICE([
         prefix:                   ${prefix}
         c compiler:               ${CC} ${CFLAGS}
         systemdsystemunitdir:     ${systemdsystemunitdir}
+
+        3G source:                ${build_3g_source}
+        Wifi source:              ${build_wifi_source}
+        Modem GPS source:         ${build_modem_gps_source}
 ])

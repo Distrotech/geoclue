@@ -28,6 +28,8 @@ BUILT_SOURCES = 		\
 noinst_LTLIBRARIES = libgeoclue.la
 
 AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
+	      $(ModemManager_CFLAGS)			  \
+	      $(NetworkManager_CFLAGS)			  \
 	      $(WARN_CFLAGS)			     	  \
 	      -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
 	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
@@ -49,24 +51,38 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-location-source.c	 \
 	gclue-locator.h 	 \
 	gclue-locator.c 	 \
-	gclue-modem-source.c	 \
-	gclue-modem-source.h	 \
-	gclue-modem-gps.c	 \
-	gclue-modem-gps.h	 \
 	gclue-service-manager.h  \
 	gclue-service-manager.c  \
 	gclue-service-client.h   \
 	gclue-service-client.c   \
 	gclue-service-location.h \
 	gclue-service-location.c \
-	gclue-wifi.h 	 	 \
-	gclue-wifi.c 	 	 \
 	gclue-web-source.c	 \
 	gclue-web-source.h	 \
-	gclue-3g.c	 	 \
-	gclue-3g.h	 	 \
 	$(NULL)
-libgeoclue_la_LIBADD = $(GEOCLUE_LIBS) $(LIBS)
+
+if BUILD_WIFI_SOURCE
+libgeoclue_la_SOURCES += gclue-wifi.h gclue-wifi.c
+endif
+
+if BUILD_MODEM_SOURCE
+libgeoclue_la_SOURCES += gclue-modem-source.c gclue-modem-source.h
+endif
+
+if BUILD_3G_SOURCE
+libgeoclue_la_SOURCES += gclue-3g.c gclue-3g.h
+endif
+
+if BUILD_MODEM_GPS_SOURCE
+libgeoclue_la_SOURCES += gclue-modem-gps.c gclue-modem-gps.h
+endif
+
+libgeoclue_la_LIBADD = \
+	$(GEOCLUE_LIBS)			\
+	$(NetworkManager_LIBS)		\
+	$(ModemManager_LIBS)		\
+	$(LIBS)				\
+	$(NULL)
 
 geoclue_SOURCES =	 	  \
 	gclue-main.c	 	  \

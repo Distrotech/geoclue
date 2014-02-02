@@ -44,6 +44,8 @@ struct _GClueWebSourcePrivate {
         gulong network_changed_id;
 
         guint64 last_submitted;
+
+        gboolean network_available;
 };
 
 G_DEFINE_ABSTRACT_TYPE (GClueWebSource, gclue_web_source, GCLUE_TYPE_LOCATION_SOURCE)
@@ -95,12 +97,16 @@ on_network_changed (GNetworkMonitor *monitor,
 {
         GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
         GError *error = NULL;
+        gboolean last_available = web->priv->network_available;
 
+        web->priv->network_available = available;
+        if (last_available == available)
+                return; /* We already reacted to netork change */
         if (!available) {
-                g_debug ("Network unreachable");
+                g_debug ("Network unavailable");
                 return;
         }
-        g_debug ("Network changed");
+        g_debug ("Network available");
 
         if (web->priv->query != NULL)
                 return;

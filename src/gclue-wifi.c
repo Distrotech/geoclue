@@ -135,17 +135,10 @@ on_ap_strength_notify (GObject    *gobject,
         on_ap_added (wifi->priv->wifi_device, ap, user_data);
 }
 
-static void
-on_ap_added (NMDeviceWifi  *device,
-             NMAccessPoint *ap,
-             gpointer       user_data)
+static gboolean
+should_ignore_ap (NMAccessPoint *ap)
 {
-        GClueWifi *wifi = GCLUE_WIFI (user_data);
         const GByteArray *ssid;
-
-        if (wifi->priv->refresh_timeout != 0)
-                return;
-        g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
 
         ssid = nm_access_point_get_ssid (ap);
         if (ssid->len >= 6 &&
@@ -158,8 +151,25 @@ on_ap_added (NMDeviceWifi  *device,
                 g_debug ("WiFi AP '%s' has '_nomap' suffix in its SSID."
                          ", Ignoring..",
                          nm_access_point_get_bssid (ap));
-                return;
+                return TRUE;
         }
+
+        return FALSE;
+}
+
+static void
+on_ap_added (NMDeviceWifi  *device,
+             NMAccessPoint *ap,
+             gpointer       user_data)
+{
+        GClueWifi *wifi = GCLUE_WIFI (user_data);
+
+        if (wifi->priv->refresh_timeout != 0)
+                return;
+        g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
+
+        if (should_ignore_ap (ap))
+                return;
 
         if (nm_access_point_get_strength (ap) <= 20) {
                 g_debug ("WiFi AP '%s' has very low strength (%u)"

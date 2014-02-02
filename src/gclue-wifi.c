@@ -383,6 +383,9 @@ gclue_wifi_create_query (GClueWebSource *source,
                 const char *mac;
                 gint8 strength_dbm;
 
+                if (should_ignore_ap (ap))
+                        continue;
+
                 json_builder_begin_object (builder);
                 json_builder_set_member_name (builder, "macAddress");
                 mac = nm_access_point_get_bssid (ap);
@@ -551,6 +554,9 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
                 NMAccessPoint *ap = g_ptr_array_index (aps, i);
                 const char *mac;
                 gint8 strength_dbm;
+
+                if (should_ignore_ap (ap))
+                        continue;
 
                 json_builder_begin_object (builder);
                 json_builder_set_member_name (builder, "key");

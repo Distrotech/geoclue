@@ -141,10 +141,25 @@ on_ap_added (NMDeviceWifi  *device,
              gpointer       user_data)
 {
         GClueWifi *wifi = GCLUE_WIFI (user_data);
+        const GByteArray *ssid;
 
         if (wifi->priv->refresh_timeout != 0)
                 return;
         g_debug ("WiFi AP '%s' added.", nm_access_point_get_bssid (ap));
+
+        ssid = nm_access_point_get_ssid (ap);
+        if (ssid->len >= 6 &&
+            ssid->data[ssid->len - 1] == 'p' &&
+            ssid->data[ssid->len - 2] == 'a' &&
+            ssid->data[ssid->len - 3] == 'm' &&
+            ssid->data[ssid->len - 4] == 'o' &&
+            ssid->data[ssid->len - 5] == 'n' &&
+            ssid->data[ssid->len - 6] == '_') {
+                g_debug ("WiFi AP '%s' has '_nomap' suffix in its SSID."
+                         ", Ignoring..",
+                         nm_access_point_get_bssid (ap));
+                return;
+        }
 
         if (nm_access_point_get_strength (ap) <= 20) {
                 g_debug ("WiFi AP '%s' has very low strength (%u)"

@@ -116,13 +116,13 @@ AM_CONDITIONAL([BUILD_3G_SOURCE], [test "$build_3g_source" = "yes"])
 
 # GPS source
 AC_ARG_ENABLE(modem-gps-source,
-              AS_HELP_STRING([--disable-gps-source], [Disable GPS backend (requires ModemManager)]),
+              AS_HELP_STRING([--disable-modem-gps-source], [Disable modem GPS backend (requires ModemManager)]),
               [build_modem_gps_source=$enableval], [build_modem_gps_source=yes])
 if test "$build_modem_gps_source" = "yes"; then
   build_modem_source=yes
-  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [1], [Build GPS source?])
+  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [1], [Build modem GPS source?])
 else
-  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [0], [Build GPS source?])
+  AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [0], [Build modem GPS source?])
 fi
 AM_CONDITIONAL([BUILD_MODEM_GPS_SOURCE], [test "$build_modem_gps_source" = "yes"])
 

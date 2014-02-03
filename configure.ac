@@ -226,6 +226,7 @@ AC_SUBST(GLIB_MKENUMS)
 
 AC_CONFIG_FILES([
   Makefile
+  build-aux/Makefile
   src/Makefile
   src/geoclue-2.0.pc
   src/agent/Makefile

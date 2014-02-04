@@ -1,3 +1,18 @@
+2.1.2
+=====
+
+- Fix some crashing bugs.
+- Ignore WiFis with '_nomap' suffix.
+- Configure options for disabling WiFi, 3G and GPS modem sources.
+- Avoid spaming the network resources for ignorable changes to network setup.
+- Add some required files to distribution that we forgot in last release.
+
+All contributors to this release:
+
+Kalev Lember <kalevlember@gmail.com>
+Ryan Lortie <desrt@desrt.ca>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 2.1.1
 =====
 

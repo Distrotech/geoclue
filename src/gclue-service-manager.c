@@ -28,7 +28,8 @@
 #include "gclue-client-info.h"
 #include "gclue-config.h"
 
-#define AGENT_WAIT_TIMEOUT 100 /* milliseconds */
+#define AGENT_WAIT_TIMEOUT      100    /* milliseconds */
+#define AGENT_WAIT_TIMEOUT_USEC 100000 /* microseconds */
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
@@ -50,6 +51,7 @@ struct _GClueServiceManagerPrivate
         GHashTable *agents;
 
         guint num_clients;
+        gint64 init_time;
 };
 
 enum
@@ -147,6 +149,7 @@ on_client_info_new_ready (GObject      *source_object,
         GDBusProxy *agent_proxy;
         GError *error = NULL;
         guint32 user_id;
+        gint64 now;
 
         info = gclue_client_info_new_finish (res, &error);
         if (info == NULL) {
@@ -165,7 +168,9 @@ on_client_info_new_ready (GObject      *source_object,
         user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
                                            GINT_TO_POINTER (user_id));
-        if (agent_proxy == NULL) {
+        now = g_get_monotonic_time ();
+        if (agent_proxy == NULL &&
+            now < (priv->init_time + AGENT_WAIT_TIMEOUT_USEC)) {
                 /* Its possible that geoclue was just launched on GetClient
                  * call, in which case agents need some time to register
                  * themselves to us.
@@ -462,6 +467,7 @@ gclue_service_manager_init (GClueServiceManager *manager)
                                                        g_direct_equal,
                                                        NULL,
                                                        g_object_unref);
+        manager->priv->init_time = g_get_monotonic_time ();
 }
 
 static gboolean

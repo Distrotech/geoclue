@@ -28,7 +28,7 @@
 #include "gclue-client-info.h"
 #include "gclue-config.h"
 
-#define AGENT_WAIT_TIMEOUT 1 /* seconds */
+#define AGENT_WAIT_TIMEOUT 100 /* milliseconds */
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
@@ -170,9 +170,9 @@ on_client_info_new_ready (GObject      *source_object,
                  * call, in which case agents need some time to register
                  * themselves to us.
                  */
-                g_timeout_add_seconds (AGENT_WAIT_TIMEOUT,
-                                       (GSourceFunc) complete_get_client,
-                                       user_data);
+                g_timeout_add (AGENT_WAIT_TIMEOUT,
+                               (GSourceFunc) complete_get_client,
+                               user_data);
                 return;
         }
 

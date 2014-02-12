@@ -35,6 +35,7 @@ AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
 	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" 	  \
 	      -DSYSCONFDIR=\""$(sysconfdir)"\"		  \
+	      -I$(srcdir)/agent				  \
 	      -I$(srcdir)/public-api
 
 libgeoclue_la_SOURCES =	 	 \
@@ -87,10 +88,11 @@ libgeoclue_la_LIBADD = \
 geoclue_SOURCES =	 	  \
 	gclue-main.c	 	  \
 	$(NULL)
-geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    \
-		$(LIBS) 		  		    \
-		$(builddir)/libgeoclue.la		    \
-		$(builddir)/geocode-glib/libgeocode-glib.la \
+geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    	\
+		$(LIBS) 		  		    	\
+		$(builddir)/libgeoclue.la		    	\
+		$(builddir)/agent/libgeoclue-agent.la 		\
+		$(builddir)/geocode-glib/libgeocode-glib.la 	\
 		$(builddir)/public-api/libgeoclue-public-api.la
 
 CLEANFILES = $(BUILT_SOURCES)

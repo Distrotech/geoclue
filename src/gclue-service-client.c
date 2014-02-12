@@ -48,7 +48,7 @@ struct _GClueServiceClientPrivate
         GClueClientInfo *client_info;
         const char *path;
         GDBusConnection *connection;
-        GDBusProxy *agent_proxy;
+        GClueAgent *agent_proxy;
 
         GClueServiceLocation *location;
         GClueServiceLocation *prev_location;
@@ -233,21 +233,17 @@ on_authorize_app_ready (GObject      *source_object,
 {
         StartData *data = (StartData *) user_data;
         GError *error = NULL;
-        GVariant *results = NULL;
         gboolean authorized = FALSE;
         GClueAccuracyLevel accuracy_level;
 
-        results = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
-                                            res,
-                                            &error);
-        if (results == NULL)
-                goto error_out;
-
-        g_variant_get_child (results, 0, "b", &authorized);
         accuracy_level = gclue_client_get_requested_accuracy_level
                                 (GCLUE_CLIENT (data->client));
-        g_variant_get_child (results, 1, "u", &accuracy_level);
-        g_variant_unref (results);
+        if (!gclue_agent_call_authorize_app_finish (GCLUE_AGENT (source_object),
+                                                    &authorized,
+                                                    &accuracy_level,
+                                                    res,
+                                                    &error))
+                goto error_out;
 
         if (!authorized) {
                 g_set_error_literal (&error,
@@ -306,14 +302,12 @@ gclue_service_client_handle_start (GClueClient           *client,
                 return TRUE;
         }
 
-        g_dbus_proxy_call (priv->agent_proxy,
-                           "AuthorizeApp",
-                           g_variant_new ("(su)", desktop_id, accuracy_level),
-                           G_DBUS_CALL_FLAGS_NONE,
-                           -1,
-                           NULL,
-                           on_authorize_app_ready,
-                           data);
+        gclue_agent_call_authorize_app (priv->agent_proxy,
+                                        desktop_id,
+                                        accuracy_level,
+                                        NULL,
+                                        on_authorize_app_ready,
+                                        data);
 
         return TRUE;
 }
@@ -578,7 +572,7 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         gParamSpecs[PROP_AGENT_PROXY] = g_param_spec_object ("agent-proxy",
                                                              "AgentProxy",
                                                              "Proxy to app authorization agent",
-                                                             G_TYPE_DBUS_PROXY,
+                                                             GCLUE_TYPE_AGENT_PROXY,
                                                              G_PARAM_READWRITE |
                                                              G_PARAM_CONSTRUCT);
         g_object_class_install_property (object_class,
@@ -628,7 +622,7 @@ GClueServiceClient *
 gclue_service_client_new (GClueClientInfo *info,
                           const char      *path,
                           GDBusConnection *connection,
-                          GDBusProxy      *agent_proxy,
+                          GClueAgent      *agent_proxy,
                           GError         **error)
 {
         return g_initable_new (GCLUE_TYPE_SERVICE_CLIENT,

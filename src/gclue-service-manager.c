@@ -26,6 +26,7 @@
 #include "gclue-service-manager.h"
 #include "gclue-service-client.h"
 #include "gclue-client-info.h"
+#include "geoclue-agent-interface.h"
 #include "gclue-config.h"
 
 #define AGENT_WAIT_TIMEOUT      100    /* milliseconds */
@@ -90,7 +91,7 @@ complete_get_client (OnClientInfoNewReadyData *data)
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueServiceClient *client;
         GClueClientInfo *info = data->client_info;
-        GDBusProxy *agent_proxy = NULL;
+        GClueAgent *agent_proxy = NULL;
         GError *error = NULL;
         char *path;
         guint32 user_id;
@@ -146,7 +147,7 @@ on_client_info_new_ready (GObject      *source_object,
         OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueClientInfo *info = NULL;
-        GDBusProxy *agent_proxy;
+        GClueAgent *agent_proxy;
         GError *error = NULL;
         guint32 user_id;
         gint64 now;
@@ -253,10 +254,10 @@ on_agent_proxy_ready (GObject      *source_object,
         AddAgentData *data = (AddAgentData *) user_data;
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         guint32 user_id;
-        GDBusProxy *agent;
+        GClueAgent *agent;
         GError *error = NULL;
 
-        agent = g_dbus_proxy_new_for_bus_finish (res, &error);
+        agent = gclue_agent_proxy_new_for_bus_finish (res, &error);
         if (agent == NULL)
             goto error_out;
 
@@ -322,15 +323,13 @@ on_agent_info_new_ready (GObject      *source_object,
 
         path = g_strdup_printf (AGENT_PATH,
                                 gclue_client_info_get_user_id (data->info));
-        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                  G_DBUS_PROXY_FLAGS_NONE,
-                                  NULL,
-                                  gclue_client_info_get_bus_name (data->info),
-                                  path,
-                                  "org.freedesktop.GeoClue2.Agent",
-                                  NULL,
-                                  on_agent_proxy_ready,
-                                  user_data);
+        gclue_agent_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                                       G_DBUS_PROXY_FLAGS_NONE,
+                                       gclue_client_info_get_bus_name (data->info),
+                                       path,
+                                       NULL,
+                                       on_agent_proxy_ready,
+                                       user_data);
         g_free (path);
 }
 

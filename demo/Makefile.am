@@ -24,19 +24,6 @@ if BUILD_DEMO_AGENT
 demo_PROGRAMS += agent
 endif # BUILD_DEMO_AGENT
 
-interface_data = $(top_srcdir)/src/agent/geoclue-agent-interface.xml
-dbus_built_sources = geoclue-agent-interface.c geoclue-agent-interface.h
-geoclue-agent-interface.c: geoclue-agent-interface.h
-geoclue-agent-interface.h: Makefile.am $(interface_data)
-	gdbus-codegen						\
-		--interface-prefix org.freedesktop.GeoClue2.	\
-		--c-namespace GClue				\
-		--generate-c-code geoclue-agent-interface	\
-		$(interface_data)
-
-BUILT_SOURCES = $(dbus_built_sources) \
-		$(NULL)
-
 agent_SOURCES = $(BUILT_SOURCES)       \
 		gclue-service-agent.h  \
 		gclue-service-agent.c  \
@@ -47,8 +34,10 @@ agent_CFLAGS = $(DEMO_AGENT_CFLAGS)   		   \
  	       -DLOCALEDIR="\"$(datadir)/locale\"" \
 	       -DABS_SRCDIR=\""$(abs_srcdir)"\"	   \
 	       -I$(top_builddir)/src		   \
+	       -I$(top_builddir)/src/agent	   \
 	       -I$(top_builddir)/src/public-api
-agent_LDADD = $(DEMO_AGENT_LIBS)
+agent_LDADD = $(DEMO_AGENT_LIBS) \
+	      $(top_builddir)/src/agent/libgeoclue-agent.la
 
 -include $(top_srcdir)/git.mk
 

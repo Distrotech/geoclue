@@ -142,8 +142,11 @@ on_client_info_new_ready (GObject      *source_object,
                           gpointer      user_data)
 {
         OnClientInfoNewReadyData *data = (OnClientInfoNewReadyData *) user_data;
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         GClueClientInfo *info = NULL;
+        GDBusProxy *agent_proxy;
         GError *error = NULL;
+        guint32 user_id;
 
         info = gclue_client_info_new_finish (res, &error);
         if (info == NULL) {
@@ -159,22 +162,19 @@ on_client_info_new_ready (GObject      *source_object,
 
         data->client_info = info;
 
-        /* We'd probably want to enable the following code when we have the
-         * ability to reliably identify agents and apps.
-         */
-        /*user_id = gclue_client_info_get_user_id (info);
+        user_id = gclue_client_info_get_user_id (info);
         agent_proxy = g_hash_table_lookup (priv->agents,
                                            GINT_TO_POINTER (user_id));
         if (agent_proxy == NULL) {
-                / * Its possible that geoclue was just launched on GetClient
+                /* Its possible that geoclue was just launched on GetClient
                  * call, in which case agents need some time to register
                  * themselves to us.
-                 * /
+                 */
                 g_timeout_add_seconds (AGENT_WAIT_TIMEOUT,
                                        (GSourceFunc) complete_get_client,
                                        user_data);
                 return;
-        }*/
+        }
 
         complete_get_client (data);
 }

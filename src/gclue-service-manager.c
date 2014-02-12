@@ -27,10 +27,13 @@
 #include "gclue-service-client.h"
 #include "gclue-client-info.h"
 #include "geoclue-agent-interface.h"
+#include "gclue-enums.h"
 #include "gclue-config.h"
 
 #define AGENT_WAIT_TIMEOUT      100    /* milliseconds */
 #define AGENT_WAIT_TIMEOUT_USEC 100000 /* microseconds */
+
+#define DEFAULT_MAX_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_EXACT
 
 static void
 gclue_service_manager_manager_iface_init (GClueManagerIface *iface);
@@ -269,6 +272,8 @@ on_agent_proxy_ready (GObject      *source_object,
                           "peer-vanished",
                           G_CALLBACK (on_agent_vanished),
                           data->manager);
+        /* FIXME: We should be storing this on disk */
+        gclue_agent_set_max_accuracy_level (agent, DEFAULT_MAX_ACCURACY_LEVEL);
 
         gclue_manager_complete_add_agent (data->manager, data->invocation);
 

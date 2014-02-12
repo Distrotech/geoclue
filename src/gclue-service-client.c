@@ -270,7 +270,7 @@ gclue_service_client_handle_start (GClueClient           *client,
         GClueConfig *config;
         StartData *data;
         const char *desktop_id;
-        GClueAccuracyLevel accuracy_level;
+        GClueAccuracyLevel accuracy_level, max_accuracy;
 
         if (priv->locator != NULL)
                 /* Already started */
@@ -301,6 +301,21 @@ gclue_service_client_handle_start (GClueClient           *client,
 
                 return TRUE;
         }
+
+        max_accuracy = gclue_agent_get_max_accuracy_level (priv->agent_proxy);
+        if (max_accuracy == 0) {
+                guint32 uid = gclue_client_info_get_user_id (priv->client_info);
+
+                g_dbus_method_invocation_return_error (invocation,
+                                                       G_DBUS_ERROR,
+                                                       G_DBUS_ERROR_ACCESS_DENIED,
+                                                       "Geolocation disabled for"
+                                                       " UID %u",
+                                                       uid);
+                start_data_free (data);
+                return TRUE;
+        }
+        accuracy_level = CLAMP (accuracy_level, 0, max_accuracy);
 
         gclue_agent_call_authorize_app (priv->agent_proxy,
                                         desktop_id,

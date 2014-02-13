@@ -228,7 +228,6 @@ typedef struct
 static void
 add_agent_data_free (AddAgentData *data)
 {
-        g_clear_object (&data->info);
         g_clear_pointer (&data->desktop_id, g_free);
         g_slice_free (AddAgentData, data);
 }
@@ -243,6 +242,7 @@ on_agent_vanished (GClueClientInfo *info,
         user_id = gclue_client_info_get_user_id (info);
         g_debug ("Agent for user '%u' vanished", user_id);
         g_hash_table_remove (manager->priv->agents, GINT_TO_POINTER (user_id));
+        g_object_unref (info);
 }
 
 static void

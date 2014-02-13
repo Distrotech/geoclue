@@ -2,6 +2,7 @@ systemconfdir    = $(sysconfdir)/geoclue
 systemconf_in_files = geoclue.conf.in
 systemconf_DATA = $(systemconf_in_files:.conf.in=.conf)
 
+
 if BUILD_DEMO_AGENT
 $(systemconf_DATA): $(systemconf_in_files) Makefile
 	@sed -e \
@@ -11,6 +12,10 @@ else
 $(systemconf_DATA): $(systemconf_in_files) Makefile
 	@sed -e "s|\@demo_agent\@||" $< > $@
 endif
+
+install-data-hook:
+	$(AM_V_GEN)chown $(dbus_srv_user).$(dbus_srv_user) \
+			 $(DESTDIR)$(systemconfdir)
 
 servicedir       = $(datadir)/dbus-1/system-services
 service_in_files = org.freedesktop.GeoClue2.service.in

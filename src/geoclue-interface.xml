@@ -27,6 +27,14 @@
     <property name="InUse" type="b" access="read"/>
 
     <!--
+        AvailableAccuracyLevel:
+
+        The level of available accuracy, as
+        <link linkend="GClueAccuracyLevel">GClueAccuracyLevel</link>.
+    -->
+    <property name="AvailableAccuracyLevel" type="u" access="read"/>
+
+    <!--
         GetClient:
         @client: The path for newly created client object
 

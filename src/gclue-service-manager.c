@@ -447,6 +447,13 @@ gclue_service_manager_set_property (GObject      *object,
         }
 }
 
+static void
+gclue_service_manager_constructed (GObject *object)
+{
+        /* FIXME: We need to probe the sources, somehow */
+        gclue_manager_set_available_accuracy_level (GCLUE_MANAGER (object),
+                                                    GCLUE_ACCURACY_LEVEL_EXACT);
+}
 
 static void
 gclue_service_manager_class_init (GClueServiceManagerClass *klass)
@@ -457,6 +464,7 @@ gclue_service_manager_class_init (GClueServiceManagerClass *klass)
         object_class->finalize = gclue_service_manager_finalize;
         object_class->get_property = gclue_service_manager_get_property;
         object_class->set_property = gclue_service_manager_set_property;
+        object_class->constructed = gclue_service_manager_constructed;
 
         g_type_class_add_private (object_class, sizeof (GClueServiceManagerPrivate));
 

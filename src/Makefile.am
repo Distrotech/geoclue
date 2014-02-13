@@ -58,6 +58,8 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-service-client.c   \
 	gclue-service-location.h \
 	gclue-service-location.c \
+	gclue-user-config.h 	 \
+	gclue-user-config.c 	 \
 	gclue-web-source.c	 \
 	gclue-web-source.h	 \
 	$(NULL)

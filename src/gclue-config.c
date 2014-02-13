@@ -24,7 +24,7 @@
 
 #include "gclue-config.h"
 
-#define CONFIG_FILE_PATH SYSCONFDIR "/geoclue.conf"
+#define CONFIG_FILE_PATH SYSCONFDIR "/geoclue/geoclue.conf"
 
 /* This class will be responsible for fetching configuration. */
 

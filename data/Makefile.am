@@ -15,7 +15,8 @@ endif
 
 install-data-hook:
 	$(AM_V_GEN)chown $(dbus_srv_user).$(dbus_srv_user) \
-			 $(DESTDIR)$(systemconfdir)
+			 $(DESTDIR)$(systemconfdir) || 	   \
+	echo "Failed to give ownership of $(DESTDIR)$(systemconfdir) to $(dbus_srv_user). Geoclue will not be able to save user configurations."
 
 servicedir       = $(datadir)/dbus-1/system-services
 service_in_files = org.freedesktop.GeoClue2.service.in

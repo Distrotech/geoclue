@@ -29,7 +29,6 @@
 #include "geoclue-agent-interface.h"
 #include "gclue-enums.h"
 #include "gclue-config.h"
-#include "gclue-user-config.h"
 
 #define AGENT_WAIT_TIMEOUT      100    /* milliseconds */
 #define AGENT_WAIT_TIMEOUT_USEC 100000 /* microseconds */
@@ -249,24 +248,6 @@ on_agent_vanished (GClueClientInfo *info,
 }
 
 static void
-on_agent_max_accuracy_changed (GClueAgent *agent,
-                               GParamSpec *pspec,
-                               gpointer    user_data)
-{
-        GClueClientInfo *info = GCLUE_CLIENT_INFO (user_data);;
-        GClueAccuracyLevel max_accuracy;
-        GClueUserConfig *user_config;
-        guint32 user_id;
-
-        user_id = gclue_client_info_get_user_id (info);
-
-        max_accuracy = gclue_agent_get_max_accuracy_level (agent);
-        user_config = gclue_user_config_new (user_id);
-        gclue_user_config_set_max_accuracy (user_config, max_accuracy);
-        g_object_unref (user_config);
-}
-
-static void
 on_agent_proxy_ready (GObject      *source_object,
                       GAsyncResult *res,
                       gpointer      user_data)
@@ -274,9 +255,7 @@ on_agent_proxy_ready (GObject      *source_object,
         AddAgentData *data = (AddAgentData *) user_data;
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (data->manager)->priv;
         guint32 user_id;
-        GClueUserConfig *user_config;
         GClueAgent *agent;
-        GClueAccuracyLevel max_accuracy;
         GError *error = NULL;
 
         agent = gclue_agent_proxy_new_for_bus_finish (res, &error);
@@ -291,16 +270,6 @@ on_agent_proxy_ready (GObject      *source_object,
                           "peer-vanished",
                           G_CALLBACK (on_agent_vanished),
                           data->manager);
-
-        user_config = gclue_user_config_new (user_id);
-        max_accuracy = gclue_user_config_get_max_accuracy (user_config);
-        g_object_unref (user_config);
-        gclue_agent_set_max_accuracy_level (agent, max_accuracy);
-
-        g_signal_connect (agent,
-                          "notify::max-accuracy-level",
-                          G_CALLBACK (on_agent_max_accuracy_changed),
-                          data->info);
 
         gclue_manager_complete_add_agent (data->manager, data->invocation);
 

@@ -42,11 +42,8 @@
         The global maximum level of accuracy allowed for all clients. Since
         agents are per-user, this can be different for each user. See
         <link linkend="GClueAccuracyLevel">GClueAccuracyLevel</link> for
-        possible values. Geoclue will set this value on agent upon agent
-        registering itself and will listen to changes to it by agent. Its done
-        this way so that geoclue is the entity that keeps this information on
-        disk and agent is just providing UI to control it.
+        possible values.
     -->
-    <property name="MaxAccuracyLevel" type="u" access="readwrite"/>
+    <property name="MaxAccuracyLevel" type="u" access="read"/>
   </interface>
 </node>

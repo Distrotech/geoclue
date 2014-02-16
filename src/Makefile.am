@@ -36,7 +36,9 @@ AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 	      -DABS_TOP_SRCDIR=\""$(abs_top_srcdir)"\" 	  \
 	      -DSYSCONFDIR=\""$(sysconfdir)"\"		  \
 	      -I$(srcdir)/agent				  \
-	      -I$(srcdir)/public-api
+	      -I$(builddir)/agent			  \
+	      -I$(srcdir)/public-api			  \
+	      -I$(builddir)/public-api
 
 libgeoclue_la_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \

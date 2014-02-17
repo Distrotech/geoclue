@@ -1,3 +1,24 @@
+2.1.3
+=====
+
+- Agents can now dictate maximum accuracy level allowed for all clients through
+  a D-Bus property. The next version of gnome-shell will make use of that and
+  provide an option to enable/disable geolocation in topbar menu.
+- Add D-Bus property to specify available accuracy level. For now we just
+  hardcode it to report that we can provide exact accuracy.
+- Give agents time to register themselves on startup before processing client
+  requests.
+- Move configuration file under geoclue subdir so that in future we can easily
+  add more configuration files if needed.
+- Fixes to build.
+- Some internal clean-ups.
+
+All contributors to this release:
+
+Colin Walters <walters@verbum.org>
+Marvin Schmidt <marv@exherbo.org>
+Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
+
 2.1.2
 =====
 

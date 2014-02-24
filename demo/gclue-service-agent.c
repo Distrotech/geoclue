@@ -173,6 +173,9 @@ on_manager_proxy_ready (GObject      *source_object,
                 return;
         }
 
+        agent = GCLUE_AGENT (g_task_get_source_object (task));
+        gclue_agent_set_max_accuracy_level (agent, GCLUE_ACCURACY_LEVEL_EXACT);
+
         g_dbus_proxy_call (proxy,
                            "AddAgent",
                            g_variant_new ("(s)",

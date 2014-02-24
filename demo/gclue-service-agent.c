@@ -29,6 +29,8 @@
 
 #include "gclue-service-agent.h"
 
+#define AGENT_PATH "/org/freedesktop/GeoClue2/Agent"
+
 static void
 gclue_service_agent_agent_iface_init (GClueAgentIface *iface);
 static void
@@ -163,6 +165,7 @@ on_manager_proxy_ready (GObject      *source_object,
                         gpointer      user_data)
 {
         GTask *task = G_TASK (user_data);
+        GClueAgent *agent;
         GDBusProxy *proxy;
         GError *error = NULL;
 
@@ -195,23 +198,19 @@ gclue_service_agent_init_async (GAsyncInitable     *initable,
                                 gpointer            user_data)
 {
         GTask *task;
-        char *path;
         GError *error = NULL;
 
         task = g_task_new (initable, cancellable, callback, user_data);
 
-        path = g_strdup_printf ("/org/freedesktop/GeoClue2/Agent/%u", getuid ());
         if (!g_dbus_interface_skeleton_export
                 (G_DBUS_INTERFACE_SKELETON (initable),
                  GCLUE_SERVICE_AGENT (initable)->priv->connection,
-                 path,
+                 AGENT_PATH,
                  &error)) {
                 g_task_return_error (task, error);
                 g_object_unref (task);
-                g_free (path);
                 return;
         }
-        g_free (path);
 
         g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                   G_DBUS_PROXY_FLAGS_NONE,

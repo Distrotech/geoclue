@@ -1,3 +1,9 @@
+2.1.6
+=====
+
+- Correct binary path is demo's desktop file.
+- Move demo apps from /usr/share to /usr/libexec.
+
 2.1.5
 =====
 

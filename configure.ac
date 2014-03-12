@@ -20,7 +20,6 @@ AC_SUBST([GEOCLUE_API_VERSION], [2.0])
 # Check for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_CXX
 AM_PROG_AR
 AC_CHECK_TOOL([DESKTOP_FILE_VALIDATE], [desktop-file-validate], [/bin/true])
 

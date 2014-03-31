@@ -288,6 +288,8 @@ complete_start (StartData *data, GClueAccuracyLevel accuracy_level)
 
         gclue_client_complete_start (GCLUE_CLIENT (data->client),
                                      data->invocation);
+        g_debug ("'%s' started.",
+                 gclue_client_get_desktop_id (GCLUE_CLIENT (data->client)));
         start_data_free (data);
 }
 
@@ -398,6 +400,7 @@ gclue_service_client_handle_stop (GClueClient           *client,
 {
         stop_client (GCLUE_SERVICE_CLIENT (client));
         gclue_client_complete_stop (client, invocation);
+        g_debug ("'%s' stopped.", gclue_client_get_desktop_id (client));
 
         return TRUE;
 }

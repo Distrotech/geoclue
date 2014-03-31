@@ -39,7 +39,7 @@ url=https://location.services.mozilla.com/v1/geolocate?key=geoclue
 # # info access, separate by ';'. Keep it empty for allowing it for all users.
 # users=
 
-[gnome-settings-daemon]
+[gnome-datetime-panel]
 allowed=true
 users=
 

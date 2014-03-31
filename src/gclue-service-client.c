@@ -58,6 +58,8 @@ struct _GClueServiceClientPrivate
 
         /* Number of times location has been updated */
         guint locations_updated;
+
+        gboolean agent_stopped; /* Agent stopped client, not the app */
 };
 
 enum
@@ -191,6 +193,80 @@ out:
         g_free (path);
 }
 
+static void
+start_client (GClueServiceClient *client, GClueAccuracyLevel accuracy_level)
+{
+        GClueServiceClientPrivate *priv = client->priv;
+
+        gclue_client_set_active (GCLUE_CLIENT (client), TRUE);
+        priv->locator = gclue_locator_new (accuracy_level);
+        g_signal_connect (priv->locator,
+                          "notify::location",
+                          G_CALLBACK (on_locator_location_changed),
+                          client);
+
+        /* In case locator already has a location */
+        on_locator_location_changed (G_OBJECT (priv->locator),
+                                     NULL,
+                                     client);
+}
+
+static void
+stop_client (GClueServiceClient *client)
+{
+        g_clear_object (&client->priv->locator);
+        gclue_client_set_active (GCLUE_CLIENT (client), FALSE);
+}
+
+static void
+on_agent_props_changed (GDBusProxy *agent_proxy,
+                        GVariant   *changed_properties,
+                        GStrv       invalidated_properties,
+                        gpointer    user_data)
+{
+        GClueServiceClient *client = GCLUE_SERVICE_CLIENT (user_data);
+        GVariantIter *iter;
+        GVariant *value;
+        gchar *key;
+        
+        if (g_variant_n_children (changed_properties) < 0)
+                return;
+
+        g_variant_get (changed_properties, "a{sv}", &iter);
+        while (g_variant_iter_loop (iter, "{&sv}", &key, &value)) {
+                GClueAccuracyLevel max_accuracy;
+                const char *id;
+
+                if (strcmp (key, "MaxAccuracyLevel") != 0)
+                        continue;
+
+                id = gclue_client_get_desktop_id (GCLUE_CLIENT (client));
+                max_accuracy = g_variant_get_uint32 (value);
+                /* FIXME: We should be handling all values of max accuracy
+                 *        level here, not just 0 and non-0.
+                 */
+                if (max_accuracy != 0 && client->priv->agent_stopped) {
+                        GClueAccuracyLevel accuracy;
+
+                        client->priv->agent_stopped = FALSE;
+                        accuracy = gclue_client_get_requested_accuracy_level
+                                (GCLUE_CLIENT (client));
+                        accuracy = CLAMP (accuracy, 0, max_accuracy);
+
+                        start_client (client, accuracy);
+                        g_debug ("Re-started '%s'.", id);
+                } else if (max_accuracy == 0 &&
+                           gclue_client_get_active (GCLUE_CLIENT (client))) {
+                        stop_client (client);
+                        client->priv->agent_stopped = TRUE;
+                        g_debug ("Stopped '%s'.", id);
+                }
+
+                break;
+        }
+        g_variant_iter_free (iter);
+}
+
 typedef struct
 {
         GClueServiceClient *client;
@@ -208,19 +284,7 @@ start_data_free (StartData *data)
 static void
 complete_start (StartData *data, GClueAccuracyLevel accuracy_level)
 {
-        GClueServiceClientPrivate *priv = data->client->priv;
-
-        gclue_client_set_active (GCLUE_CLIENT (data->client), TRUE);
-        priv->locator = gclue_locator_new (accuracy_level);
-        g_signal_connect (priv->locator,
-                          "notify::location",
-                          G_CALLBACK (on_locator_location_changed),
-                          data->client);
-
-        /* In case locator already has a location */
-        on_locator_location_changed (G_OBJECT (priv->locator),
-                                     NULL,
-                                     data->client);
+        start_client (data->client, accuracy_level);
 
         gclue_client_complete_start (GCLUE_CLIENT (data->client),
                                      data->invocation);
@@ -332,10 +396,7 @@ static gboolean
 gclue_service_client_handle_stop (GClueClient           *client,
                                   GDBusMethodInvocation *invocation)
 {
-        GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
-
-        g_clear_object (&priv->locator);
-        gclue_client_set_active (client, FALSE);
+        stop_client (GCLUE_SERVICE_CLIENT (client));
         gclue_client_complete_stop (client, invocation);
 
         return TRUE;
@@ -411,6 +472,10 @@ gclue_service_client_set_property (GObject      *object,
 
         case PROP_AGENT_PROXY:
                 client->priv->agent_proxy = g_value_dup_object (value);
+                g_signal_connect (client->priv->agent_proxy,
+                                  "g-properties-changed",
+                                  G_CALLBACK (on_agent_props_changed),
+                                  object);
                 break;
 
         default:

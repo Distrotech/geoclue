@@ -58,8 +58,6 @@ struct _GClueServiceClientPrivate
 
         /* Number of times location has been updated */
         guint locations_updated;
-
-        gboolean active;
 };
 
 enum
@@ -69,7 +67,6 @@ enum
         PROP_PATH,
         PROP_CONNECTION,
         PROP_AGENT_PROXY,
-        PROP_ACTIVE,
         LAST_PROP
 };
 
@@ -209,19 +206,11 @@ start_data_free (StartData *data)
 }
 
 static void
-set_active (GClueServiceClient *client,
-            gboolean            value)
-{
-        client->priv->active = value;
-        g_object_notify (G_OBJECT (client), "active");
-}
-
-static void
 complete_start (StartData *data, GClueAccuracyLevel accuracy_level)
 {
         GClueServiceClientPrivate *priv = data->client->priv;
 
-        set_active (data->client, TRUE);
+        gclue_client_set_active (GCLUE_CLIENT (data->client), TRUE);
         priv->locator = gclue_locator_new (accuracy_level);
         g_signal_connect (priv->locator,
                           "notify::location",
@@ -346,8 +335,8 @@ gclue_service_client_handle_stop (GClueClient           *client,
         GClueServiceClientPrivate *priv = GCLUE_SERVICE_CLIENT (client)->priv;
 
         g_clear_object (&priv->locator);
+        gclue_client_set_active (client, FALSE);
         gclue_client_complete_stop (client, invocation);
-        set_active (GCLUE_SERVICE_CLIENT (client), FALSE);
 
         return TRUE;
 }
@@ -392,10 +381,6 @@ gclue_service_client_get_property (GObject    *object,
 
         case PROP_AGENT_PROXY:
                 g_value_set_object (value, client->priv->agent_proxy);
-                break;
-
-        case PROP_ACTIVE:
-                g_value_set_boolean (value, client->priv->active);
                 break;
 
         default:
@@ -610,15 +595,6 @@ gclue_service_client_class_init (GClueServiceClientClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_AGENT_PROXY,
                                          gParamSpecs[PROP_AGENT_PROXY]);
-
-        gParamSpecs[PROP_ACTIVE] = g_param_spec_boolean ("active",
-                                                         "Active",
-                                                         "Client has been started (successfully)",
-                                                         FALSE,
-                                                         G_PARAM_READABLE);
-        g_object_class_install_property (object_class,
-                                         PROP_ACTIVE,
-                                         gParamSpecs[PROP_ACTIVE]);
 }
 
 static void
@@ -690,12 +666,4 @@ gclue_service_client_get_client_info (GClueServiceClient *client)
         g_return_val_if_fail (GCLUE_IS_SERVICE_CLIENT(client), NULL);
 
         return client->priv->client_info;
-}
-
-gboolean
-gclue_service_client_get_active (GClueServiceClient *client)
-{
-        g_return_val_if_fail (GCLUE_IS_SERVICE_CLIENT(client), FALSE);
-
-        return client->priv->active;
 }

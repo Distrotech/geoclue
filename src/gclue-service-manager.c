@@ -75,9 +75,9 @@ sync_in_use_property (GClueServiceManager *manager)
         for (l = g_hash_table_get_values (manager->priv->clients);
              l != NULL;
              l = l->next) {
-                GClueServiceClient *client = GCLUE_SERVICE_CLIENT (l->data);
+                GClueClient *client = GCLUE_CLIENT (l->data);
 
-                if (gclue_service_client_get_active (client)) {
+                if (gclue_client_get_active (client)) {
                         in_use = TRUE;
 
                         break;

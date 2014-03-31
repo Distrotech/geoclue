@@ -105,6 +105,14 @@
     <property name="RequestedAccuracyLevel" type="u" access="readwrite"/>
 
     <!--
+        Active:
+
+        If client is active, i-e started successfully using
+        org.freedesktop.GeoClue2.Client.Start() and receiving location updates.
+    -->
+    <property name="Active" type="b" access="read"/>
+
+    <!--
         Start:
 
         Start receiving events about the current location. Applications should

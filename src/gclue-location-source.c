@@ -87,6 +87,16 @@ gclue_location_source_set_property (GObject      *object,
 }
 
 static void
+gclue_location_source_finalize (GObject *object)
+{
+        GClueLocationSourcePrivate *priv = GCLUE_LOCATION_SOURCE (object)->priv;
+
+        g_clear_object (&priv->location);
+
+        G_OBJECT_CLASS (gclue_location_source_parent_class)->finalize (object);
+}
+
+static void
 gclue_location_source_class_init (GClueLocationSourceClass *klass)
 {
         GObjectClass *object_class;
@@ -94,6 +104,7 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         object_class = G_OBJECT_CLASS (klass);
         object_class->get_property = gclue_location_source_get_property;
         object_class->set_property = gclue_location_source_set_property;
+        object_class->finalize = gclue_location_source_finalize;
         g_type_class_add_private (object_class, sizeof (GClueLocationSourcePrivate));
 
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",

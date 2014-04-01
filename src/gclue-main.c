@@ -147,6 +147,7 @@ main (int argc, char **argv)
                 g_critical ("option parsing failed: %s\n", error->message);
                 exit (-1);
         }
+        g_option_context_free (context);
 
         if (version) {
                 g_print ("%s\n", PACKAGE_VERSION);

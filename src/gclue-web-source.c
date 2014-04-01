@@ -88,6 +88,7 @@ query_callback (SoupSession *session,
 
         gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (web),
                                             location);
+        g_object_unref (location);
 }
 
 static void

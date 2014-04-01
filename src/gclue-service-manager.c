@@ -70,11 +70,10 @@ static void
 sync_in_use_property (GClueServiceManager *manager)
 {
         gboolean in_use = FALSE;
-        GList *l;
+        GList *clients, *l;
 
-        for (l = g_hash_table_get_values (manager->priv->clients);
-             l != NULL;
-             l = l->next) {
+        clients = g_hash_table_get_values (manager->priv->clients);
+        for (l = clients; l != NULL; l = l->next) {
                 GClueClient *client = GCLUE_CLIENT (l->data);
 
                 if (gclue_client_get_active (client)) {
@@ -83,6 +82,7 @@ sync_in_use_property (GClueServiceManager *manager)
                         break;
                 }
         }
+        g_list_free (clients);
 
         if (in_use != gclue_manager_get_in_use (GCLUE_MANAGER (manager)))
                 gclue_manager_set_in_use (GCLUE_MANAGER (manager), in_use);

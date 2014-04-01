@@ -159,6 +159,7 @@ out:
         g_clear_error (&error);
         g_clear_object (&info);
         g_slice_free (OnClientInfoNewReadyData, data);
+        g_free (path);
 
         return FALSE;
 }

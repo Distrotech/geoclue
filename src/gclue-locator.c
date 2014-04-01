@@ -44,6 +44,11 @@
  * location sources from rest of the code
  */
 
+static gboolean
+gclue_locator_start (GClueLocationSource *source);
+static gboolean
+gclue_locator_stop (GClueLocationSource *source);
+
 G_DEFINE_TYPE (GClueLocator, gclue_locator, GCLUE_TYPE_LOCATION_SOURCE)
 
 struct _GClueLocatorPrivate
@@ -63,16 +68,13 @@ enum
 static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
-on_location_changed (GObject    *gobject,
-                     GParamSpec *pspec,
-                     gpointer    user_data)
+set_location (GClueLocator    *locator,
+              GeocodeLocation *location)
 {
-        GClueLocationSource *locator = GCLUE_LOCATION_SOURCE (user_data);
-        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (gobject);
-        GeocodeLocation *location, *cur_location;
+        GeocodeLocation *cur_location;
 
-        cur_location = gclue_location_source_get_location (locator);
-        location = gclue_location_source_get_location (source);
+        cur_location = gclue_location_source_get_location
+                        (GCLUE_LOCATION_SOURCE (locator));
 
         g_debug ("New location available");
 
@@ -89,7 +91,39 @@ on_location_changed (GObject    *gobject,
                 return;
         }
 
-        gclue_location_source_set_location (locator, location);
+        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (locator),
+                                            location);
+}
+
+static void
+on_location_changed (GObject    *gobject,
+                     GParamSpec *pspec,
+                     gpointer    user_data)
+{
+        GClueLocator *locator = GCLUE_LOCATOR (user_data);
+        GClueLocationSource *source = GCLUE_LOCATION_SOURCE (gobject);
+        GeocodeLocation *location;
+
+        location = gclue_location_source_get_location (source);
+        set_location (locator, location);
+}
+
+static void
+start_source (GClueLocator        *locator,
+              GClueLocationSource *src)
+{
+        GeocodeLocation *location;
+
+        g_signal_connect (G_OBJECT (src),
+                          "notify::location",
+                          G_CALLBACK (on_location_changed),
+                          locator);
+
+        location = gclue_location_source_get_location (src);
+        if (gclue_location_source_get_active (src) && location != NULL)
+                set_location (locator, location);
+
+        gclue_location_source_start (src);
 }
 
 static void
@@ -176,30 +210,20 @@ gclue_locator_constructed (GObject *object)
 #endif
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
-                GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
-                GeocodeLocation *location;
-
-                location = gclue_location_source_get_location (src);
-                if (location != NULL)
-                        gclue_location_source_set_location
-                                (GCLUE_LOCATION_SOURCE (locator), location);
-
-                g_signal_connect (G_OBJECT (src),
-                                  "notify::location",
-                                  G_CALLBACK (on_location_changed),
-                                  locator);
-
-                if (submit_source != NULL && GCLUE_IS_WEB_SOURCE (src))
+                if (submit_source != NULL && GCLUE_IS_WEB_SOURCE (node->data))
                         gclue_web_source_set_submit_source
-                                (GCLUE_WEB_SOURCE (src),
-                                 submit_source);
+                                (GCLUE_WEB_SOURCE (node->data), submit_source);
         }
 }
 
 static void
 gclue_locator_class_init (GClueLocatorClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *object_class;
+
+        source_class->start = gclue_locator_start;
+        source_class->stop = gclue_locator_stop;
 
         object_class = G_OBJECT_CLASS (klass);
         object_class->get_property = gclue_locator_get_property;
@@ -227,6 +251,55 @@ gclue_locator_init (GClueLocator *locator)
                 G_TYPE_INSTANCE_GET_PRIVATE (locator,
                                             GCLUE_TYPE_LOCATOR,
                                             GClueLocatorPrivate);
+}
+
+static gboolean
+gclue_locator_start (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+        GClueLocator *locator;
+        GList *node;
+
+        g_return_val_if_fail (GCLUE_IS_LOCATOR (source), FALSE);
+        locator = GCLUE_LOCATOR (source);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_locator_parent_class);
+        if (!base_class->start (source))
+                return FALSE;
+
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
+
+                start_source (locator, src);
+        }
+
+        return TRUE;
+}
+
+static gboolean
+gclue_locator_stop (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+        GClueLocator *locator;
+        GList *node;
+
+        g_return_val_if_fail (GCLUE_IS_LOCATOR (source), FALSE);
+        locator = GCLUE_LOCATOR (source);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_locator_parent_class);
+        if (!base_class->stop (source))
+                return FALSE;
+
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
+
+                g_signal_handlers_disconnect_by_func (G_OBJECT (src),
+                                                      G_CALLBACK (on_location_changed),
+                                                      locator);
+                gclue_location_source_stop (src);
+        }
+
+        return TRUE;
 }
 
 GClueLocator *

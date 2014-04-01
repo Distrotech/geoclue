@@ -42,6 +42,11 @@
  * configuration file so its easy to switch to Google's API.
  **/
 
+static gboolean
+gclue_wifi_start (GClueLocationSource *source);
+static gboolean
+gclue_wifi_stop (GClueLocationSource *source);
+
 struct _GClueWifiPrivate {
         NMClient *client;
         NMDeviceWifi *wifi_device;
@@ -87,12 +92,16 @@ gclue_wifi_finalize (GObject *gwifi)
 static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
-        GClueWebSourceClass *source_class = GCLUE_WEB_SOURCE_CLASS (klass);
+        GClueWebSourceClass *web_class = GCLUE_WEB_SOURCE_CLASS (klass);
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
 
-        source_class->create_query = gclue_wifi_create_query;
-        source_class->create_submit_query = gclue_wifi_create_submit_query;
-        source_class->parse_response = gclue_wifi_parse_response;
+        source_class->start = gclue_wifi_start;
+        source_class->stop = gclue_wifi_stop;
+
+        web_class->create_query = gclue_wifi_create_query;
+        web_class->create_submit_query = gclue_wifi_create_submit_query;
+        web_class->parse_response = gclue_wifi_parse_response;
         gwifi_class->finalize = gclue_wifi_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
@@ -197,7 +206,7 @@ connect_ap_signals (GClueWifi *wifi)
 {
         GClueWifiPrivate *priv = wifi->priv;
 
-        if (priv->ap_added_id != 0)
+        if (priv->ap_added_id != 0 || priv->wifi_device == NULL)
                 return;
 
         priv->ap_added_id = g_signal_connect (priv->wifi_device,
@@ -211,7 +220,7 @@ disconnect_ap_signals (GClueWifi *wifi)
 {
         GClueWifiPrivate *priv = wifi->priv;
 
-        if (priv->ap_added_id == 0)
+        if (priv->ap_added_id == 0 || priv->wifi_device == NULL)
                 return;
 
         g_signal_handler_disconnect (priv->wifi_device, priv->ap_added_id);
@@ -221,6 +230,36 @@ disconnect_ap_signals (GClueWifi *wifi)
                 g_source_remove (priv->refresh_timeout);
                 priv->refresh_timeout = 0;
         }
+}
+
+static gboolean
+gclue_wifi_start (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+
+        g_return_val_if_fail (GCLUE_IS_WIFI (source), FALSE);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_wifi_parent_class);
+        if (!base_class->start (source))
+                return FALSE;
+
+        connect_ap_signals (GCLUE_WIFI (source));
+        return TRUE;
+}
+
+static gboolean
+gclue_wifi_stop (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+
+        g_return_val_if_fail (GCLUE_IS_WIFI (source), FALSE);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_wifi_parent_class);
+        if (!base_class->stop (source))
+                return FALSE;
+
+        disconnect_ap_signals (GCLUE_WIFI (source));
+        return TRUE;
 }
 
 static void
@@ -237,7 +276,8 @@ on_device_added (NMClient *client,
         g_debug ("WiFi device '%s' added.",
                  nm_device_wifi_get_hw_address (wifi->priv->wifi_device));
 
-        connect_ap_signals (wifi);
+        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi)))
+                connect_ap_signals (wifi);
 }
 
 static void

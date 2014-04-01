@@ -36,6 +36,9 @@
  * Baseclass for all sources that solely use a web resource for geolocation.
  **/
 
+static gboolean
+gclue_web_source_start (GClueLocationSource *source);
+
 struct _GClueWebSourcePrivate {
         SoupSession *soup_session;
 
@@ -102,6 +105,9 @@ on_network_changed (GNetworkMonitor *monitor,
         GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
         GError *error = NULL;
         gboolean last_available = web->priv->network_available;
+
+        if (!gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (user_data)))
+                return;
 
         web->priv->network_available = available;
         if (last_available == available)
@@ -172,15 +178,15 @@ gclue_web_source_constructed (GObject *object)
                                   "network-changed",
                                   G_CALLBACK (on_network_changed),
                                   object);
-
-        if (g_network_monitor_get_network_available (monitor))
-                on_network_changed (monitor, TRUE, object);
 }
 
 static void
 gclue_web_source_class_init (GClueWebSourceClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *gsource_class = G_OBJECT_CLASS (klass);
+
+        source_class->start = gclue_web_source_start;
 
         gsource_class->finalize = gclue_web_source_finalize;
         gsource_class->constructed = gclue_web_source_constructed;
@@ -218,6 +224,19 @@ gclue_web_source_refresh (GClueWebSource *source)
                 priv->network_available = FALSE;
                 on_network_changed (monitor, TRUE, source);
         }
+}
+
+static gboolean
+gclue_web_source_start (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_web_source_parent_class);
+        if (!base_class->start (source))
+                return FALSE;
+
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (source));
+        return TRUE;
 }
 
 static void

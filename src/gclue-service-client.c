@@ -205,10 +205,7 @@ start_client (GClueServiceClient *client, GClueAccuracyLevel accuracy_level)
                           G_CALLBACK (on_locator_location_changed),
                           client);
 
-        /* In case locator already has a location */
-        on_locator_location_changed (G_OBJECT (priv->locator),
-                                     NULL,
-                                     client);
+        gclue_location_source_start (GCLUE_LOCATION_SOURCE (priv->locator));
 }
 
 static void

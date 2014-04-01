@@ -32,6 +32,11 @@
  * Baseclass for all sources that use a modem through ModemManager.
  **/
 
+static gboolean
+gclue_modem_source_start (GClueLocationSource *source);
+static gboolean
+gclue_modem_source_stop (GClueLocationSource *source);
+
 G_DEFINE_ABSTRACT_TYPE (GClueModemSource, gclue_modem_source, GCLUE_TYPE_LOCATION_SOURCE)
 
 struct _GClueModemSourcePrivate {
@@ -88,7 +93,11 @@ gclue_modem_source_constructed (GObject *object);
 static void
 gclue_modem_source_class_init (GClueModemSourceClass *klass)
 {
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *gsource_class = G_OBJECT_CLASS (klass);
+
+        source_class->start = gclue_modem_source_start;
+        source_class->stop = gclue_modem_source_stop;
 
         gsource_class->finalize = gclue_modem_source_finalize;
         gsource_class->constructed = gclue_modem_source_constructed;
@@ -166,6 +175,48 @@ on_modem_enabled (GObject      *source_object,
                                  user_data);
 }
 
+static gboolean
+gclue_modem_source_start (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+
+        g_return_val_if_fail (GCLUE_IS_MODEM_SOURCE (source), FALSE);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_modem_source_parent_class);
+        if (!base_class->start (source))
+                return FALSE;
+
+        if (GCLUE_MODEM_SOURCE (source)->priv->modem == NULL)
+                return FALSE;
+
+        mm_modem_enable (GCLUE_MODEM_SOURCE (source)->priv->modem,
+                         GCLUE_MODEM_SOURCE (source)->priv->cancellable,
+                         on_modem_enabled,
+                         source);
+        return TRUE;
+}
+
+static gboolean
+gclue_modem_source_stop (GClueLocationSource *source)
+{
+        GClueLocationSourceClass *base_class;
+
+        g_return_val_if_fail (GCLUE_IS_MODEM_SOURCE (source), FALSE);
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_modem_source_parent_class);
+        if (!base_class->stop (source))
+                return FALSE;
+
+        if (GCLUE_MODEM_SOURCE (source)->priv->modem == NULL)
+                return FALSE;
+
+        mm_modem_disable (GCLUE_MODEM_SOURCE (source)->priv->modem,
+                          NULL,
+                          NULL,
+                          NULL);
+        return TRUE;
+}
+
 static void
 on_mm_object_added (GDBusObjectManager *manager,
                     GDBusObject        *object,
@@ -200,10 +251,11 @@ on_mm_object_added (GDBusObjectManager *manager,
         source->priv->modem = mm_object_get_modem (mm_object);
         source->priv->modem_location = mm_object_get_modem_location (mm_object);
 
-        mm_modem_enable (source->priv->modem,
-                         source->priv->cancellable,
-                         on_modem_enabled,
-                         user_data);
+        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)))
+                mm_modem_enable (source->priv->modem,
+                                 source->priv->cancellable,
+                                 on_modem_enabled,
+                                 user_data);
 }
 
 static void

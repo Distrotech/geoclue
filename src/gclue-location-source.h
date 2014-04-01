@@ -51,15 +51,22 @@ struct _GClueLocationSource
 struct _GClueLocationSourceClass
 {
         GObjectClass parent_class;
+
+        gboolean (*start) (GClueLocationSource *source);
+        gboolean (*stop)  (GClueLocationSource *source);
 };
 
 GType gclue_location_source_get_type (void) G_GNUC_CONST;
 
+void              gclue_location_source_start (GClueLocationSource *source);
+void              gclue_location_source_stop  (GClueLocationSource *source);
 GeocodeLocation * gclue_location_source_get_location
                                               (GClueLocationSource *source);
 void              gclue_location_source_set_location
                                               (GClueLocationSource *source,
                                                GeocodeLocation     *location);
+gboolean          gclue_location_source_get_active
+                                              (GClueLocationSource *source);
 
 G_END_DECLS
 

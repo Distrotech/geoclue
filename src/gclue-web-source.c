@@ -58,6 +58,7 @@ query_callback (SoupSession *session,
         GClueWebSource *web;
         GError *error = NULL;
         char *contents;
+        char *str;
         GeocodeLocation *location;
         SoupURI *uri;
 
@@ -74,9 +75,11 @@ query_callback (SoupSession *session,
 
         contents = g_strndup (query->response_body->data, query->response_body->length);
         uri = soup_message_get_uri (query);
+        str = soup_uri_to_string (uri, FALSE);
         g_debug ("Got following response from '%s':\n%s",
-                 soup_uri_to_string (uri, FALSE),
+                 str,
                  contents);
+        g_free (str);
         location = GCLUE_WEB_SOURCE_GET_CLASS (web)->parse_response (web,
                                                                      contents,
                                                                      &error);

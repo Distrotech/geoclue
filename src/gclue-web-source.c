@@ -214,8 +214,10 @@ gclue_web_source_refresh (GClueWebSource *source)
                 return;
 
         monitor = g_network_monitor_get_default ();
-        if (g_network_monitor_get_network_available (monitor))
+        if (g_network_monitor_get_network_available (monitor)) {
+                priv->network_available = FALSE;
                 on_network_changed (monitor, TRUE, source);
+        }
 }
 
 static void

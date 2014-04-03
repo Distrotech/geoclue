@@ -98,6 +98,25 @@ query_callback (SoupSession *session,
 }
 
 static void
+refresh_accuracy_level (GClueWebSource *web,
+                        gboolean        available)
+{
+        GClueAccuracyLevel new, existing;
+
+        existing = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (web));
+        new = GCLUE_WEB_SOURCE_GET_CLASS (web)->get_available_accuracy_level
+                        (web, available);
+        if (new != existing) {
+                g_debug ("Available accuracy level from %s: %u",
+                         G_OBJECT_TYPE_NAME (web), new);
+                g_object_set (G_OBJECT (web),
+                              "available-accuracy-level", new,
+                              NULL);
+        }
+}
+
+static void
 on_network_changed (GNetworkMonitor *monitor,
                     gboolean         available,
                     gpointer         user_data)
@@ -105,6 +124,8 @@ on_network_changed (GNetworkMonitor *monitor,
         GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
         GError *error = NULL;
         gboolean last_available = web->priv->network_available;
+
+        refresh_accuracy_level (web, available);
 
         if (!gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (user_data)))
                 return;
@@ -178,6 +199,9 @@ gclue_web_source_constructed (GObject *object)
                                   "network-changed",
                                   G_CALLBACK (on_network_changed),
                                   object);
+        on_network_changed (monitor,
+                            g_network_monitor_get_network_available (monitor),
+                            object);
 }
 
 static void
@@ -204,8 +228,9 @@ gclue_web_source_init (GClueWebSource *web)
  * gclue_web_source_refresh:
  * @source: a #GClueWebSource
  *
- * Causes @source to refresh location. Its meant to be used by subclasses if
- * they have reason to suspect location might have changed.
+ * Causes @source to refresh location and available accuracy level. Its meant
+ * to be used by subclasses if they have reason to suspect location and/or
+ * available accuracy level might have changed.
  **/
 void
 gclue_web_source_refresh (GClueWebSource *source)

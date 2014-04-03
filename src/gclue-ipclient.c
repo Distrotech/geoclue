@@ -51,6 +51,9 @@ static GeocodeLocation *
 gclue_ipclient_parse_response (GClueWebSource *source,
                                const char     *json,
                                GError        **error);
+static GClueAccuracyLevel
+gclue_ipclient_get_available_accuracy_level (GClueWebSource *source,
+                                             gboolean        network_available);
 
 G_DEFINE_TYPE (GClueIpclient, gclue_ipclient, GCLUE_TYPE_WEB_SOURCE)
 
@@ -72,6 +75,8 @@ gclue_ipclient_class_init (GClueIpclientClass *klass)
 
         source_class->create_query = gclue_ipclient_create_query;
         source_class->parse_response = gclue_ipclient_parse_response;
+        source_class->get_available_accuracy_level =
+                        gclue_ipclient_get_available_accuracy_level;
         gipclient_class->finalize = gclue_ipclient_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueIpclientPrivate));
@@ -277,4 +282,12 @@ gclue_ipclient_parse_response (GClueWebSource *source,
         g_object_unref (parser);
 
         return location;
+}
+
+static GClueAccuracyLevel
+gclue_ipclient_get_available_accuracy_level (GClueWebSource *source,
+                                             gboolean        network_available)
+{
+        return network_available? GCLUE_ACCURACY_LEVEL_CITY :
+                                  GCLUE_ACCURACY_LEVEL_NONE;
 }

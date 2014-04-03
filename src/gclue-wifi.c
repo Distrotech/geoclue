@@ -67,6 +67,9 @@ static GeocodeLocation *
 gclue_wifi_parse_response (GClueWebSource *source,
                            const char     *json,
                            GError        **error);
+static GClueAccuracyLevel
+gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
+                                         gboolean        net_available);
 
 G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_WEB_SOURCE)
 
@@ -100,6 +103,8 @@ gclue_wifi_class_init (GClueWifiClass *klass)
         web_class->create_query = gclue_wifi_create_query;
         web_class->create_submit_query = gclue_wifi_create_submit_query;
         web_class->parse_response = gclue_wifi_parse_response;
+        web_class->get_available_accuracy_level =
+                gclue_wifi_get_available_accuracy_level;
         gwifi_class->finalize = gclue_wifi_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
@@ -260,6 +265,16 @@ gclue_wifi_stop (GClueLocationSource *source)
         return TRUE;
 }
 
+static GClueAccuracyLevel
+gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
+                                         gboolean        net_available)
+{
+        return  (net_available &&
+                 GCLUE_WIFI (source)->priv->wifi_device != NULL)?
+                 GCLUE_ACCURACY_LEVEL_STREET :
+                 GCLUE_ACCURACY_LEVEL_NONE;
+}
+
 static void
 on_device_added (NMClient *client,
                  NMDevice *device,
@@ -276,6 +291,8 @@ on_device_added (NMClient *client,
 
         if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (wifi)))
                 connect_ap_signals (wifi);
+
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 }
 
 static void
@@ -293,6 +310,8 @@ on_device_removed (NMClient *client,
 
         disconnect_ap_signals (wifi);
         wifi->priv->wifi_device = NULL;
+
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 }
 
 static void
@@ -325,6 +344,8 @@ gclue_wifi_init (GClueWifi *wifi)
                     break;
                 }
         }
+
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 }
 
 static void

@@ -195,14 +195,15 @@ on_ap_added (NMDeviceWifi  *device,
 static void
 connect_ap_signals (GClueWifi *wifi)
 {
-        if (wifi->priv->ap_added_id != 0)
+        GClueWifiPrivate *priv = wifi->priv;
+
+        if (priv->ap_added_id != 0)
                 return;
 
-        wifi->priv->ap_added_id =
-                g_signal_connect (wifi->priv->wifi_device,
-                                  "access-point-added",
-                                  G_CALLBACK (on_ap_added),
-                                  wifi);
+        priv->ap_added_id = g_signal_connect (priv->wifi_device,
+                                              "access-point-added",
+                                              G_CALLBACK (on_ap_added),
+                                              wifi);
 }
 
 static void

@@ -218,6 +218,42 @@ gclue_modem_source_stop (GClueLocationSource *source)
 }
 
 static void
+refresh_accuracy_level (GClueModemSource *source)
+{
+        GClueAccuracyLevel new, existing;
+
+        existing = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (source));
+        new = GCLUE_ACCURACY_LEVEL_NONE;
+
+        if (source->priv->mm_object != NULL) {
+                MMModemLocationSource req_caps;
+                GClueModemSourceClass *klass;
+
+                klass = GCLUE_MODEM_SOURCE_GET_CLASS (source);
+                req_caps = klass->get_req_modem_location_caps (source, NULL);
+                if (req_caps & (MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI |
+                                MM_MODEM_LOCATION_SOURCE_CDMA_BS))
+                        /* FIXME: This is the case of 3G source and that depends
+                           on network too so this level is only correct if
+                           network is available.
+                        */
+                        new = GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD;
+                if (req_caps & (MM_MODEM_LOCATION_SOURCE_GPS_RAW |
+                                MM_MODEM_LOCATION_SOURCE_GPS_NMEA))
+                        new = GCLUE_ACCURACY_LEVEL_EXACT;
+        }
+
+        if (new != existing) {
+                g_debug ("Available accuracy level from %s: %u",
+                         G_OBJECT_TYPE_NAME (source), new);
+                g_object_set (G_OBJECT (source),
+                              "available-accuracy-level", new,
+                              NULL);
+        }
+}
+
+static void
 on_mm_object_added (GDBusObjectManager *manager,
                     GDBusObject        *object,
                     gpointer            user_data)
@@ -256,6 +292,8 @@ on_mm_object_added (GDBusObjectManager *manager,
                                  source->priv->cancellable,
                                  on_modem_enabled,
                                  user_data);
+
+        refresh_accuracy_level (source);
 }
 
 static void
@@ -272,6 +310,8 @@ on_mm_object_removed (GDBusObjectManager *manager,
         g_clear_object (&priv->mm_object);
         g_clear_object (&priv->modem);
         g_clear_object (&priv->modem_location);
+
+        refresh_accuracy_level (GCLUE_MODEM_SOURCE (user_data));
 }
 
 static void

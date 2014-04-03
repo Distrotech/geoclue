@@ -121,6 +121,7 @@ on_modem_location_setup (GObject      *source_object,
 
                 return;
         }
+        g_debug ("Modem '%s' setup.", mm_object_get_path (priv->mm_object));
 
         on_location_changed (G_OBJECT (priv->modem_location), NULL, user_data);
 }
@@ -148,6 +149,7 @@ on_modem_enabled (GObject      *source_object,
 
                 return;
         }
+        g_debug ("modem '%s' enabled.", mm_object_get_path (priv->mm_object));
 
         g_signal_connect (G_OBJECT (priv->modem_location),
                           "notify::location",

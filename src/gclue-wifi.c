@@ -193,7 +193,7 @@ on_ap_added (NMDeviceWifi  *device,
 }
 
 static void
-connect_ap_signals (GClueWifi  *wifi)
+connect_ap_signals (GClueWifi *wifi)
 {
         if (wifi->priv->ap_added_id != 0)
                 return;
@@ -206,7 +206,7 @@ connect_ap_signals (GClueWifi  *wifi)
 }
 
 static void
-disconnect_ap_signals (GClueWifi  *wifi)
+disconnect_ap_signals (GClueWifi *wifi)
 {
         GClueWifiPrivate *priv = wifi->priv;
 

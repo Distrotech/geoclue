@@ -42,6 +42,8 @@ struct _GClueLocationSourcePrivate
         GeocodeLocation *location;
 
         guint active_counter;
+
+        GClueAccuracyLevel avail_accuracy_level;
 };
 
 enum
@@ -49,6 +51,7 @@ enum
         PROP_0,
         PROP_LOCATION,
         PROP_ACTIVE,
+        PROP_AVAILABLE_ACCURACY_LEVEL,
         LAST_PROP
 };
 
@@ -72,6 +75,10 @@ gclue_location_source_get_property (GObject    *object,
                                      gclue_location_source_get_active (source));
                 break;
 
+        case PROP_AVAILABLE_ACCURACY_LEVEL:
+                g_value_set_enum (value, source->priv->avail_accuracy_level);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -93,6 +100,10 @@ gclue_location_source_set_property (GObject      *object,
                 gclue_location_source_set_location (source, location);
                 break;
         }
+
+        case PROP_AVAILABLE_ACCURACY_LEVEL:
+                source->priv->avail_accuracy_level = g_value_get_enum (value);
+                break;
 
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -141,6 +152,17 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_ACTIVE,
                                          gParamSpecs[PROP_ACTIVE]);
+
+        gParamSpecs[PROP_AVAILABLE_ACCURACY_LEVEL] =
+                g_param_spec_enum ("available-accuracy-level",
+                                   "AvailableAccuracyLevel",
+                                   "Available accuracy level",
+                                   GCLUE_TYPE_ACCURACY_LEVEL,
+                                   0,
+                                   G_PARAM_READWRITE);
+        g_object_class_install_property (object_class,
+                                         PROP_AVAILABLE_ACCURACY_LEVEL,
+                                         gParamSpecs[PROP_AVAILABLE_ACCURACY_LEVEL]);
 }
 
 static void
@@ -270,4 +292,18 @@ gclue_location_source_get_active (GClueLocationSource *source)
         g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
 
         return (source->priv->active_counter > 0);
+}
+
+/**
+ * gclue_location_source_get_available_accuracy_level:
+ * @source: a #GClueLocationSource
+ *
+ * Returns: The currently available accuracy level.
+ **/
+GClueAccuracyLevel
+gclue_location_source_get_available_accuracy_level (GClueLocationSource *source)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), 0);
+
+        return source->priv->avail_accuracy_level;
 }

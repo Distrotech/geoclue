@@ -24,6 +24,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
+#include "public-api/gclue-enum-types.h"
 #include "geocode-glib/geocode-location.h"
 
 G_BEGIN_DECLS
@@ -66,6 +67,9 @@ void              gclue_location_source_set_location
                                               (GClueLocationSource *source,
                                                GeocodeLocation     *location);
 gboolean          gclue_location_source_get_active
+                                              (GClueLocationSource *source);
+GClueAccuracyLevel
+                  gclue_location_source_get_available_accuracy_level
                                               (GClueLocationSource *source);
 
 G_END_DECLS

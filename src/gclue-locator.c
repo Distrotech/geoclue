@@ -54,6 +54,7 @@ G_DEFINE_TYPE (GClueLocator, gclue_locator, GCLUE_TYPE_LOCATION_SOURCE)
 struct _GClueLocatorPrivate
 {
         GList *sources;
+        GList *active_sources;
 
         GClueAccuracyLevel accuracy_level;
 };
@@ -133,6 +134,13 @@ on_location_changed (GObject    *gobject,
         set_location (locator, location);
 }
 
+static gboolean
+is_source_active (GClueLocator        *locator,
+                  GClueLocationSource *src)
+{
+        return (g_list_find (locator->priv->active_sources, src) != NULL);
+}
+
 static void
 start_source (GClueLocator        *locator,
               GClueLocationSource *src)
@@ -156,9 +164,34 @@ on_avail_accuracy_level_changed (GObject    *gobject,
                                  GParamSpec *pspec,
                                  gpointer    user_data)
 {
+        GClueLocationSource *src = GCLUE_LOCATION_SOURCE (gobject);
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
+        GClueLocatorPrivate *priv = locator->priv;
+        GClueAccuracyLevel level;
+        gboolean active;
 
         refresh_available_accuracy_level (locator);
+
+        active = gclue_location_source_get_active
+                (GCLUE_LOCATION_SOURCE (locator));
+        if (!active)
+                return;
+
+        level = gclue_location_source_get_available_accuracy_level (src);
+        if (level != GCLUE_ACCURACY_LEVEL_NONE &&
+            priv->accuracy_level >= level &&
+            !is_source_active (locator, src)) {
+                start_source (locator, src);
+        } else if ((level == GCLUE_ACCURACY_LEVEL_NONE ||
+                    priv->accuracy_level > level) &&
+                   is_source_active (locator, src)) {
+                g_signal_handlers_disconnect_by_func (G_OBJECT (src),
+                                                      G_CALLBACK (on_location_changed),
+                                                      locator);
+                gclue_location_source_stop (src);
+                priv->active_sources = g_list_remove (priv->active_sources,
+                                                      src);
+        }
 }
 
 static void
@@ -209,8 +242,16 @@ gclue_locator_finalize (GObject *gsource)
                         (G_OBJECT (node->data),
                          G_CALLBACK (on_avail_accuracy_level_changed),
                          locator);
+        for (node = locator->priv->active_sources; node != NULL; node = node->next) {
+                g_signal_handlers_disconnect_by_func
+                        (G_OBJECT (node->data),
+                         G_CALLBACK (on_location_changed),
+                         locator);
+                gclue_location_source_stop (GCLUE_LOCATION_SOURCE (node->data));
+        }
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
+        priv->active_sources = NULL;
 
         G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (gsource);
 }
@@ -222,32 +263,21 @@ gclue_locator_constructed (GObject *object)
         GClueLocationSource *submit_source = NULL;
         GList *node;
 
-        if (locator->priv->accuracy_level >= GCLUE_IPCLIENT_ACCURACY_LEVEL) {
-                GClueIpclient *ipclient = gclue_ipclient_get_singleton ();
-                locator->priv->sources = g_list_append (locator->priv->sources,
-                                                        ipclient);
-        }
+        GClueIpclient *ipclient = gclue_ipclient_get_singleton ();
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                ipclient);
 #if GCLUE_USE_3G_SOURCE
-        if (locator->priv->accuracy_level >= GCLUE_3G_ACCURACY_LEVEL) {
-                GClue3G *source = gclue_3g_get_singleton ();
-                locator->priv->sources = g_list_append (locator->priv->sources,
-                                                        source);
-        }
+        GClue3G *source = gclue_3g_get_singleton ();
+        locator->priv->sources = g_list_append (locator->priv->sources, source);
 #endif
 #if GCLUE_USE_WIFI_SOURCE
-        if (locator->priv->accuracy_level >= GCLUE_WIFI_ACCURACY_LEVEL) {
-                GClueWifi *wifi = gclue_wifi_get_singleton ();
-                locator->priv->sources = g_list_append (locator->priv->sources,
-                                                        wifi);
-        }
+        GClueWifi *wifi = gclue_wifi_get_singleton ();
+        locator->priv->sources = g_list_append (locator->priv->sources, wifi);
 #endif
 #if GCLUE_USE_MODEM_GPS_SOURCE
-        if (locator->priv->accuracy_level >= GCLUE_MODEM_GPS_ACCURACY_LEVEL) {
-                GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
-                locator->priv->sources = g_list_append (locator->priv->sources,
-                                                        gps);
-                submit_source = GCLUE_LOCATION_SOURCE (gps);
-        }
+        GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
+        locator->priv->sources = g_list_append (locator->priv->sources, gps);
+        submit_source = GCLUE_LOCATION_SOURCE (gps);
 #endif
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
@@ -316,6 +346,19 @@ gclue_locator_start (GClueLocationSource *source)
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
                 GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
+                GClueAccuracyLevel level;
+
+                level = gclue_location_source_get_available_accuracy_level (src);
+                if (level > locator->priv->accuracy_level ||
+                    level == GCLUE_ACCURACY_LEVEL_NONE)
+                        continue;
+
+                locator->priv->active_sources = g_list_append (locator->priv->active_sources,
+                                                               src);
+                g_signal_connect (G_OBJECT (src),
+                                  "notify::location",
+                                  G_CALLBACK (on_location_changed),
+                                  locator);
 
                 start_source (locator, src);
         }
@@ -337,7 +380,7 @@ gclue_locator_stop (GClueLocationSource *source)
         if (!base_class->stop (source))
                 return FALSE;
 
-        for (node = locator->priv->sources; node != NULL; node = node->next) {
+        for (node = locator->priv->active_sources; node != NULL; node = node->next) {
                 GClueLocationSource *src = GCLUE_LOCATION_SOURCE (node->data);
 
                 g_signal_handlers_disconnect_by_func (G_OBJECT (src),
@@ -346,6 +389,8 @@ gclue_locator_stop (GClueLocationSource *source)
                 gclue_location_source_stop (src);
         }
 
+        g_list_free (locator->priv->active_sources);
+        locator->priv->active_sources = NULL;
         return TRUE;
 }
 

@@ -96,6 +96,31 @@ set_location (GClueLocator    *locator,
 }
 
 static void
+refresh_available_accuracy_level (GClueLocator *locator)
+{
+        GList *node;
+        GClueAccuracyLevel new, existing;
+
+        new = GCLUE_ACCURACY_LEVEL_NONE;
+        for (node = locator->priv->sources; node != NULL; node = node->next) {
+                GClueLocationSource *src;
+                GClueAccuracyLevel level;
+
+                src = GCLUE_LOCATION_SOURCE (node->data);
+                level = gclue_location_source_get_available_accuracy_level (src);
+                if (level > new)
+                        new = level;
+        }
+        existing = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (locator));
+
+        if (new != existing)
+                g_object_set (G_OBJECT (locator),
+                              "available-accuracy-level", new,
+                              NULL);
+}
+
+static void
 on_location_changed (GObject    *gobject,
                      GParamSpec *pspec,
                      gpointer    user_data)
@@ -124,6 +149,16 @@ start_source (GClueLocator        *locator,
                 set_location (locator, location);
 
         gclue_location_source_start (src);
+}
+
+static void
+on_avail_accuracy_level_changed (GObject    *gobject,
+                                 GParamSpec *pspec,
+                                 gpointer    user_data)
+{
+        GClueLocator *locator = GCLUE_LOCATOR (user_data);
+
+        refresh_available_accuracy_level (locator);
 }
 
 static void
@@ -167,7 +202,13 @@ gclue_locator_finalize (GObject *gsource)
 {
         GClueLocator *locator = GCLUE_LOCATOR (gsource);
         GClueLocatorPrivate *priv = locator->priv;
+        GList *node;
 
+        for (node = locator->priv->sources; node != NULL; node = node->next)
+                g_signal_handlers_disconnect_by_func
+                        (G_OBJECT (node->data),
+                         G_CALLBACK (on_avail_accuracy_level_changed),
+                         locator);
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
 
@@ -210,10 +251,16 @@ gclue_locator_constructed (GObject *object)
 #endif
 
         for (node = locator->priv->sources; node != NULL; node = node->next) {
+                g_signal_connect (G_OBJECT (node->data),
+                                  "notify::available-accuracy-level",
+                                  G_CALLBACK (on_avail_accuracy_level_changed),
+                                  locator);
+
                 if (submit_source != NULL && GCLUE_IS_WEB_SOURCE (node->data))
                         gclue_web_source_set_submit_source
                                 (GCLUE_WEB_SOURCE (node->data), submit_source);
         }
+        refresh_available_accuracy_level (locator);
 }
 
 static void

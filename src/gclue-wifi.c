@@ -71,19 +71,17 @@ gclue_wifi_parse_response (GClueWebSource *source,
 G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_WEB_SOURCE)
 
 static void
-on_device_removed (NMClient *client,
-                   NMDevice *device,
-                   gpointer  user_data);
+disconnect_ap_signals (GClueWifi *wifi);
 
 static void
 gclue_wifi_finalize (GObject *gwifi)
 {
         GClueWifi *wifi = (GClueWifi *) gwifi;
 
-        if (wifi->priv->wifi_device != NULL)
-                on_device_removed (wifi->priv->client,
-                                   NM_DEVICE (wifi->priv->wifi_device),
-                                   wifi);
+        if (wifi->priv->wifi_device != NULL) {
+                disconnect_ap_signals (wifi);
+                wifi->priv->wifi_device = NULL;
+        }
         g_object_unref (wifi->priv->client);
 
         G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);

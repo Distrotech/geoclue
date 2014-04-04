@@ -211,17 +211,12 @@ void
 gclue_web_source_refresh (GClueWebSource *source)
 {
         GNetworkMonitor *monitor;
-        GClueWebSourcePrivate *priv;
 
         g_return_if_fail (GCLUE_IS_WEB_SOURCE (source));
 
-        priv = source->priv;
-        if (priv->query != NULL)
-                return;
-
         monitor = g_network_monitor_get_default ();
         if (g_network_monitor_get_network_available (monitor)) {
-                priv->network_available = FALSE;
+                source->priv->network_available = FALSE;
                 on_network_changed (monitor, TRUE, source);
         }
 }

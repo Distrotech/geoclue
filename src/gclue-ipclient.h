@@ -30,8 +30,6 @@
 
 G_BEGIN_DECLS
 
-#define GCLUE_IPCLIENT_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_CITY
-
 GType gclue_ipclient_get_type (void) G_GNUC_CONST;
 
 #define GCLUE_TYPE_IPCLIENT                  (gclue_ipclient_get_type ())

@@ -28,8 +28,6 @@
 
 G_BEGIN_DECLS
 
-#define GCLUE_WIFI_ACCURACY_LEVEL GCLUE_ACCURACY_LEVEL_STREET
-
 GType gclue_wifi_get_type (void) G_GNUC_CONST;
 
 #define GCLUE_TYPE_WIFI                  (gclue_wifi_get_type ())

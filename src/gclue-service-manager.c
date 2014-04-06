@@ -28,6 +28,7 @@
 #include "gclue-client-info.h"
 #include "geoclue-agent-interface.h"
 #include "gclue-enums.h"
+#include "gclue-locator.h"
 #include "gclue-config.h"
 
 #define AGENT_WAIT_TIMEOUT      100    /* milliseconds */
@@ -54,6 +55,8 @@ struct _GClueServiceManagerPrivate
 
         guint num_clients;
         gint64 init_time;
+
+        GClueLocator *locator;
 };
 
 enum
@@ -383,6 +386,7 @@ gclue_service_manager_finalize (GObject *object)
 {
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (object)->priv;
 
+        g_clear_object (&priv->locator);
         g_clear_object (&priv->connection);
         g_clear_pointer (&priv->clients, g_hash_table_unref);
         g_clear_pointer (&priv->agents, g_hash_table_unref);
@@ -437,11 +441,32 @@ gclue_service_manager_set_property (GObject      *object,
 }
 
 static void
+on_avail_accuracy_level_changed (GObject    *object,
+                                 GParamSpec *pspec,
+                                 gpointer    user_data)
+{
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (user_data)->priv;
+        GClueAccuracyLevel level;
+
+        level = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (priv->locator));
+        gclue_manager_set_available_accuracy_level (GCLUE_MANAGER (user_data),
+                                                    level);
+}
+
+static void
 gclue_service_manager_constructed (GObject *object)
 {
-        /* FIXME: We need to probe the sources, somehow */
-        gclue_manager_set_available_accuracy_level (GCLUE_MANAGER (object),
-                                                    GCLUE_ACCURACY_LEVEL_EXACT);
+        GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (object)->priv;
+
+        priv->locator = gclue_locator_new (GCLUE_ACCURACY_LEVEL_EXACT);
+        g_signal_connect (G_OBJECT (priv->locator),
+                          "notify::available-accuracy-level",
+                          G_CALLBACK (on_avail_accuracy_level_changed),
+                          object);
+        on_avail_accuracy_level_changed (G_OBJECT (priv->locator),
+                                         NULL,
+                                         object);
 }
 
 static void

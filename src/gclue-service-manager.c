@@ -98,6 +98,8 @@ on_peer_vanished (GClueClientInfo *info,
 
         g_hash_table_remove (manager->priv->clients,
                              gclue_client_info_get_bus_name (info));
+        g_debug ("Number of connected clients: %u",
+                 g_hash_table_size (manager->priv->clients));
         sync_in_use_property (manager);
 }
 
@@ -137,6 +139,8 @@ complete_get_client (OnClientInfoNewReadyData *data)
         g_hash_table_insert (priv->clients,
                              g_strdup (gclue_client_info_get_bus_name (info)),
                              client);
+        g_debug ("Number of connected clients: %u",
+                 g_hash_table_size (priv->clients));
 
         g_signal_connect (info,
                           "peer-vanished",

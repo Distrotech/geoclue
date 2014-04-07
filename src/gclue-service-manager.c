@@ -63,7 +63,6 @@ enum
 {
         PROP_0,
         PROP_CONNECTION,
-        PROP_CONNECTED_CLIENTS,
         LAST_PROP
 };
 
@@ -99,7 +98,6 @@ on_peer_vanished (GClueClientInfo *info,
 
         g_hash_table_remove (manager->priv->clients,
                              gclue_client_info_get_bus_name (info));
-        g_object_notify (G_OBJECT (manager), "connected-clients");
         sync_in_use_property (manager);
 }
 
@@ -139,7 +137,6 @@ complete_get_client (OnClientInfoNewReadyData *data)
         g_hash_table_insert (priv->clients,
                              g_strdup (gclue_client_info_get_bus_name (info)),
                              client);
-        g_object_notify (G_OBJECT (data->manager), "connected-clients");
 
         g_signal_connect (info,
                           "peer-vanished",
@@ -408,15 +405,6 @@ gclue_service_manager_get_property (GObject    *object,
                 g_value_set_object (value, manager->priv->connection);
                 break;
 
-        case PROP_CONNECTED_CLIENTS:
-        {
-                guint num;
-
-                num = gclue_service_manager_get_connected_clients (manager);
-                g_value_set_uint (value, num);
-                break;
-        }
-
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -491,18 +479,6 @@ gclue_service_manager_class_init (GClueServiceManagerClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_CONNECTION,
                                          gParamSpecs[PROP_CONNECTION]);
-
-        gParamSpecs[PROP_CONNECTED_CLIENTS] =
-                g_param_spec_uint ("connected-clients",
-                                   "ConnectedClients",
-                                   "Number of connected clients",
-                                   0,
-                                   G_MAXUINT,
-                                   0,
-                                   G_PARAM_READABLE);
-        g_object_class_install_property (object_class,
-                                         PROP_CONNECTED_CLIENTS,
-                                         gParamSpecs[PROP_CONNECTED_CLIENTS]);
 }
 
 static void
@@ -557,10 +533,4 @@ gclue_service_manager_new (GDBusConnection *connection,
                                error,
                                "connection", connection,
                                NULL);
-}
-
-guint
-gclue_service_manager_get_connected_clients (GClueServiceManager *manager)
-{
-        return g_hash_table_size (manager->priv->clients);
 }

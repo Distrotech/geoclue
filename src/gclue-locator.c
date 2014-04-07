@@ -355,10 +355,6 @@ gclue_locator_start (GClueLocationSource *source)
 
                 locator->priv->active_sources = g_list_append (locator->priv->active_sources,
                                                                src);
-                g_signal_connect (G_OBJECT (src),
-                                  "notify::location",
-                                  G_CALLBACK (on_location_changed),
-                                  locator);
 
                 start_source (locator, src);
         }

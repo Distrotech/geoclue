@@ -66,20 +66,20 @@ on_inactivity_timeout (gpointer user_data)
 }
 
 static void
-on_connected_clients_notify (GObject    *gobject,
-                             GParamSpec *pspec,
-                             gpointer    user_data)
+on_in_use_notify (GObject    *gobject,
+                  GParamSpec *pspec,
+                  gpointer    user_data)
 {
-        guint connected;
+        gboolean in_use;
 
-        connected = gclue_service_manager_get_connected_clients
-                        (GCLUE_SERVICE_MANAGER (gobject));
-        g_debug ("Number of connected clients: %u", connected);
+        in_use = gclue_manager_get_in_use (GCLUE_MANAGER (gobject));
 
         if (inactivity_timeout <= 0)
                 return;
 
-        if (connected == 0)
+        g_debug ("Service %s in use", in_use? "now" : "not");
+
+        if (!in_use)
                 inactivity_timeout_id =
                         g_timeout_add_seconds (inactivity_timeout,
                                                on_inactivity_timeout,
@@ -106,8 +106,8 @@ on_bus_acquired (GDBusConnection *connection,
         }
 
         g_signal_connect (manager,
-                          "notify::connected-clients",
-                          G_CALLBACK (on_connected_clients_notify),
+                          "notify::in-use",
+                          G_CALLBACK (on_in_use_notify),
                           NULL);
 
         if (inactivity_timeout > 0)

@@ -419,27 +419,31 @@ on_wifi_destroyed (gpointer data,
 /**
  * gclue_wifi_new:
  *
- * Get the #GClueWifi singleton.
+ * Get the #GClueWifi singleton, for the specified max accuracy level @level.
  *
  * Returns: (transfer full): a new ref to #GClueWifi. Use g_object_unref()
  * when done.
  **/
 GClueWifi *
-gclue_wifi_get_singleton (void)
+gclue_wifi_get_singleton (GClueAccuracyLevel level)
 {
-        static GClueWifi *wifi = NULL;
+        static GClueWifi *wifi[] = { NULL, NULL };
+        guint i;
 
-        if (wifi == NULL) {
-                wifi = g_object_new (GCLUE_TYPE_WIFI,
-                                     "accuracy-level", GCLUE_ACCURACY_LEVEL_STREET,
-                                     NULL);
-                g_object_weak_ref (G_OBJECT (wifi),
+        g_return_val_if_fail (level >= GCLUE_ACCURACY_LEVEL_CITY, NULL);
+
+        i = (level == GCLUE_ACCURACY_LEVEL_CITY)? 0 : 1;
+        if (wifi[i] == NULL) {
+                wifi[i] = g_object_new (GCLUE_TYPE_WIFI,
+                                        "accuracy-level", level,
+                                        NULL);
+                g_object_weak_ref (G_OBJECT (wifi[i]),
                                    on_wifi_destroyed,
-                                   &wifi);
+                                   &wifi[i]);
         } else
-                g_object_ref (wifi);
+                g_object_ref (wifi[i]);
 
-        return wifi;
+        return wifi[i];
 }
 
 GClueAccuracyLevel

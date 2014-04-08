@@ -271,7 +271,7 @@ gclue_locator_constructed (GObject *object)
         locator->priv->sources = g_list_append (locator->priv->sources, source);
 #endif
 #if GCLUE_USE_WIFI_SOURCE
-        GClueWifi *wifi = gclue_wifi_get_singleton ();
+        GClueWifi *wifi = gclue_wifi_get_singleton (GCLUE_ACCURACY_LEVEL_STREET);
         locator->priv->sources = g_list_append (locator->priv->sources, wifi);
 #endif
 #if GCLUE_USE_MODEM_GPS_SOURCE

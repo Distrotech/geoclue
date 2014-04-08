@@ -402,7 +402,7 @@ GClueAccuracyLevel
 gclue_locator_get_accuracy_level (GClueLocator *locator)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATOR (locator),
-                              GCLUE_ACCURACY_LEVEL_COUNTRY);
+                              GCLUE_ACCURACY_LEVEL_NONE);
 
         return locator->priv->accuracy_level;
 }

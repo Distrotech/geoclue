@@ -62,7 +62,8 @@ struct _GClueWifiClass {
         GClueWebSourceClass parent_class;
 };
 
-GClueWifi * gclue_wifi_get_singleton (void);
+GClueWifi *        gclue_wifi_get_singleton      (void);
+GClueAccuracyLevel gclue_wifi_get_accuracy_level (GClueWifi *wifi);
 
 G_END_DECLS
 

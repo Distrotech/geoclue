@@ -54,7 +54,17 @@ struct _GClueWifiPrivate {
         gulong ap_added_id;
 
         guint refresh_timeout;
+
+        GClueAccuracyLevel accuracy_level;
 };
+
+enum
+{
+        PROP_0,
+        PROP_ACCURACY_LEVEL,
+        LAST_PROP
+};
+static GParamSpec *gParamSpecs[LAST_PROP];
 
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
@@ -91,6 +101,42 @@ gclue_wifi_finalize (GObject *gwifi)
 }
 
 static void
+gclue_wifi_get_property (GObject    *object,
+                         guint       prop_id,
+                         GValue     *value,
+                         GParamSpec *pspec)
+{
+        GClueWifi *wifi = GCLUE_WIFI (object);
+
+        switch (prop_id) {
+        case PROP_ACCURACY_LEVEL:
+                g_value_set_enum (value, wifi->priv->accuracy_level);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
+gclue_wifi_set_property (GObject      *object,
+                         guint         prop_id,
+                         const GValue *value,
+                         GParamSpec   *pspec)
+{
+        GClueWifi *wifi = GCLUE_WIFI (object);
+
+        switch (prop_id) {
+        case PROP_ACCURACY_LEVEL:
+                wifi->priv->accuracy_level = g_value_get_enum (value);
+                break;
+
+        default:
+                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        }
+}
+
+static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
         GClueWebSourceClass *web_class = GCLUE_WEB_SOURCE_CLASS (klass);
@@ -105,9 +151,22 @@ gclue_wifi_class_init (GClueWifiClass *klass)
         web_class->parse_response = gclue_wifi_parse_response;
         web_class->get_available_accuracy_level =
                 gclue_wifi_get_available_accuracy_level;
+        gwifi_class->get_property = gclue_wifi_get_property;
+        gwifi_class->set_property = gclue_wifi_set_property;
         gwifi_class->finalize = gclue_wifi_finalize;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
+
+        gParamSpecs[PROP_ACCURACY_LEVEL] = g_param_spec_enum ("accuracy-level",
+                                                              "AccuracyLevel",
+                                                              "Max accuracy level",
+                                                              GCLUE_TYPE_ACCURACY_LEVEL,
+                                                              GCLUE_ACCURACY_LEVEL_CITY,
+                                                              G_PARAM_READWRITE |
+                                                              G_PARAM_CONSTRUCT_ONLY);
+        g_object_class_install_property (gwifi_class,
+                                         PROP_ACCURACY_LEVEL,
+                                         gParamSpecs[PROP_ACCURACY_LEVEL]);
 }
 
 static gboolean
@@ -371,7 +430,9 @@ gclue_wifi_get_singleton (void)
         static GClueWifi *wifi = NULL;
 
         if (wifi == NULL) {
-                wifi = g_object_new (GCLUE_TYPE_WIFI, NULL);
+                wifi = g_object_new (GCLUE_TYPE_WIFI,
+                                     "accuracy-level", GCLUE_ACCURACY_LEVEL_STREET,
+                                     NULL);
                 g_object_weak_ref (G_OBJECT (wifi),
                                    on_wifi_destroyed,
                                    &wifi);
@@ -379,6 +440,15 @@ gclue_wifi_get_singleton (void)
                 g_object_ref (wifi);
 
         return wifi;
+}
+
+GClueAccuracyLevel
+gclue_wifi_get_accuracy_level (GClueWifi *wifi)
+{
+        g_return_val_if_fail (GCLUE_IS_WIFI (wifi),
+                              GCLUE_ACCURACY_LEVEL_NONE);
+
+        return wifi->priv->accuracy_level;
 }
 
 static char *

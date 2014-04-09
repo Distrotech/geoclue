@@ -4,10 +4,6 @@ libexec_PROGRAMS = geoclue
 
 SUBDIRS = public-api agent geocode-glib
 
-if BUILD_GEOIP_SERVER
-SUBDIRS += geoip-server
-endif # BUILD_GEOIP_SERVER
-
 interfacedir = $(datadir)/dbus-1/interfaces
 interface_DATA = org.freedesktop.GeoClue2.xml
 

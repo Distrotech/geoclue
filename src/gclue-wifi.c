@@ -98,7 +98,7 @@ gclue_wifi_finalize (GObject *gwifi)
                 disconnect_ap_signals (wifi);
                 wifi->priv->wifi_device = NULL;
         }
-        g_object_unref (wifi->priv->client);
+        g_clear_object (&wifi->priv->client);
 
         G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
 }
@@ -332,10 +332,12 @@ static GClueAccuracyLevel
 gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
                                          gboolean        net_available)
 {
-        return  (net_available &&
-                 GCLUE_WIFI (source)->priv->wifi_device != NULL)?
-                 GCLUE_ACCURACY_LEVEL_STREET :
-                 GCLUE_ACCURACY_LEVEL_NONE;
+        if (!net_available)
+                return GCLUE_ACCURACY_LEVEL_NONE;
+
+        return (GCLUE_WIFI (source)->priv->wifi_device != NULL)?
+                GCLUE_ACCURACY_LEVEL_STREET :
+                GCLUE_ACCURACY_LEVEL_CITY;
 }
 
 static void
@@ -392,6 +394,9 @@ gclue_wifi_constructed (GObject *object)
 
         G_OBJECT_CLASS (gclue_wifi_parent_class)->constructed (object);
 
+        if (wifi->priv->accuracy_level == GCLUE_ACCURACY_LEVEL_CITY)
+                goto refresh_n_exit;
+
         wifi->priv->client = nm_client_new (); /* FIXME: We should be using async variant */
         g_signal_connect (wifi->priv->client,
                           "device-added",
@@ -415,6 +420,7 @@ gclue_wifi_constructed (GObject *object)
                 }
         }
 
+refresh_n_exit:
         gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 }
 
@@ -517,32 +523,45 @@ gclue_wifi_create_query (GClueWebSource *source,
         guint i;
         char *uri;
 
-        aps = get_ap_list (wifi, error);
-        if (aps == NULL)
-                goto out;
-
         builder = json_builder_new ();
         json_builder_begin_object (builder);
 
         json_builder_set_member_name (builder, "wifiAccessPoints");
         json_builder_begin_array (builder);
 
-        for (i = 0; i < aps->len; i++) {
-                NMAccessPoint *ap = g_ptr_array_index (aps, i);
-                const char *mac;
-                gint8 strength_dbm;
+        aps = get_ap_list (wifi, NULL);
+        if (aps != NULL) {
+                for (i = 0; i < aps->len; i++) {
+                        NMAccessPoint *ap = g_ptr_array_index (aps, i);
+                        const char *mac;
+                        gint8 strength_dbm;
 
-                if (should_ignore_ap (ap))
-                        continue;
+                        if (should_ignore_ap (ap))
+                                continue;
 
+                        json_builder_begin_object (builder);
+                        json_builder_set_member_name (builder, "macAddress");
+                        mac = nm_access_point_get_bssid (ap);
+                        json_builder_add_string_value (builder, mac);
+
+                        json_builder_set_member_name (builder, "signalStrength");
+                        strength_dbm = nm_access_point_get_strength (ap) /
+                                       2 - 100;
+                        json_builder_add_int_value (builder, strength_dbm);
+                        json_builder_end_object (builder);
+                }
+        } else {
+                /* Pure geoip query */
+
+                /* FIXME: Currently we need a dummy AP entry to work around:
+                 *        https://github.com/mozilla/ichnaea/issues/165
+                 */
                 json_builder_begin_object (builder);
                 json_builder_set_member_name (builder, "macAddress");
-                mac = nm_access_point_get_bssid (ap);
-                json_builder_add_string_value (builder, mac);
+                json_builder_add_string_value (builder, "00:00:00:00:00:00");
 
                 json_builder_set_member_name (builder, "signalStrength");
-                strength_dbm = nm_access_point_get_strength (ap) / 2 - 100;
-                json_builder_add_int_value (builder, strength_dbm);
+                json_builder_add_int_value (builder, -50);
                 json_builder_end_object (builder);
         }
 
@@ -568,7 +587,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         g_debug ("Sending following request to '%s':\n%s", uri, data);
 
         g_free (uri);
-out:
+
         return ret;
 }
 

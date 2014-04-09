@@ -48,8 +48,6 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-config.c 	 	 \
 	gclue-error.h 	 	 \
 	gclue-error.c 	 	 \
-	gclue-ipclient.h 	 \
-	gclue-ipclient.c 	 \
 	gclue-location-source.h	 \
 	gclue-location-source.c	 \
 	gclue-locator.h 	 \

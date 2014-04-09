@@ -84,17 +84,16 @@ else
 fi
 AM_CONDITIONAL([BUILD_MODEM_GPS_SOURCE], [test "$build_modem_gps_source" = "yes"])
 
-# Wifi source
-AC_ARG_ENABLE(wifi-source,
-              AS_HELP_STRING([--disable-wifi-source], [Disable Wifi backend (requires ModemManager)]),
-              [build_wifi_source=$enableval], [build_wifi_source=yes])
-if test "$build_wifi_source" = "yes"; then
-  require_networkmanager=yes
-  AC_DEFINE([GCLUE_USE_WIFI_SOURCE], [1], [Build Wifi source?])
+# NetworkManager
+AC_ARG_ENABLE(network-manager,
+              AS_HELP_STRING([--disable-network-manager], [Disable use of NetworkManager)]),
+              [use_nm=$enableval], [use_nm=yes])
+if test "$use_nm" = "yes"; then
+  PKG_CHECK_MODULES(NetworkManager, libnm-glib >= $LIBNM_GLIB_MIN_VERSION)
+  AC_DEFINE([GCLUE_USE_NETWORK_MANAGER], [1], [Use NetowrkManager?])
 else
-  AC_DEFINE([GCLUE_USE_WIFI_SOURCE], [0], [Build Wifi source?])
+  AC_DEFINE([GCLUE_USE_NETWORK_MANAGER], [0], [Use NetowrkManager?])
 fi
-AM_CONDITIONAL([BUILD_WIFI_SOURCE], [test "$build_wifi_source" = "yes"])
 
 # Modem source is used in common by GPS and 3G sources
 if test "$build_modem_source" = "yes"; then
@@ -105,11 +104,6 @@ AM_CONDITIONAL([BUILD_MODEM_SOURCE], [test "$build_modem_source" = "yes"])
 # Check for ModemManager if one of the sources requires it
 if test "$require_modemmanager" = "yes"; then
   PKG_CHECK_MODULES(ModemManager, mm-glib >= $LIBMM_GLIB_MIN_VERSION)
-fi
-
-# Check for NetworkManager if one of the sources requires it
-if test "$require_networkmanager" = "yes"; then
-  PKG_CHECK_MODULES(NetworkManager, libnm-glib >= $LIBNM_GLIB_MIN_VERSION)
 fi
 
 # Demo agent
@@ -211,6 +205,5 @@ AC_MSG_NOTICE([
         systemdsystemunitdir:     ${systemdsystemunitdir}
 
         3G source:                ${build_3g_source}
-        Wifi source:              ${build_wifi_source}
         Modem GPS source:         ${build_modem_gps_source}
 ])

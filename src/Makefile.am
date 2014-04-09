@@ -56,11 +56,9 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-service-location.c \
 	gclue-web-source.c	 \
 	gclue-web-source.h	 \
+	gclue-wifi.h 		 \
+	gclue-wifi.c		 \
 	$(NULL)
-
-if BUILD_WIFI_SOURCE
-libgeoclue_la_SOURCES += gclue-wifi.h gclue-wifi.c
-endif
 
 if BUILD_MODEM_SOURCE
 libgeoclue_la_SOURCES += gclue-modem-source.c gclue-modem-source.h

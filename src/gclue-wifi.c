@@ -24,8 +24,11 @@
 #include <libsoup/soup.h>
 #include <json-glib/json-glib.h>
 #include <string.h>
+#include <config.h>
+#if GCLUE_USE_NETWORK_MANAGER
 #include <nm-client.h>
 #include <nm-device-wifi.h>
+#endif
 #include "gclue-wifi.h"
 #include "gclue-config.h"
 #include "gclue-error.h"
@@ -42,15 +45,18 @@
  * configuration file so its easy to switch to Google's API.
  **/
 
+#if GCLUE_USE_NETWORK_MANAGER
 static gboolean
 gclue_wifi_start (GClueLocationSource *source);
 static gboolean
 gclue_wifi_stop (GClueLocationSource *source);
+#endif
 
 struct _GClueWifiPrivate {
+#if GCLUE_USE_NETWORK_MANAGER
         NMClient *client;
         NMDeviceWifi *wifi_device;
-
+#endif
         gulong ap_added_id;
 
         guint refresh_timeout;
@@ -69,10 +75,12 @@ static GParamSpec *gParamSpecs[LAST_PROP];
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error);
+#if GCLUE_USE_NETWORK_MANAGER
 static SoupMessage *
 gclue_wifi_create_submit_query (GClueWebSource  *source,
                                 GeocodeLocation *location,
                                 GError         **error);
+#endif
 static GeocodeLocation *
 gclue_wifi_parse_response (GClueWebSource *source,
                            const char     *json,
@@ -83,11 +91,9 @@ gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
 
 G_DEFINE_TYPE (GClueWifi, gclue_wifi, GCLUE_TYPE_WEB_SOURCE)
 
+#if GCLUE_USE_NETWORK_MANAGER
 static void
 disconnect_ap_signals (GClueWifi *wifi);
-
-static void
-gclue_wifi_constructed (GObject *object);
 
 static void
 gclue_wifi_finalize (GObject *gwifi)
@@ -102,6 +108,10 @@ gclue_wifi_finalize (GObject *gwifi)
 
         G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
 }
+#endif
+
+static void
+gclue_wifi_constructed (GObject *object);
 
 static void
 gclue_wifi_get_property (GObject    *object,
@@ -143,20 +153,25 @@ static void
 gclue_wifi_class_init (GClueWifiClass *klass)
 {
         GClueWebSourceClass *web_class = GCLUE_WEB_SOURCE_CLASS (klass);
+#if GCLUE_USE_NETWORK_MANAGER
         GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
+#endif
         GObjectClass *gwifi_class = G_OBJECT_CLASS (klass);
 
+#if GCLUE_USE_NETWORK_MANAGER
         source_class->start = gclue_wifi_start;
         source_class->stop = gclue_wifi_stop;
-
-        web_class->create_query = gclue_wifi_create_query;
         web_class->create_submit_query = gclue_wifi_create_submit_query;
+#endif
+        web_class->create_query = gclue_wifi_create_query;
         web_class->parse_response = gclue_wifi_parse_response;
         web_class->get_available_accuracy_level =
                 gclue_wifi_get_available_accuracy_level;
         gwifi_class->get_property = gclue_wifi_get_property;
         gwifi_class->set_property = gclue_wifi_set_property;
+#if GCLUE_USE_NETWORK_MANAGER
         gwifi_class->finalize = gclue_wifi_finalize;
+#endif
         gwifi_class->constructed = gclue_wifi_constructed;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
@@ -173,6 +188,7 @@ gclue_wifi_class_init (GClueWifiClass *klass)
                                          gParamSpecs[PROP_ACCURACY_LEVEL]);
 }
 
+#if GCLUE_USE_NETWORK_MANAGER
 static gboolean
 on_refresh_timeout (gpointer user_data)
 {
@@ -327,6 +343,7 @@ gclue_wifi_stop (GClueLocationSource *source)
         disconnect_ap_signals (GCLUE_WIFI (source));
         return TRUE;
 }
+#endif
 
 static GClueAccuracyLevel
 gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
@@ -335,11 +352,16 @@ gclue_wifi_get_available_accuracy_level (GClueWebSource *source,
         if (!net_available)
                 return GCLUE_ACCURACY_LEVEL_NONE;
 
+#if GCLUE_USE_NETWORK_MANAGER
         return (GCLUE_WIFI (source)->priv->wifi_device != NULL)?
                 GCLUE_ACCURACY_LEVEL_STREET :
                 GCLUE_ACCURACY_LEVEL_CITY;
+#else
+        return GCLUE_ACCURACY_LEVEL_CITY;
+#endif
 }
 
+#if GCLUE_USE_NETWORK_MANAGER
 static void
 on_device_added (NMClient *client,
                  NMDevice *device,
@@ -378,6 +400,7 @@ on_device_removed (NMClient *client,
 
         gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 }
+#endif
 
 static void
 gclue_wifi_init (GClueWifi *wifi)
@@ -388,6 +411,7 @@ gclue_wifi_init (GClueWifi *wifi)
 static void
 gclue_wifi_constructed (GObject *object)
 {
+#if GCLUE_USE_NETWORK_MANAGER
         GClueWifi *wifi = GCLUE_WIFI (object);
         const GPtrArray *devices;
         guint i;
@@ -409,7 +433,7 @@ gclue_wifi_constructed (GObject *object)
 
         devices = nm_client_get_devices (wifi->priv->client);
         if (devices == NULL)
-                return;
+                goto refresh_n_exit;
 
         for (i = 0; i < devices->len; i++) {
                 NMDevice *device = g_ptr_array_index (devices, i);
@@ -421,7 +445,10 @@ gclue_wifi_constructed (GObject *object)
         }
 
 refresh_n_exit:
-        gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
+#else
+        G_OBJECT_CLASS (gclue_wifi_parent_class)->constructed (object);
+#endif
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (object));
 }
 
 static void
@@ -482,6 +509,7 @@ get_url (void)
         return gclue_config_get_wifi_url (config);
 }
 
+#if GCLUE_USE_NETWORK_MANAGER
 static const GPtrArray *
 get_ap_list (GClueWifi *wifi,
              GError   **error)
@@ -507,20 +535,23 @@ get_ap_list (GClueWifi *wifi,
 
         return aps;
 }
+#endif
 
 static SoupMessage *
 gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error)
 {
+#if GCLUE_USE_NETWORK_MANAGER
         GClueWifi *wifi = GCLUE_WIFI (source);
+        const GPtrArray *aps; /* As in Access Points */
+        guint i;
+#endif
         SoupMessage *ret = NULL;
         JsonBuilder *builder;
         JsonGenerator *generator;
         JsonNode *root_node;
         char *data;
         gsize data_len;
-        const GPtrArray *aps; /* As in Access Points */
-        guint i;
         char *uri;
 
         builder = json_builder_new ();
@@ -529,6 +560,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         json_builder_set_member_name (builder, "wifiAccessPoints");
         json_builder_begin_array (builder);
 
+#if GCLUE_USE_NETWORK_MANAGER
         aps = get_ap_list (wifi, NULL);
         if (aps != NULL) {
                 for (i = 0; i < aps->len; i++) {
@@ -551,6 +583,7 @@ gclue_wifi_create_query (GClueWebSource *source,
                         json_builder_end_object (builder);
                 }
         } else {
+#endif
                 /* Pure geoip query */
 
                 /* FIXME: Currently we need a dummy AP entry to work around:
@@ -563,8 +596,9 @@ gclue_wifi_create_query (GClueWebSource *source,
                 json_builder_set_member_name (builder, "signalStrength");
                 json_builder_add_int_value (builder, -50);
                 json_builder_end_object (builder);
+#if GCLUE_USE_NETWORK_MANAGER
         }
-
+#endif
         json_builder_end_array (builder);
         json_builder_end_object (builder);
 
@@ -645,6 +679,7 @@ gclue_wifi_parse_response (GClueWebSource *source,
         return location;
 }
 
+#if GCLUE_USE_NETWORK_MANAGER
 static char *
 get_submit_url (void)
 {
@@ -767,3 +802,4 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
 out:
         return ret;
 }
+#endif

@@ -27,9 +27,7 @@
 #include "gclue-locator.h"
 #include "public-api/gclue-enum-types.h"
 
-#if GCLUE_USE_WIFI_SOURCE
 #include "gclue-wifi.h"
-#endif
 
 #if GCLUE_USE_3G_SOURCE
 #include "gclue-3g.h"
@@ -266,14 +264,12 @@ gclue_locator_constructed (GObject *object)
         GClue3G *source = gclue_3g_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, source);
 #endif
-#if GCLUE_USE_WIFI_SOURCE
         if (locator->priv->accuracy_level >= GCLUE_ACCURACY_LEVEL_CITY) {
                 GClueWifi *wifi = gclue_wifi_get_singleton
                         (locator->priv->accuracy_level);
                 locator->priv->sources = g_list_append (locator->priv->sources,
                                                         wifi);
         }
-#endif
 #if GCLUE_USE_MODEM_GPS_SOURCE
         GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, gps);

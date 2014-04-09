@@ -87,6 +87,9 @@ static void
 disconnect_ap_signals (GClueWifi *wifi);
 
 static void
+gclue_wifi_constructed (GObject *object);
+
+static void
 gclue_wifi_finalize (GObject *gwifi)
 {
         GClueWifi *wifi = (GClueWifi *) gwifi;
@@ -154,6 +157,7 @@ gclue_wifi_class_init (GClueWifiClass *klass)
         gwifi_class->get_property = gclue_wifi_get_property;
         gwifi_class->set_property = gclue_wifi_set_property;
         gwifi_class->finalize = gclue_wifi_finalize;
+        gwifi_class->constructed = gclue_wifi_constructed;
 
         g_type_class_add_private (klass, sizeof (GClueWifiPrivate));
 
@@ -376,10 +380,17 @@ on_device_removed (NMClient *client,
 static void
 gclue_wifi_init (GClueWifi *wifi)
 {
+        wifi->priv = G_TYPE_INSTANCE_GET_PRIVATE ((wifi), GCLUE_TYPE_WIFI, GClueWifiPrivate);
+}
+
+static void
+gclue_wifi_constructed (GObject *object)
+{
+        GClueWifi *wifi = GCLUE_WIFI (object);
         const GPtrArray *devices;
         guint i;
 
-        wifi->priv = G_TYPE_INSTANCE_GET_PRIVATE ((wifi), GCLUE_TYPE_WIFI, GClueWifiPrivate);
+        G_OBJECT_CLASS (gclue_wifi_parent_class)->constructed (object);
 
         wifi->priv->client = nm_client_new (); /* FIXME: We should be using async variant */
         g_signal_connect (wifi->priv->client,

@@ -451,6 +451,8 @@ gclue_service_manager_constructed (GObject *object)
 {
         GClueServiceManagerPrivate *priv = GCLUE_SERVICE_MANAGER (object)->priv;
 
+        G_OBJECT_CLASS (gclue_service_manager_parent_class)->constructed (object);
+
         priv->locator = gclue_locator_new (GCLUE_ACCURACY_LEVEL_EXACT);
         g_signal_connect (G_OBJECT (priv->locator),
                           "notify::available-accuracy-level",

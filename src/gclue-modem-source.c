@@ -386,6 +386,8 @@ gclue_modem_source_constructed (GObject *object)
 {
         GClueModemSourcePrivate *priv = GCLUE_MODEM_SOURCE (object)->priv;
 
+        G_OBJECT_CLASS (gclue_modem_source_parent_class)->constructed (object);
+
         priv->cancellable = g_cancellable_new ();
 
         g_bus_get (G_BUS_TYPE_SYSTEM,

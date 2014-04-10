@@ -260,6 +260,8 @@ gclue_locator_constructed (GObject *object)
         GClueLocationSource *submit_source = NULL;
         GList *node;
 
+        G_OBJECT_CLASS (gclue_locator_parent_class)->constructed (object);
+
 #if GCLUE_USE_3G_SOURCE
         GClue3G *source = gclue_3g_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, source);

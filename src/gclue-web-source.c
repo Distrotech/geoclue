@@ -188,6 +188,8 @@ gclue_web_source_constructed (GObject *object)
         GNetworkMonitor *monitor;
         GClueWebSourcePrivate *priv = GCLUE_WEB_SOURCE (object)->priv;
 
+        G_OBJECT_CLASS (gclue_web_source_parent_class)->constructed (object);
+
         priv->soup_session = soup_session_new_with_options
                         (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
                          SOUP_TYPE_PROXY_RESOLVER_DEFAULT,

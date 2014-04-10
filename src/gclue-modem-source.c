@@ -199,6 +199,7 @@ gclue_modem_source_start (GClueLocationSource *source)
 static gboolean
 gclue_modem_source_stop (GClueLocationSource *source)
 {
+        GClueModemSourcePrivate *priv = GCLUE_MODEM_SOURCE (source)->priv;
         GClueLocationSourceClass *base_class;
 
         g_return_val_if_fail (GCLUE_IS_MODEM_SOURCE (source), FALSE);
@@ -207,10 +208,14 @@ gclue_modem_source_stop (GClueLocationSource *source)
         if (!base_class->stop (source))
                 return FALSE;
 
-        if (GCLUE_MODEM_SOURCE (source)->priv->modem == NULL)
+        if (priv->modem == NULL)
                 return FALSE;
 
-        mm_modem_disable (GCLUE_MODEM_SOURCE (source)->priv->modem,
+        g_signal_handlers_disconnect_by_func (G_OBJECT (priv->modem_location),
+                                              G_CALLBACK (on_location_changed),
+                                              source);
+
+        mm_modem_disable (priv->modem,
                           NULL,
                           NULL,
                           NULL);

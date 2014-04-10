@@ -681,11 +681,12 @@ gclue_wifi_parse_response (GClueWebSource *source,
 
 #if GCLUE_USE_NETWORK_MANAGER
 static char *
-get_submit_url (void)
+get_submit_config (char **nick)
 {
         GClueConfig *config;
 
         config = gclue_config_get_singleton ();
+        *nick = gclue_config_get_wifi_submit_nick (config);
 
         return gclue_config_get_wifi_submit_url (config);
 }
@@ -700,14 +701,14 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
         JsonBuilder *builder;
         JsonGenerator *generator;
         JsonNode *root_node;
-        char *data, *timestamp, *url;
+        char *data, *timestamp, *url, *nick;
         gsize data_len;
         const GPtrArray *aps; /* As in Access Points */
         guint i, frequency;
         gdouble lat, lon, accuracy, altitude;
         GTimeVal tv;
 
-        url = get_submit_url ();
+        url = get_submit_config (&nick);
         if (url == NULL)
                 goto out;
 
@@ -791,6 +792,10 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
         g_object_unref (generator);
 
         ret = soup_message_new ("POST", url);
+        if (nick != NULL && nick[0] != '\0')
+                soup_message_headers_append (ret->request_headers,
+                                             "X-Nickname",
+                                             nick);
         soup_message_set_request (ret,
                                   "application/json",
                                   SOUP_MEMORY_TAKE,

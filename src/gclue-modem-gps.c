@@ -220,6 +220,9 @@ on_get_gps_raw_ready (GObject      *source_object,
                 return;
         }
 
+        if (!gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)))
+                return;
+
         if (priv->gps_raw == NULL) {
                 g_debug ("No GPS");
                 return;

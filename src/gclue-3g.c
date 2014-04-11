@@ -346,6 +346,9 @@ on_get_3gpp_ready (GObject      *source_object,
                 return;
         }
 
+        if (!gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)))
+                return;
+
         if (location_3gpp == NULL) {
                 g_debug ("No 3GPP");
                 return;

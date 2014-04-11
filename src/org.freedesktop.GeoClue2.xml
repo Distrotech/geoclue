@@ -177,6 +177,14 @@
     <property name="Accuracy" type="d" access="read"/>
 
     <!--
+        Altitude:
+
+        The altitude of the location fix, in meters. When unknown, its set to
+        minimum double value, -1.7976931348623157e+308.
+    -->
+    <property name="Altitude" type="d" access="read"/>
+
+    <!--
         Description:
 
         A human-readable description of the location, if available.

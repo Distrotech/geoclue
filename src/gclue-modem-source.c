@@ -322,6 +322,7 @@ on_mm_object_removed (GDBusObjectManager *manager,
 
         if (priv->mm_object == NULL || priv->mm_object != mm_object)
                 return;
+        g_debug ("Modem '%s' removed.", mm_object_get_path (priv->mm_object));
 
         g_signal_handlers_disconnect_by_func (G_OBJECT (priv->modem_location),
                                               G_CALLBACK (on_location_changed),

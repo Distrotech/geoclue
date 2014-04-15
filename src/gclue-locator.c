@@ -381,6 +381,7 @@ gclue_locator_stop (GClueLocationSource *source)
                                                       G_CALLBACK (on_location_changed),
                                                       locator);
                 gclue_location_source_stop (src);
+                g_debug ("Requested %s to stop", G_OBJECT_TYPE_NAME (src));
         }
 
         g_list_free (locator->priv->active_sources);

@@ -192,7 +192,7 @@ gclue_modem_source_start (GClueLocationSource *source)
                 return FALSE;
 
         if (priv->modem == NULL)
-                return FALSE;
+                return TRUE;
 
         priv->active_cancellable = g_cancellable_new ();
         mm_modem_enable (priv->modem,
@@ -215,7 +215,7 @@ gclue_modem_source_stop (GClueLocationSource *source)
                 return FALSE;
 
         if (priv->modem == NULL)
-                return FALSE;
+                return TRUE;
 
         g_signal_handlers_disconnect_by_func (G_OBJECT (priv->modem_location),
                                               G_CALLBACK (on_location_changed),

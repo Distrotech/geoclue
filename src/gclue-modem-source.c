@@ -76,7 +76,6 @@ gclue_modem_source_finalize (GObject *gsource)
         GClueModemSource *source = GCLUE_MODEM_SOURCE (gsource);
         GClueModemSourcePrivate *priv = source->priv;
 
-        clear_caps (source);
         G_OBJECT_CLASS (gclue_modem_source_parent_class)->finalize (gsource);
 
         g_cancellable_cancel (priv->cancellable);
@@ -223,6 +222,7 @@ gclue_modem_source_stop (GClueLocationSource *source)
                                               source);
         g_cancellable_cancel (priv->active_cancellable);
         g_clear_object (&priv->active_cancellable);
+        clear_caps (GCLUE_MODEM_SOURCE (source));
 
         mm_modem_disable (priv->modem,
                           NULL,

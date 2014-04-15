@@ -120,18 +120,21 @@ on_modem_location_setup (GObject      *source_object,
                          GAsyncResult *res,
                          gpointer      user_data)
 {
-        GClueModemSourcePrivate *priv = GCLUE_MODEM_SOURCE (user_data)->priv;
+        GClueModemSourcePrivate *priv;
         GError *error = NULL;
 
-        if (!mm_modem_location_setup_finish (priv->modem_location, res, &error)) {
+        if (!mm_modem_location_setup_finish (MM_MODEM_LOCATION (source_object),
+                                             res,
+                                             &error)) {
                 g_warning ("Failed to setup modem: %s", error->message);
                 g_error_free (error);
 
                 return;
         }
+        priv = GCLUE_MODEM_SOURCE (user_data)->priv;
         g_debug ("Modem '%s' setup.", mm_object_get_path (priv->mm_object));
 
-        on_location_changed (G_OBJECT (priv->modem_location), NULL, user_data);
+        on_location_changed (source_object, NULL, user_data);
 }
 
 static void
@@ -139,24 +142,25 @@ on_modem_enabled (GObject      *source_object,
                   GAsyncResult *res,
                   gpointer      user_data)
 {
-        GClueModemSource *source= GCLUE_MODEM_SOURCE (user_data);
-        GClueModemSourcePrivate *priv = source->priv;
+        GClueModemSourcePrivate *priv;
         MMModemLocationSource caps;
         GError *error = NULL;
 
-        if (!mm_modem_enable_finish (priv->modem, res, &error)) {
-                if (error->code == MM_CORE_ERROR_IN_PROGRESS)
+        if (!mm_modem_enable_finish (MM_MODEM (source_object), res, &error)) {
+                if (error->code == MM_CORE_ERROR_IN_PROGRESS) {
                         /* Seems another source instance is already on it */
+                        priv = GCLUE_MODEM_SOURCE (user_data)->priv;
                         g_signal_connect (G_OBJECT (priv->modem_location),
                                           "notify::location",
                                           G_CALLBACK (on_location_changed),
                                           user_data);
-                else
+                } else
                         g_warning ("Failed to enable modem: %s", error->message);
                 g_error_free (error);
 
                 return;
         }
+        priv = GCLUE_MODEM_SOURCE (user_data)->priv;
         g_debug ("modem '%s' enabled.", mm_object_get_path (priv->mm_object));
 
         g_signal_connect (G_OBJECT (priv->modem_location),

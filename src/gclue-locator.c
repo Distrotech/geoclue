@@ -234,6 +234,8 @@ gclue_locator_finalize (GObject *gsource)
         GClueLocatorPrivate *priv = locator->priv;
         GList *node;
 
+        G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (gsource);
+
         for (node = locator->priv->sources; node != NULL; node = node->next)
                 g_signal_handlers_disconnect_by_func
                         (G_OBJECT (node->data),
@@ -249,8 +251,6 @@ gclue_locator_finalize (GObject *gsource)
         g_list_free_full (priv->sources, g_object_unref);
         priv->sources = NULL;
         priv->active_sources = NULL;
-
-        G_OBJECT_CLASS (gclue_locator_parent_class)->finalize (gsource);
 }
 
 static void

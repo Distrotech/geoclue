@@ -100,13 +100,13 @@ gclue_wifi_finalize (GObject *gwifi)
 {
         GClueWifi *wifi = (GClueWifi *) gwifi;
 
+        G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
+
         if (wifi->priv->wifi_device != NULL) {
                 disconnect_ap_signals (wifi);
                 wifi->priv->wifi_device = NULL;
         }
         g_clear_object (&wifi->priv->client);
-
-        G_OBJECT_CLASS (gclue_wifi_parent_class)->finalize (gwifi);
 }
 #endif
 

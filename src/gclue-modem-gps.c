@@ -53,11 +53,11 @@ gclue_modem_gps_finalize (GObject *ggps)
 {
         GClueModemGPSPrivate *priv = GCLUE_MODEM_GPS (ggps)->priv;
 
+        G_OBJECT_CLASS (gclue_modem_gps_parent_class)->finalize (ggps);
+
         g_cancellable_cancel (priv->cancellable);
         g_clear_object (&priv->cancellable);
         g_clear_object (&priv->gps_raw);
-
-        G_OBJECT_CLASS (gclue_modem_gps_parent_class)->finalize (ggps);
 }
 
 static void

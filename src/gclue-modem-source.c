@@ -182,18 +182,20 @@ static gboolean
 gclue_modem_source_start (GClueLocationSource *source)
 {
         GClueLocationSourceClass *base_class;
+        GClueModemSourcePrivate *priv;
 
         g_return_val_if_fail (GCLUE_IS_MODEM_SOURCE (source), FALSE);
+        priv = GCLUE_MODEM_SOURCE (source)->priv;
 
         base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_modem_source_parent_class);
         if (!base_class->start (source))
                 return FALSE;
 
-        if (GCLUE_MODEM_SOURCE (source)->priv->modem == NULL)
+        if (priv->modem == NULL)
                 return FALSE;
 
-        mm_modem_enable (GCLUE_MODEM_SOURCE (source)->priv->modem,
-                         GCLUE_MODEM_SOURCE (source)->priv->cancellable,
+        mm_modem_enable (priv->modem,
+                         priv->cancellable,
                          on_modem_enabled,
                          source);
         return TRUE;

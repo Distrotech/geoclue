@@ -224,10 +224,6 @@ gclue_modem_source_stop (GClueLocationSource *source)
         g_clear_object (&priv->active_cancellable);
         clear_caps (GCLUE_MODEM_SOURCE (source));
 
-        mm_modem_disable (priv->modem,
-                          NULL,
-                          NULL,
-                          NULL);
         return TRUE;
 }
 

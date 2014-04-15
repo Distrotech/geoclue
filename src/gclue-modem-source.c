@@ -46,6 +46,7 @@ struct _GClueModemSourcePrivate {
         MMModemLocation *modem_location;
 
         GCancellable *cancellable;
+        GCancellable *active_cancellable;
 };
 
 static void
@@ -173,7 +174,7 @@ on_modem_enabled (GObject      *source_object,
         mm_modem_location_setup (priv->modem_location,
                                  caps,
                                  TRUE,
-                                 priv->cancellable,
+                                 priv->active_cancellable,
                                  on_modem_location_setup,
                                  user_data);
 }
@@ -194,8 +195,9 @@ gclue_modem_source_start (GClueLocationSource *source)
         if (priv->modem == NULL)
                 return FALSE;
 
+        priv->active_cancellable = g_cancellable_new ();
         mm_modem_enable (priv->modem,
-                         priv->cancellable,
+                         priv->active_cancellable,
                          on_modem_enabled,
                          source);
         return TRUE;
@@ -219,6 +221,8 @@ gclue_modem_source_stop (GClueLocationSource *source)
         g_signal_handlers_disconnect_by_func (G_OBJECT (priv->modem_location),
                                               G_CALLBACK (on_location_changed),
                                               source);
+        g_cancellable_cancel (priv->active_cancellable);
+        g_clear_object (&priv->active_cancellable);
 
         mm_modem_disable (priv->modem,
                           NULL,
@@ -297,11 +301,13 @@ on_mm_object_added (GDBusObjectManager *manager,
         source->priv->modem = mm_object_get_modem (mm_object);
         source->priv->modem_location = mm_object_get_modem_location (mm_object);
 
-        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)))
+        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source))) {
+                source->priv->active_cancellable = g_cancellable_new ();
                 mm_modem_enable (source->priv->modem,
-                                 source->priv->cancellable,
+                                 source->priv->active_cancellable,
                                  on_modem_enabled,
                                  user_data);
+        }
 
         refresh_accuracy_level (source);
 }

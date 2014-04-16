@@ -499,7 +499,7 @@ gclue_wifi_get_accuracy_level (GClueWifi *wifi)
         return wifi->priv->accuracy_level;
 }
 
-static char *
+static const char *
 get_url (void)
 {
         GClueConfig *config;
@@ -552,7 +552,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         JsonNode *root_node;
         char *data;
         gsize data_len;
-        char *uri;
+        const char *uri;
 
         builder = json_builder_new ();
         json_builder_begin_object (builder);
@@ -620,8 +620,6 @@ gclue_wifi_create_query (GClueWebSource *source,
                                   data_len);
         g_debug ("Sending following request to '%s':\n%s", uri, data);
 
-        g_free (uri);
-
         return ret;
 }
 
@@ -680,8 +678,8 @@ gclue_wifi_parse_response (GClueWebSource *source,
 }
 
 #if GCLUE_USE_NETWORK_MANAGER
-static char *
-get_submit_config (char **nick)
+static const char *
+get_submit_config (const char **nick)
 {
         GClueConfig *config;
 
@@ -704,7 +702,8 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
         JsonBuilder *builder;
         JsonGenerator *generator;
         JsonNode *root_node;
-        char *data, *timestamp, *url, *nick;
+        char *data, *timestamp;
+        const char *url, *nick;
         gsize data_len;
         const GPtrArray *aps; /* As in Access Points */
         guint i, frequency;
@@ -805,7 +804,6 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
                                   data,
                                   data_len);
         g_debug ("Sending following request to '%s':\n%s", url, data);
-        g_free (url);
 
 out:
         return ret;

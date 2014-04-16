@@ -686,6 +686,9 @@ get_submit_config (char **nick)
         GClueConfig *config;
 
         config = gclue_config_get_singleton ();
+        if (!gclue_config_get_wifi_submit_data (config))
+                return NULL;
+
         *nick = gclue_config_get_wifi_submit_nick (config);
 
         return gclue_config_get_wifi_submit_url (config);

@@ -20,10 +20,14 @@ url=https://location.services.mozilla.com/v1/geolocate?key=geoclue
 #
 #url=https://www.googleapis.com/geolocation/v1/geolocate?key=YOUR_KEY
 
-# URL to submission API of Mozilla Location Service
-# If uncommented, geoclue will automatically submit network data to Mozilla
+# Submit data to Mozilla Location Service
+# If set to true, geoclue will automatically submit network data to Mozilla
 # each time it gets a GPS lock.
-#submission-url=https://location.services.mozilla.com/v1/submit?key=geoclue
+#
+submit-data=false
+
+# URL to submission API of Mozilla Location Service
+submission-url=https://location.services.mozilla.com/v1/submit?key=geoclue
 
 # A nickname to submit network data with. This is currently used for leaderboard:
 # https://location.services.mozilla.com/leaders

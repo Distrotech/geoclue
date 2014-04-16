@@ -199,6 +199,8 @@ gclue_config_get_wifi_url (GClueConfig *config)
         return url;
 }
 
+#define DEFAULT_WIFI_SUBMIT_URL "https://location.services.mozilla.com/v1/submit?key=geoclue"
+
 char *
 gclue_config_get_wifi_submit_url (GClueConfig *config)
 {
@@ -212,6 +214,7 @@ gclue_config_get_wifi_submit_url (GClueConfig *config)
         if (error != NULL) {
                 g_debug ("No wifi submission URL: %s", error->message);
                 g_error_free (error);
+                url = g_strdup (DEFAULT_WIFI_SUBMIT_URL);
         }
 
         return url;
@@ -233,4 +236,23 @@ gclue_config_get_wifi_submit_nick (GClueConfig *config)
         }
 
         return nick;
+}
+
+gboolean
+gclue_config_get_wifi_submit_data (GClueConfig *config)
+{
+        gboolean submit = FALSE;
+        GError *error = NULL;
+
+        submit = g_key_file_get_boolean (config->priv->key_file,
+                                         "wifi",
+                                         "submit-data",
+                                         &error);
+        if (error != NULL) {
+                g_debug ("Failed to get config wifi/submit-data: %s",
+                         error->message);
+                g_error_free (error);
+        }
+
+        return submit;
 }

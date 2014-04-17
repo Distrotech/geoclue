@@ -333,6 +333,14 @@ gclue_config_get_wifi_submit_nick (GClueConfig *config)
         return config->priv->wifi_submit_nick;
 }
 
+void
+gclue_config_set_wifi_submit_nick (GClueConfig *config,
+                                   const char  *nick)
+{
+
+        config->priv->wifi_submit_nick = g_strdup (nick);
+}
+
 gboolean
 gclue_config_get_wifi_submit_data (GClueConfig *config)
 {

@@ -90,9 +90,7 @@ geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    	\
 		$(builddir)/public-api/libgeoclue-public-api.la
 
 CLEANFILES = $(BUILT_SOURCES)
-EXTRA_DIST = $(interface_DATA) \
-	     test-data/fedora-geoip-results.json \
-	     test-data/freegeoip-results.json
+EXTRA_DIST = $(interface_DATA)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-$(GEOCLUE_API_VERSION).pc

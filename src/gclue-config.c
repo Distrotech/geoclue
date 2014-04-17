@@ -338,3 +338,11 @@ gclue_config_get_wifi_submit_data (GClueConfig *config)
 {
         return config->priv->wifi_submit;
 }
+
+void
+gclue_config_set_wifi_submit_data (GClueConfig *config,
+                                   gboolean     submit)
+{
+
+        config->priv->wifi_submit = submit;
+}

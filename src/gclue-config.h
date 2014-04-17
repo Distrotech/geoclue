@@ -68,6 +68,8 @@ const char *        gclue_config_get_wifi_url         (GClueConfig     *config);
 const char *        gclue_config_get_wifi_submit_url  (GClueConfig     *config);
 const char *        gclue_config_get_wifi_submit_nick (GClueConfig     *config);
 gboolean            gclue_config_get_wifi_submit_data (GClueConfig     *config);
+void                gclue_config_set_wifi_submit_data (GClueConfig     *config,
+                                                       gboolean         submit);
 
 G_END_DECLS
 

@@ -31,7 +31,7 @@
 #define BUS_NAME "org.freedesktop.GeoClue2"
 
 /* Commandline options */
-static gboolean version;
+static gboolean version = FALSE;
 static gint inactivity_timeout = 0;
 
 static GOptionEntry entries[] =

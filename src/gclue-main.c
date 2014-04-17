@@ -27,12 +27,14 @@
 #include <stdlib.h>
 
 #include "gclue-service-manager.h"
+#include "gclue-config.h"
 
 #define BUS_NAME "org.freedesktop.GeoClue2"
 
 /* Commandline options */
 static gboolean version = FALSE;
 static gint inactivity_timeout = 0;
+static gboolean submit_data = FALSE;
 
 static GOptionEntry entries[] =
 {
@@ -50,6 +52,13 @@ static GOptionEntry entries[] =
           &inactivity_timeout,
           N_("Exit after T seconds of inactivity. Default: 0 (never)"),
           "T" },
+        { "submit-data",
+          's',
+          0,
+          G_OPTION_ARG_NONE,
+          &submit_data,
+          N_("Enable submission of network data"),
+          NULL },
         { NULL }
 };
 
@@ -133,6 +142,7 @@ main (int argc, char **argv)
         guint owner_id;
         GError *error = NULL;
         GOptionContext *context;
+        GClueConfig *config;
 
         setlocale (LC_ALL, "");
 
@@ -153,6 +163,10 @@ main (int argc, char **argv)
                 g_print ("%s\n", PACKAGE_VERSION);
                 exit (0);
         }
+
+        config = gclue_config_get_singleton ();
+        if (submit_data)
+                gclue_config_set_wifi_submit_data (config, submit_data);
 
         owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
                                    BUS_NAME,

@@ -35,6 +35,7 @@
 static gboolean version = FALSE;
 static gint inactivity_timeout = 0;
 static gboolean submit_data = FALSE;
+static char *submit_nick = NULL;
 
 static GOptionEntry entries[] =
 {
@@ -59,6 +60,13 @@ static GOptionEntry entries[] =
           &submit_data,
           N_("Enable submission of network data"),
           NULL },
+        { "submit-nick",
+          'n',
+          0,
+          G_OPTION_ARG_STRING,
+          &submit_nick,
+          N_("Nickname to submit network data under (2-32 characters)"),
+          "NICK" },
         { NULL }
 };
 
@@ -167,6 +175,8 @@ main (int argc, char **argv)
         config = gclue_config_get_singleton ();
         if (submit_data)
                 gclue_config_set_wifi_submit_data (config, submit_data);
+        if (submit_nick != NULL)
+                gclue_config_set_wifi_submit_nick (config, submit_nick);
 
         owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
                                    BUS_NAME,

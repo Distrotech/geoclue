@@ -7,7 +7,10 @@ SUBDIRS = public-api agent geocode-glib
 interfacedir = $(datadir)/dbus-1/interfaces
 interface_DATA = org.freedesktop.GeoClue2.xml
 
-dbus_built_sources = geoclue-interface.c geoclue-interface.h
+dbus_built_sources = geoclue-interface.c 	\
+		     geoclue-interface.h 	\
+		     wpa_supplicant-interface.c \
+		     wpa_supplicant-interface.h
 geoclue-interface.c: geoclue-interface.h
 geoclue-interface.h: Makefile.am $(interface_DATA)
 	$(AM_V_GEN)$(GDBUS_CODEGEN) \
@@ -16,6 +19,23 @@ geoclue-interface.h: Makefile.am $(interface_DATA)
 		--generate-c-code geoclue-interface		\
     		--generate-docbook=docs				\
 		$(srcdir)/$(interface_DATA)
+
+wpa_supplicant-interface.c: wpa_supplicant-interface.h
+wpa_supplicant-interface.h: Makefile.am fi.w1.wpa_supplicant1.xml
+	$(AM_V_GEN)$(GDBUS_CODEGEN) \
+		--interface-prefix fi.w1			\
+		--annotate "fi.w1.wpa_supplicant1"		\
+		org.gtk.GDBus.C.Name WPA_Supplicant		\
+		--annotate "fi.w1.wpa_supplicant1.Interface"	\
+		org.gtk.GDBus.C.Name WPA_Interface		\
+		--annotate "fi.w1.wpa_supplicant1.BSS"		\
+		org.gtk.GDBus.C.Name WPA_BSS			\
+		--annotate "fi.w1.wpa_supplicant1.Interface::BSSAdded"	 \
+		org.gtk.GDBus.C.Name BSS_Added				 \
+		--annotate "fi.w1.wpa_supplicant1.Interface::BSSRemoved" \
+		org.gtk.GDBus.C.Name BSS_Removed			 \
+		--generate-c-code wpa_supplicant-interface 	\
+		$(srcdir)/fi.w1.wpa_supplicant1.xml
 
 BUILT_SOURCES = 		\
 	$(dbus_built_sources)	\
@@ -90,7 +110,8 @@ geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    	\
 		$(builddir)/public-api/libgeoclue-public-api.la
 
 CLEANFILES = $(BUILT_SOURCES)
-EXTRA_DIST = $(interface_DATA)
+EXTRA_DIST = $(interface_DATA) \
+	     fi.w1.wpa_supplicant1.xml
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-$(GEOCLUE_API_VERSION).pc

@@ -125,7 +125,7 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
                              GError                **error)
 {
 	GeocluePlazes *plazes;
-	char *mac, *mac_lc;
+	char *mac;
 	
 	plazes = (GEOCLUE_PLAZES (iface));
 	
@@ -147,12 +147,10 @@ geoclue_plazes_get_position (GcIfacePosition        *iface,
 
 	geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_ACQUIRING);
 
-	mac_lc = g_ascii_strdown (mac, -1);
-	g_free (mac);
 	if (!gc_web_service_query (plazes->web_service, error,
 	                           PLAZES_KEY_MAC, mac,
 	                           (char *)0)) {
-		g_free (mac_lc);
+		g_free (mac);
         // did not get a reply; we can try again later
 		geoclue_plazes_set_status (plazes, GEOCLUE_STATUS_AVAILABLE);
 		g_set_error (error, GEOCLUE_ERROR,

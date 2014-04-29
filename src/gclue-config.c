@@ -112,7 +112,7 @@ load_app_configs (GClueConfig *config)
 {
         const char *known_groups[] = { "agent", "wifi", NULL };
         GClueConfigPrivate *priv = config->priv;
-        gsize num_groups, i;
+        gsize num_groups = 0, i;
         char **groups;
 
         groups = g_key_file_get_groups (priv->key_file, &num_groups);
@@ -122,7 +122,7 @@ load_app_configs (GClueConfig *config)
         for (i = 0; i < num_groups; i++) {
                 AppConfig *app_config;
                 int* users;
-                gsize num_users, j;
+                gsize num_users = 0, j;
                 gboolean allowed;
                 gboolean ignore = FALSE;
                 GError *error = NULL;
@@ -282,7 +282,7 @@ gclue_config_is_app_allowed (GClueConfig     *config,
 {
         GClueConfigPrivate *priv = config->priv;
         GList *node;
-        AppConfig *app_config;
+        AppConfig *app_config = NULL;
         gsize i;
         guint64 uid;
 

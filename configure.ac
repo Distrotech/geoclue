@@ -40,7 +40,6 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[The name of the gettext d
 GLIB_MIN_VERSION=2.34.0
 JSON_GLIB_MIN_VERSION=0.14
 GEOIP_MIN_VERSION=1.5.1
-LIBNM_GLIB_MIN_VERSION=0.9.8.0
 LIBMM_GLIB_MIN_VERSION=1.0
 LIBXML_MIN_VERSION=2.7
 
@@ -83,17 +82,6 @@ else
   AC_DEFINE([GCLUE_USE_MODEM_GPS_SOURCE], [0], [Build modem GPS source?])
 fi
 AM_CONDITIONAL([BUILD_MODEM_GPS_SOURCE], [test "$build_modem_gps_source" = "yes"])
-
-# NetworkManager
-AC_ARG_ENABLE(network-manager,
-              AS_HELP_STRING([--disable-network-manager], [Disable use of NetworkManager)]),
-              [use_nm=$enableval], [use_nm=yes])
-if test "$use_nm" = "yes"; then
-  PKG_CHECK_MODULES(NetworkManager, libnm-glib >= $LIBNM_GLIB_MIN_VERSION)
-  AC_DEFINE([GCLUE_USE_NETWORK_MANAGER], [1], [Use NetowrkManager?])
-else
-  AC_DEFINE([GCLUE_USE_NETWORK_MANAGER], [0], [Use NetowrkManager?])
-fi
 
 # Modem source is used in common by GPS and 3G sources
 if test "$build_modem_source" = "yes"; then

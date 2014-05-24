@@ -49,7 +49,6 @@ noinst_LTLIBRARIES = libgeoclue.la
 
 AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 	      $(ModemManager_CFLAGS)			  \
-	      $(NetworkManager_CFLAGS)			  \
 	      $(WARN_CFLAGS)			     	  \
 	      -DLOCALEDIR="\"$(datadir)/locale\"" 	  \
 	      -DG_LOG_DOMAIN=\""Geoclue"\"	     	  \
@@ -98,7 +97,6 @@ endif
 
 libgeoclue_la_LIBADD = \
 	$(GEOCLUE_LIBS)			\
-	$(NetworkManager_LIBS)		\
 	$(ModemManager_LIBS)		\
 	$(LIBS)				\
 	$(NULL)

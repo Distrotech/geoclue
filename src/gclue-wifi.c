@@ -714,12 +714,13 @@ gclue_wifi_create_query (GClueWebSource *source,
         builder = json_builder_new ();
         json_builder_begin_object (builder);
 
-        json_builder_set_member_name (builder, "wifiAccessPoints");
-        json_builder_begin_array (builder);
-
         bss_list = get_bss_list (wifi, NULL);
+        /* We send pure geoip query using empty object if bss_list is NULL. */
         if (bss_list != NULL) {
                 GList *iter;
+
+                json_builder_set_member_name (builder, "wifiAccessPoints");
+                json_builder_begin_array (builder);
 
                 for (iter = bss_list; iter != NULL; iter = iter->next) {
                         WPABSS *bss = WPA_BSS (iter->data);
@@ -740,21 +741,8 @@ gclue_wifi_create_query (GClueWebSource *source,
                         json_builder_add_int_value (builder, strength_dbm);
                         json_builder_end_object (builder);
                 }
-        } else {
-                /* Pure geoip query */
-
-                /* FIXME: Currently we need a dummy AP entry to work around:
-                 *        https://github.com/mozilla/ichnaea/issues/165
-                 */
-                json_builder_begin_object (builder);
-                json_builder_set_member_name (builder, "macAddress");
-                json_builder_add_string_value (builder, "00:00:00:00:00:00");
-
-                json_builder_set_member_name (builder, "signalStrength");
-                json_builder_add_int_value (builder, -50);
-                json_builder_end_object (builder);
+                json_builder_end_array (builder);
         }
-        json_builder_end_array (builder);
         json_builder_end_object (builder);
 
         generator = json_generator_new ();

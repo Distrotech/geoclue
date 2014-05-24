@@ -35,5 +35,20 @@
 
     <allow send_destination="org.freedesktop.NetworkManager"
            send_interface="org.freedesktop.NetworkManager.Device"/>
+
+    <!-- Also give @dbus_srv_user@ access to wpa_supplicant API -->
+    <allow receive_sender="fi.w1.wpa_supplicant1"
+           receive_type="signal"/>
+
+    <allow send_destination="fi.w1.wpa_supplicant1"
+           send_interface="org.freedesktop.DBus.Properties"
+           send_member="Get"/>
+
+    <allow send_destination="fi.w1.wpa_supplicant1"
+           send_interface="org.freedesktop.DBus.Properties"
+           send_member="GetAll"/>
+
+    <allow send_destination="fi.w1.wpa_supplicant1"
+           send_interface="org.freedesktop.DBus.Introspectable"/>
   </policy>
 </busconfig>

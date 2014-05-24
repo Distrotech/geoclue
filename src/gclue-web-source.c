@@ -257,7 +257,6 @@ gclue_web_source_start (GClueLocationSource *source)
         if (!base_class->start (source))
                 return FALSE;
 
-        gclue_web_source_refresh (GCLUE_WEB_SOURCE (source));
         return TRUE;
 }
 

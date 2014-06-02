@@ -44,18 +44,24 @@ submission-nick=geoclue
 # # Allowed access to location information?
 # allowed=true|false
 #
+# # Is application a system component?
+# system=true|false
+#
 # # List of UIDs of all users for which this application is allowed location
 # # info access, separate by ';'. Keep it empty for allowing it for all users.
 # users=
 
 [gnome-datetime-panel]
 allowed=true
+system=true
 users=
 
 [epiphany]
 allowed=true
+system=false
 users=
 
 [firefox]
 allowed=true
+system=false
 users=

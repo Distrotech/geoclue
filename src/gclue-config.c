@@ -34,6 +34,7 @@ typedef struct
 {
         char *id;
         gboolean allowed;
+        gboolean system;
         int* users;
         gsize num_users;
 } AppConfig;
@@ -123,7 +124,7 @@ load_app_configs (GClueConfig *config)
                 AppConfig *app_config;
                 int* users;
                 gsize num_users = 0, j;
-                gboolean allowed;
+                gboolean allowed, system;
                 gboolean ignore = FALSE;
                 GError *error = NULL;
 
@@ -144,6 +145,13 @@ load_app_configs (GClueConfig *config)
                 if (error != NULL)
                         goto error_out;
 
+                system = g_key_file_get_boolean (priv->key_file,
+                                                 groups[i],
+                                                 "system",
+                                                 &error);
+                if (error != NULL)
+                        goto error_out;
+
                 users = g_key_file_get_integer_list (priv->key_file,
                                                      groups[i],
                                                      "users",
@@ -155,6 +163,7 @@ load_app_configs (GClueConfig *config)
                 app_config = g_slice_new0 (AppConfig);
                 app_config->id = g_strdup (groups[i]);
                 app_config->allowed = allowed;
+                app_config->system = system;
                 app_config->users = users;
                 app_config->num_users = num_users;
 
@@ -313,6 +322,27 @@ gclue_config_is_app_allowed (GClueConfig     *config,
         }
 
         return FALSE;
+}
+
+gboolean
+gclue_config_is_system_component (GClueConfig *config,
+                                  const char  *desktop_id)
+{
+        GClueConfigPrivate *priv = config->priv;
+        GList *node;
+        AppConfig *app_config = NULL;
+
+        g_return_val_if_fail (desktop_id != NULL, FALSE);
+
+        for (node = priv->app_configs; node != NULL; node = node->next) {
+                if (strcmp (((AppConfig *) node->data)->id, desktop_id) == 0) {
+                        app_config = (AppConfig *) node->data;
+
+                        break;
+                }
+        }
+
+        return (app_config != NULL || app_config->system);
 }
 
 const char *

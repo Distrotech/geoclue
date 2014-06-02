@@ -64,6 +64,8 @@ gboolean            gclue_config_is_agent_allowed     (GClueConfig     *config,
 gboolean            gclue_config_is_app_allowed       (GClueConfig     *config,
                                                        const char      *desktop_id,
                                                        GClueClientInfo *app_info);
+gboolean            gclue_config_is_system_component  (GClueConfig     *config,
+                                                       const char      *desktop_id);
 const char *        gclue_config_get_wifi_url         (GClueConfig     *config);
 const char *        gclue_config_get_wifi_submit_url  (GClueConfig     *config);
 const char *        gclue_config_get_wifi_submit_nick (GClueConfig     *config);

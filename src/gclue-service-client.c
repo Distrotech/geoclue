@@ -409,6 +409,9 @@ gclue_service_client_finalize (GObject *object)
 
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
+        g_signal_handlers_disconnect_by_func (priv->agent_proxy,
+                                              G_CALLBACK (on_agent_props_changed),
+                                              object);
         g_clear_object (&priv->agent_proxy);
         g_clear_object (&priv->locator);
         g_clear_object (&priv->location);

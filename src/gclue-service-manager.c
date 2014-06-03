@@ -57,12 +57,15 @@ struct _GClueServiceManagerPrivate
         gint64 init_time;
 
         GClueLocator *locator;
+
+        gboolean active;
 };
 
 enum
 {
         PROP_0,
         PROP_CONNECTION,
+        PROP_ACTIVE,
         LAST_PROP
 };
 
@@ -71,7 +74,7 @@ static GParamSpec *gParamSpecs[LAST_PROP];
 static void
 sync_in_use_property (GClueServiceManager *manager)
 {
-        gboolean in_use = FALSE;
+        gboolean in_use = FALSE, active = FALSE;
         GList *clients, *l;
 
         clients = g_hash_table_get_values (manager->priv->clients);
@@ -83,6 +86,7 @@ sync_in_use_property (GClueServiceManager *manager)
                 id = gclue_client_get_desktop_id (client);
                 config = gclue_config_get_singleton ();
 
+                active |= gclue_client_get_active (client);
                 if (gclue_client_get_active (client) &&
                     !gclue_config_is_system_component (config, id)) {
                         in_use = TRUE;
@@ -92,6 +96,10 @@ sync_in_use_property (GClueServiceManager *manager)
         }
         g_list_free (clients);
 
+        if (manager->priv->active != active) {
+                manager->priv->active = active;
+                g_object_notify (G_OBJECT (manager), "active");
+        }
         if (in_use != gclue_manager_get_in_use (GCLUE_MANAGER (manager)))
                 gclue_manager_set_in_use (GCLUE_MANAGER (manager), in_use);
 }
@@ -415,6 +423,10 @@ gclue_service_manager_get_property (GObject    *object,
                 g_value_set_object (value, manager->priv->connection);
                 break;
 
+        case PROP_ACTIVE:
+                g_value_set_boolean (value, manager->priv->active);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -491,6 +503,21 @@ gclue_service_manager_class_init (GClueServiceManagerClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_CONNECTION,
                                          gParamSpecs[PROP_CONNECTION]);
+
+        /**
+         * GClueServiceManager:active:
+         *
+         * Unlike the D-Bus 'InUse' property, this doesn't differentiate
+         * between system components and apps.
+         */
+        gParamSpecs[PROP_ACTIVE] = g_param_spec_boolean ("active",
+                                                         "Active",
+                                                         "If manager is active",
+                                                         FALSE,
+                                                         G_PARAM_READABLE);
+        g_object_class_install_property (object_class,
+                                         PROP_ACTIVE,
+                                         gParamSpecs[PROP_ACTIVE]);
 }
 
 static void
@@ -545,4 +572,10 @@ gclue_service_manager_new (GDBusConnection *connection,
                                error,
                                "connection", connection,
                                NULL);
+}
+
+gboolean
+gclue_service_manager_get_active (GClueServiceManager *manager)
+{
+        return manager->priv->active;
 }

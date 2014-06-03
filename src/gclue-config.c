@@ -342,7 +342,7 @@ gclue_config_is_system_component (GClueConfig *config,
                 }
         }
 
-        return (app_config != NULL || app_config->system);
+        return (app_config != NULL && app_config->system);
 }
 
 const char *

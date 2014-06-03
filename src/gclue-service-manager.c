@@ -77,8 +77,14 @@ sync_in_use_property (GClueServiceManager *manager)
         clients = g_hash_table_get_values (manager->priv->clients);
         for (l = clients; l != NULL; l = l->next) {
                 GClueClient *client = GCLUE_CLIENT (l->data);
+                GClueConfig *config;
+                const char *id;
 
-                if (gclue_client_get_active (client)) {
+                id = gclue_client_get_desktop_id (client);
+                config = gclue_config_get_singleton ();
+
+                if (gclue_client_get_active (client) &&
+                    !gclue_config_is_system_component (config, id)) {
                         in_use = TRUE;
 
                         break;

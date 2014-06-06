@@ -92,7 +92,7 @@ libgeoclue_la_SOURCES =	 	 \
 	$(NULL)
 
 if BUILD_MODEM_SOURCE
-libgeoclue_la_SOURCES += gclue-modem-source.c gclue-modem-source.h
+libgeoclue_la_SOURCES += gclue-modem-source.c gclue-modem-source.h gclue-modem.c gclue-modem.h
 endif
 
 if BUILD_3G_SOURCE

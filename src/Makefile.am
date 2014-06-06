@@ -41,8 +41,16 @@ wpa_supplicant-interface.h: Makefile.am fi.w1.wpa_supplicant1.xml
 		--generate-c-code wpa_supplicant-interface 	\
 		$(srcdir)/fi.w1.wpa_supplicant1.xml
 
+gclue-marshal.c: gclue-marshal.list
+	$(AM_V_GEN)$(GLIB_GENMARSHAL) --prefix=gclue_marshal $(srcdir)/gclue-marshal.list --header --body > gclue-marshal.c
+
+gclue-marshal.h: gclue-marshal.list
+	$(AM_V_GEN)$(GLIB_GENMARSHAL) --prefix=gclue_marshal $(srcdir)/gclue-marshal.list --header > gclue-marshal.h
+
 BUILT_SOURCES = 		\
 	$(dbus_built_sources)	\
+	gclue-marshal.c 	\
+	gclue-marshal.h		\
 	$(NULL)
 
 noinst_LTLIBRARIES = libgeoclue.la
@@ -112,8 +120,9 @@ geoclue_LDADD = $(GEOCLUE_LIBS) 	  		    	\
 		$(builddir)/public-api/libgeoclue-public-api.la
 
 CLEANFILES = $(BUILT_SOURCES)
-EXTRA_DIST = $(interface_DATA) \
-	     fi.w1.wpa_supplicant1.xml
+EXTRA_DIST = $(interface_DATA) 	       \
+	     fi.w1.wpa_supplicant1.xml \
+	     gclue-marshal.list
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = geoclue-$(GEOCLUE_API_VERSION).pc

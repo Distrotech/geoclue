@@ -24,7 +24,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include "gclue-modem-source.h"
+#include "gclue-location-source.h"
 
 G_BEGIN_DECLS
 
@@ -48,7 +48,7 @@ typedef struct _GClue3GPrivate GClue3GPrivate;
 
 struct _GClue3G {
         /* <private> */
-        GClueModemSource parent_instance;
+        GClueLocationSource parent_instance;
         GClue3GPrivate *priv;
 };
 
@@ -59,7 +59,7 @@ struct _GClue3G {
 **/
 struct _GClue3GClass {
         /* <private> */
-        GClueModemSourceClass parent_class;
+        GClueLocationSourceClass parent_class;
 };
 
 GClue3G * gclue_3g_get_singleton (void);

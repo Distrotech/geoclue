@@ -25,6 +25,7 @@
 #include <string.h>
 #include <libxml/tree.h>
 #include "gclue-3g.h"
+#include "gclue-modem.h"
 #include "geocode-glib/geocode-location.h"
 
 #define URL "http://www.opencellid.org/cell/get?mcc=%u&mnc=%u" \
@@ -41,144 +42,93 @@
  **/
 
 struct _GClue3GPrivate {
-        MMLocation3gpp *location_3gpp;
+        GClueModem *modem;
 
         SoupSession *soup_session;
         SoupMessage *query;
         GCancellable *cancellable;
 
         gulong network_changed_id;
+        gulong threeg_notify_id;
 };
 
-static MMModemLocationSource
-gclue_3g_get_req_modem_location_caps (GClueModemSource *source,
-                                      const char      **caps_name);
-static void
-gclue_3g_modem_location_changed (GClueModemSource *source,
-                                 MMModemLocation  *modem_location);
+G_DEFINE_TYPE (GClue3G, gclue_3g, GCLUE_TYPE_LOCATION_SOURCE)
 
-G_DEFINE_TYPE (GClue3G, gclue_3g, GCLUE_TYPE_MODEM_SOURCE)
+static gboolean
+gclue_3g_start (GClueLocationSource *source);
+static gboolean
+gclue_3g_stop (GClueLocationSource *source);
 
 static void
 cancel_pending_query (GClue3G *source)
 {
         GClue3GPrivate *priv = source->priv;
 
-        if (priv->query != NULL && priv->network_changed_id == 0) {
+        if (priv->query != NULL) {
                 g_debug ("Cancelling query");
                 soup_session_cancel_message (priv->soup_session,
                                              priv->query,
                                              SOUP_STATUS_CANCELLED);
                 priv->query = NULL;
         }
+}
 
-        if (priv->network_changed_id != 0) {
-                g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                             priv->network_changed_id);
-                priv->network_changed_id = 0;
+static void
+refresh_accuracy_level (GClue3G *source)
+{
+        GClueAccuracyLevel new, existing;
+        GNetworkMonitor *monitor = g_network_monitor_get_default ();
+
+        existing = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (source));
+
+        if (gclue_modem_get_is_3g_available (source->priv->modem) &&
+            g_network_monitor_get_network_available (monitor))
+                new = GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD;
+        else
+                new = GCLUE_ACCURACY_LEVEL_NONE;
+
+        if (new != existing) {
+                g_debug ("Available accuracy level from %s: %u",
+                         G_OBJECT_TYPE_NAME (source), new);
+                g_object_set (G_OBJECT (source),
+                              "available-accuracy-level", new,
+                              NULL);
         }
 }
 
 static void
-gclue_3g_finalize (GObject *g3g)
+on_3g_enabled (GObject      *source_object,
+               GAsyncResult *result,
+               gpointer      user_data)
 {
-        GClue3G *source = (GClue3G *) g3g;
+        GClue3G *source = GCLUE_3G (user_data);
+        GError *error = NULL;
+
+        if (!gclue_modem_enable_3g_finish (source->priv->modem,
+                                           result,
+                                           &error)) {
+                g_warning ("Failed to enable 3GPP: %s", error->message);
+                g_error_free (error);
+        }
+}
+
+static void
+on_is_3g_available_notify (GObject    *gobject,
+                           GParamSpec *pspec,
+                           gpointer    user_data)
+{
+        GClue3G *source = GCLUE_3G (user_data);
         GClue3GPrivate *priv = source->priv;
 
-        G_OBJECT_CLASS (gclue_3g_parent_class)->finalize (g3g);
+        refresh_accuracy_level (source);
 
-        cancel_pending_query (source);
-
-        g_clear_object (&priv->soup_session);
-        g_cancellable_cancel (priv->cancellable);
-        g_clear_object (&priv->cancellable);
-        g_clear_object (&priv->location_3gpp);
-}
-
-static void
-gclue_3g_class_init (GClue3GClass *klass)
-{
-        GClueModemSourceClass *source_class = GCLUE_MODEM_SOURCE_CLASS (klass);
-        GObjectClass *g3g_class = G_OBJECT_CLASS (klass);
-
-        source_class->get_req_modem_location_caps =
-                gclue_3g_get_req_modem_location_caps;
-        source_class->modem_location_changed = gclue_3g_modem_location_changed;
-        g3g_class->finalize = gclue_3g_finalize;
-
-        g_type_class_add_private (klass, sizeof (GClue3GPrivate));
-}
-
-static void
-gclue_3g_init (GClue3G *source)
-{
-        source->priv = G_TYPE_INSTANCE_GET_PRIVATE ((source), GCLUE_TYPE_3G, GClue3GPrivate);
-
-        source->priv->cancellable = g_cancellable_new ();
-
-        source->priv->soup_session = soup_session_new_with_options
-                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
-                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
-                         NULL);
-}
-
-static void
-on_3g_destroyed (gpointer data,
-                 GObject *where_the_object_was)
-{
-        GClue3G **source = (GClue3G **) data;
-
-        *source = NULL;
-}
-
-/**
- * gclue_3g_new:
- *
- * Get the #GClue3G singleton.
- *
- * Returns: (transfer full): a new ref to #GClue3G. Use g_object_unref()
- * when done.
- **/
-GClue3G *
-gclue_3g_get_singleton (void)
-{
-        static GClue3G *source = NULL;
-
-        if (source == NULL) {
-                source = g_object_new (GCLUE_TYPE_3G, NULL);
-                g_object_weak_ref (G_OBJECT (source),
-                                   on_3g_destroyed,
-                                   &source);
-        } else
-                g_object_ref (source);
-
-        return source;
-}
-
-static SoupMessage *
-create_query (GClue3G *source)
-{
-        GClue3GPrivate *priv = source->priv;
-        SoupMessage *ret = NULL;
-        char *uri;
-        guint mcc, mnc;
-        gulong lac, cell_id;
-
-        mcc = mm_location_3gpp_get_mobile_country_code (priv->location_3gpp);
-        mnc = mm_location_3gpp_get_mobile_network_code (priv->location_3gpp);
-        lac = mm_location_3gpp_get_location_area_code (priv->location_3gpp);
-        cell_id = mm_location_3gpp_get_cell_id (priv->location_3gpp);
-        uri = g_strdup_printf (URL,
-                               mcc,
-                               mnc,
-                               lac,
-                               cell_id);
-        ret = soup_message_new ("GET", uri);
-        g_debug ("Will send request '%s'", uri);
-
-        g_free (uri);
-
-        return ret;
+        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)) &&
+            gclue_modem_get_is_3g_available (priv->modem))
+                gclue_modem_enable_3g (priv->modem,
+                                       priv->cancellable,
+                                       on_3g_enabled,
+                                       source);
 }
 
 static GeocodeLocation *
@@ -260,7 +210,8 @@ query_callback (SoupSession *session,
 		return;
 	}
 
-        contents = g_strndup (query->response_body->data, query->response_body->length);
+        contents = g_strndup (query->response_body->data,
+                              query->response_body->length);
         uri = soup_message_get_uri (query);
         g_debug ("Got following response from '%s':\n%s",
                  soup_uri_to_string (uri, FALSE),
@@ -279,17 +230,163 @@ on_network_changed (GNetworkMonitor *monitor,
                     gboolean         available,
                     gpointer         user_data)
 {
-        GClue3GPrivate *priv = GCLUE_3G (user_data)->priv;
+        GClue3G *source = GCLUE_3G (user_data);
+        GClue3GPrivate *priv = source->priv;
 
-        if (!available)
-                return;
+        refresh_accuracy_level (source);
 
-        g_return_if_fail (priv->query != NULL);
-        g_return_if_fail (priv->network_changed_id != 0);
+        if (available && priv->query != NULL)
+                soup_session_queue_message (priv->soup_session,
+                                            priv->query,
+                                            query_callback,
+                                            user_data);
+}
+
+static void
+gclue_3g_finalize (GObject *g3g)
+{
+        GClue3G *source = (GClue3G *) g3g;
+        GClue3GPrivate *priv = source->priv;
+
+        G_OBJECT_CLASS (gclue_3g_parent_class)->finalize (g3g);
+
+        g_cancellable_cancel (priv->cancellable);
+        cancel_pending_query (source);
 
         g_signal_handler_disconnect (g_network_monitor_get_default (),
                                      priv->network_changed_id);
         priv->network_changed_id = 0;
+
+        g_signal_handler_disconnect (priv->modem,
+                                     priv->threeg_notify_id);
+        priv->threeg_notify_id = 0;
+
+        g_clear_object (&priv->modem);
+        g_clear_object (&priv->soup_session);
+        g_clear_object (&priv->cancellable);
+}
+
+static void
+gclue_3g_class_init (GClue3GClass *klass)
+{
+        GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
+        GObjectClass *g3g_class = G_OBJECT_CLASS (klass);
+
+        g3g_class->finalize = gclue_3g_finalize;
+
+        source_class->start = gclue_3g_start;
+        source_class->stop = gclue_3g_stop;
+
+        g_type_class_add_private (klass, sizeof (GClue3GPrivate));
+}
+
+static void
+gclue_3g_init (GClue3G *source)
+{
+        GClue3GPrivate *priv;
+        GNetworkMonitor *monitor;
+
+        source->priv = G_TYPE_INSTANCE_GET_PRIVATE ((source), GCLUE_TYPE_3G, GClue3GPrivate);
+        priv = source->priv;
+
+        priv->cancellable = g_cancellable_new ();
+
+        priv->soup_session = soup_session_new_with_options
+                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
+                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
+                         NULL);
+        priv->modem = gclue_modem_get_singleton ();
+        priv->threeg_notify_id =
+                        g_signal_connect (priv->modem,
+                                          "notify::is-3g-available",
+                                          G_CALLBACK (on_is_3g_available_notify),
+                                          source);
+        monitor = g_network_monitor_get_default ();
+        priv->network_changed_id =
+                        g_signal_connect (monitor,
+                                          "network-changed",
+                                          G_CALLBACK (on_network_changed),
+                                          source);
+}
+
+static void
+on_3g_destroyed (gpointer data,
+                 GObject *where_the_object_was)
+{
+        GClue3G **source = (GClue3G **) data;
+
+        *source = NULL;
+}
+
+/**
+ * gclue_3g_new:
+ *
+ * Get the #GClue3G singleton.
+ *
+ * Returns: (transfer full): a new ref to #GClue3G. Use g_object_unref()
+ * when done.
+ **/
+GClue3G *
+gclue_3g_get_singleton (void)
+{
+        static GClue3G *source = NULL;
+
+        if (source == NULL) {
+                source = g_object_new (GCLUE_TYPE_3G, NULL);
+                g_object_weak_ref (G_OBJECT (source),
+                                   on_3g_destroyed,
+                                   &source);
+        } else
+                g_object_ref (source);
+
+        return source;
+}
+
+static SoupMessage *
+create_query (GClue3G *source,
+              guint    mcc,
+              guint    mnc,
+              gulong   lac,
+              gulong   cell_id)
+{
+        SoupMessage *ret = NULL;
+        char *uri;
+
+        uri = g_strdup_printf (URL,
+                               mcc,
+                               mnc,
+                               lac,
+                               cell_id);
+        ret = soup_message_new ("GET", uri);
+        g_debug ("Will send request '%s'", uri);
+
+        g_free (uri);
+
+        return ret;
+}
+
+static void
+on_fix_3g (GClueModem *modem,
+           guint       mcc,
+           guint       mnc,
+           gulong      lac,
+           gulong      cell_id,
+           gpointer    user_data)
+{
+        GClue3G *source = GCLUE_3G (user_data);
+        GClue3GPrivate *priv = source->priv;
+        GNetworkMonitor *monitor;
+
+        cancel_pending_query (source);
+
+        priv->query = create_query (source, mcc, mnc, lac, cell_id);
+
+        monitor = g_network_monitor_get_default ();
+        if (!g_network_monitor_get_network_available (monitor)) {
+                g_debug ("No network, will send request later");
+
+                return;
+        }
 
         soup_session_queue_message (priv->soup_session,
                                     priv->query,
@@ -298,107 +395,56 @@ on_network_changed (GNetworkMonitor *monitor,
 }
 
 static gboolean
-is_location_3gpp_same (GClue3G        *source,
-                       MMLocation3gpp *location_3gpp)
+gclue_3g_start (GClueLocationSource *source)
 {
-        GClue3GPrivate *priv = source->priv;
-        guint mcc, mnc, new_mcc, new_mnc;
-        gulong lac, cell_id, new_lac, new_cell_id;
+        GClueLocationSourceClass *base_class;
+        GClue3GPrivate *priv;
 
-        if (priv->location_3gpp == NULL)
+        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
+        priv = GCLUE_3G (source)->priv;
+
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_3g_parent_class);
+        if (!base_class->start (source))
                 return FALSE;
 
-        mcc = mm_location_3gpp_get_mobile_country_code (priv->location_3gpp);
-        mnc = mm_location_3gpp_get_mobile_network_code (priv->location_3gpp);
-        lac = mm_location_3gpp_get_location_area_code (priv->location_3gpp);
-        cell_id = mm_location_3gpp_get_cell_id (priv->location_3gpp);
+        g_signal_connect (priv->modem,
+                          "fix-3g",
+                          G_CALLBACK (on_fix_3g),
+                          source);
 
-        new_mcc = mm_location_3gpp_get_mobile_country_code (location_3gpp);
-        new_mnc = mm_location_3gpp_get_mobile_network_code (location_3gpp);
-        new_lac = mm_location_3gpp_get_location_area_code (location_3gpp);
-        new_cell_id = mm_location_3gpp_get_cell_id (location_3gpp);
-
-        return (mcc == new_mcc &&
-                mnc == new_mnc &&
-                lac == new_lac &&
-                cell_id == new_cell_id);
+        if (gclue_modem_get_is_3g_available (priv->modem))
+                gclue_modem_enable_3g (priv->modem,
+                                       priv->cancellable,
+                                       on_3g_enabled,
+                                       source);
+        return TRUE;
 }
 
-static void
-on_get_3gpp_ready (GObject      *source_object,
-                   GAsyncResult *res,
-                   gpointer      user_data)
+static gboolean
+gclue_3g_stop (GClueLocationSource *source)
 {
-        GClue3G *source = GCLUE_3G (user_data);
-        GClue3GPrivate *priv = source->priv;
-        MMModemLocation *modem_location = MM_MODEM_LOCATION (source_object);
-        MMLocation3gpp *location_3gpp;
-        GNetworkMonitor *monitor;
+        GClue3GPrivate *priv = GCLUE_3G (source)->priv;
+        GClueLocationSourceClass *base_class;
         GError *error = NULL;
 
-        location_3gpp = mm_modem_location_get_3gpp_finish (modem_location,
-                                                           res,
-                                                           &error);
-        if (error != NULL) {
-                g_warning ("Failed to get location from 3GPP: %s",
-                           error->message);
-                g_error_free (error);
-                return;
-        }
+        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
 
-        if (!gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)))
-                return;
+        base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_3g_parent_class);
+        if (!base_class->stop (source))
+                return FALSE;
 
-        if (location_3gpp == NULL) {
-                g_debug ("No 3GPP");
-                return;
-        }
+        g_signal_handlers_disconnect_by_func (G_OBJECT (priv->modem),
+                                              G_CALLBACK (on_fix_3g),
+                                              source);
 
-        if (is_location_3gpp_same (source, location_3gpp)) {
-                g_debug ("New 3GPP location is same as last one");
-                return;
-        }
-        g_clear_object (&priv->location_3gpp);
-        priv->location_3gpp = location_3gpp;
+        if (gclue_modem_get_is_3g_available (priv->modem))
+                if (!gclue_modem_disable_3g (priv->modem,
+                                             priv->cancellable,
+                                             &error)) {
+                        g_warning ("Failed to disable 3GPP: %s",
+                                   error->message);
+                        g_error_free (error);
+                }
 
-        cancel_pending_query (source);
-
-        priv->query = create_query (source);
-
-        monitor = g_network_monitor_get_default ();
-        if (!g_network_monitor_get_network_available (monitor)) {
-                g_debug ("No network, will send request later");
-                priv->network_changed_id =
-                        g_signal_connect (monitor,
-                                          "network-changed",
-                                          G_CALLBACK (on_network_changed),
-                                          user_data);
-                return;
-        }
-
-        soup_session_queue_message (priv->soup_session,
-                                    priv->query,
-                                    query_callback,
-                                    user_data);
-}
-
-static void
-gclue_3g_modem_location_changed (GClueModemSource *source,
-                                 MMModemLocation  *modem_location)
-{
-        mm_modem_location_get_3gpp (modem_location,
-                                    GCLUE_3G (source)->priv->cancellable,
-                                    on_get_3gpp_ready,
-                                    source);
-}
-
-static MMModemLocationSource
-gclue_3g_get_req_modem_location_caps (GClueModemSource *source,
-                                      const char      **caps_name)
-
-{
-        if (caps_name != NULL)
-                *caps_name = "3GPP";
-
-        return MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI;
+        return TRUE;
 }

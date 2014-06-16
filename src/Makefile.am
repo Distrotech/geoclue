@@ -89,6 +89,8 @@ libgeoclue_la_SOURCES =	 	 \
 	gclue-web-source.h	 \
 	gclue-wifi.h 		 \
 	gclue-wifi.c		 \
+	gclue-mozilla.h		 \
+	gclue-mozilla.c		 \
 	$(NULL)
 
 if BUILD_MODEM_SOURCE

@@ -44,58 +44,32 @@
 struct _GClue3GPrivate {
         GClueModem *modem;
 
-        SoupSession *soup_session;
-        SoupMessage *query;
         GCancellable *cancellable;
 
-        gulong network_changed_id;
         gulong threeg_notify_id;
+
+        guint   mcc;
+        guint   mnc;
+        gulong  lac;
+        gulong  cell_id;
 };
 
-G_DEFINE_TYPE (GClue3G, gclue_3g, GCLUE_TYPE_LOCATION_SOURCE)
+G_DEFINE_TYPE (GClue3G, gclue_3g, GCLUE_TYPE_WEB_SOURCE)
 
 static gboolean
 gclue_3g_start (GClueLocationSource *source);
 static gboolean
 gclue_3g_stop (GClueLocationSource *source);
-
-static void
-cancel_pending_query (GClue3G *source)
-{
-        GClue3GPrivate *priv = source->priv;
-
-        if (priv->query != NULL) {
-                g_debug ("Cancelling query");
-                soup_session_cancel_message (priv->soup_session,
-                                             priv->query,
-                                             SOUP_STATUS_CANCELLED);
-                priv->query = NULL;
-        }
-}
-
-static void
-refresh_accuracy_level (GClue3G *source)
-{
-        GClueAccuracyLevel new, existing;
-        GNetworkMonitor *monitor = g_network_monitor_get_default ();
-
-        existing = gclue_location_source_get_available_accuracy_level
-                        (GCLUE_LOCATION_SOURCE (source));
-
-        if (gclue_modem_get_is_3g_available (source->priv->modem) &&
-            g_network_monitor_get_network_available (monitor))
-                new = GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD;
-        else
-                new = GCLUE_ACCURACY_LEVEL_NONE;
-
-        if (new != existing) {
-                g_debug ("Available accuracy level from %s: %u",
-                         G_OBJECT_TYPE_NAME (source), new);
-                g_object_set (G_OBJECT (source),
-                              "available-accuracy-level", new,
-                              NULL);
-        }
-}
+static SoupMessage *
+gclue_3g_create_query (GClueWebSource *web,
+                       GError        **error);
+static GClueAccuracyLevel
+gclue_3g_get_available_accuracy_level (GClueWebSource *web,
+                                       gboolean available);
+static GeocodeLocation *
+gclue_3g_parse_response (GClueWebSource *web,
+                         const char     *xml,
+                         GError        **error);
 
 static void
 on_3g_enabled (GObject      *source_object,
@@ -121,7 +95,7 @@ on_is_3g_available_notify (GObject    *gobject,
         GClue3G *source = GCLUE_3G (user_data);
         GClue3GPrivate *priv = source->priv;
 
-        refresh_accuracy_level (source);
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (source));
 
         if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)) &&
             gclue_modem_get_is_3g_available (priv->modem))
@@ -132,8 +106,9 @@ on_is_3g_available_notify (GObject    *gobject,
 }
 
 static GeocodeLocation *
-parse_response (GClue3G    *source,
-                const char *xml)
+gclue_3g_parse_response (GClueWebSource *web,
+                         const char     *xml,
+                         GError        **error)
 {
         xmlDocPtr doc;
         xmlNodePtr node;
@@ -143,12 +118,18 @@ parse_response (GClue3G    *source,
 
         doc = xmlParseDoc ((const xmlChar *) xml);
         if (doc == NULL) {
-                g_warning ("Failed to parse following response:\n%s",  xml);
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_INVALID_ARGUMENT,
+                                     "Bad XML");
                 return NULL;
         }
         node = xmlDocGetRootElement (doc);
         if (node == NULL || strcmp ((const char *) node->name, "rsp") != 0) {
-                g_warning ("Expected 'rsp' root node in response:\n%s",  xml);
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_INVALID_ARGUMENT,
+                                     "Expected 'rsp' root node");
                 return NULL;
         }
 
@@ -158,15 +139,20 @@ parse_response (GClue3G    *source,
                         break;
         }
         if (node == NULL) {
-                g_warning ("Failed to find node 'cell' in response:\n%s",  xml);
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_INVALID_ARGUMENT,
+                                     "Failed to find node 'cell'");
                 return NULL;
         }
 
         /* Get latitude and longitude from 'cell' node */
         prop = xmlGetProp (node, (xmlChar *) "lat");
         if (prop == NULL) {
-                g_warning ("No 'lat' property node on 'cell' in response:\n%s",
-                           xml);
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_INVALID_ARGUMENT,
+                                     "No 'lat' property on node 'cell'");
                 return NULL;
         }
         latitude = g_ascii_strtod ((const char *) prop, NULL);
@@ -174,8 +160,10 @@ parse_response (GClue3G    *source,
 
         prop = xmlGetProp (node, (xmlChar *) "lon");
         if (prop == NULL) {
-                g_warning ("No 'lon' property node on 'cell' in response:\n%s",
-                           xml);
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_INVALID_ARGUMENT,
+                                     "No 'lon' property on node 'cell'");
                 return NULL;
         }
         longitude = g_ascii_strtod ((const char *) prop, NULL);
@@ -190,59 +178,6 @@ parse_response (GClue3G    *source,
 }
 
 static void
-query_callback (SoupSession *session,
-                SoupMessage *query,
-                gpointer     user_data)
-{
-        GClue3G *source;
-        char *contents;
-        GeocodeLocation *location;
-        SoupURI *uri;
-
-        if (query->status_code == SOUP_STATUS_CANCELLED)
-                return;
-
-        source = GCLUE_3G (user_data);
-        source->priv->query = NULL;
-
-        if (query->status_code != SOUP_STATUS_OK) {
-                g_warning ("Failed to query location: %s", query->reason_phrase);
-		return;
-	}
-
-        contents = g_strndup (query->response_body->data,
-                              query->response_body->length);
-        uri = soup_message_get_uri (query);
-        g_debug ("Got following response from '%s':\n%s",
-                 soup_uri_to_string (uri, FALSE),
-                 contents);
-        location = parse_response (source, contents);
-        g_free (contents);
-        if (location == NULL)
-                return;
-
-        gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (source),
-                                            location);
-}
-
-static void
-on_network_changed (GNetworkMonitor *monitor,
-                    gboolean         available,
-                    gpointer         user_data)
-{
-        GClue3G *source = GCLUE_3G (user_data);
-        GClue3GPrivate *priv = source->priv;
-
-        refresh_accuracy_level (source);
-
-        if (available && priv->query != NULL)
-                soup_session_queue_message (priv->soup_session,
-                                            priv->query,
-                                            query_callback,
-                                            user_data);
-}
-
-static void
 gclue_3g_finalize (GObject *g3g)
 {
         GClue3G *source = (GClue3G *) g3g;
@@ -251,24 +186,19 @@ gclue_3g_finalize (GObject *g3g)
         G_OBJECT_CLASS (gclue_3g_parent_class)->finalize (g3g);
 
         g_cancellable_cancel (priv->cancellable);
-        cancel_pending_query (source);
-
-        g_signal_handler_disconnect (g_network_monitor_get_default (),
-                                     priv->network_changed_id);
-        priv->network_changed_id = 0;
 
         g_signal_handler_disconnect (priv->modem,
                                      priv->threeg_notify_id);
         priv->threeg_notify_id = 0;
 
         g_clear_object (&priv->modem);
-        g_clear_object (&priv->soup_session);
         g_clear_object (&priv->cancellable);
 }
 
 static void
 gclue_3g_class_init (GClue3GClass *klass)
 {
+        GClueWebSourceClass *web_class = GCLUE_WEB_SOURCE_CLASS (klass);
         GClueLocationSourceClass *source_class = GCLUE_LOCATION_SOURCE_CLASS (klass);
         GObjectClass *g3g_class = G_OBJECT_CLASS (klass);
 
@@ -276,6 +206,10 @@ gclue_3g_class_init (GClue3GClass *klass)
 
         source_class->start = gclue_3g_start;
         source_class->stop = gclue_3g_stop;
+        web_class->create_query = gclue_3g_create_query;
+        web_class->parse_response = gclue_3g_parse_response;
+        web_class->get_available_accuracy_level =
+                gclue_3g_get_available_accuracy_level;
 
         g_type_class_add_private (klass, sizeof (GClue3GPrivate));
 }
@@ -284,28 +218,17 @@ static void
 gclue_3g_init (GClue3G *source)
 {
         GClue3GPrivate *priv;
-        GNetworkMonitor *monitor;
 
         source->priv = G_TYPE_INSTANCE_GET_PRIVATE ((source), GCLUE_TYPE_3G, GClue3GPrivate);
         priv = source->priv;
 
         priv->cancellable = g_cancellable_new ();
 
-        priv->soup_session = soup_session_new_with_options
-                        (SOUP_SESSION_REMOVE_FEATURE_BY_TYPE,
-                         SOUP_TYPE_PROXY_RESOLVER_DEFAULT,
-                         NULL);
         priv->modem = gclue_modem_get_singleton ();
         priv->threeg_notify_id =
                         g_signal_connect (priv->modem,
                                           "notify::is-3g-available",
                                           G_CALLBACK (on_is_3g_available_notify),
-                                          source);
-        monitor = g_network_monitor_get_default ();
-        priv->network_changed_id =
-                        g_signal_connect (monitor,
-                                          "network-changed",
-                                          G_CALLBACK (on_network_changed),
                                           source);
 }
 
@@ -343,26 +266,43 @@ gclue_3g_get_singleton (void)
 }
 
 static SoupMessage *
-create_query (GClue3G *source,
-              guint    mcc,
-              guint    mnc,
-              gulong   lac,
-              gulong   cell_id)
+gclue_3g_create_query (GClueWebSource *web,
+                       GError        **error)
 {
+        GClue3GPrivate *priv = GCLUE_3G (web)->priv;
         SoupMessage *ret = NULL;
         char *uri;
 
+        if (priv->mcc == 0) {
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_NOT_INITIALIZED,
+                                     "3GPP cell tower info unavailable");
+                return NULL; /* Not initialized yet */
+        }
+
         uri = g_strdup_printf (URL,
-                               mcc,
-                               mnc,
-                               lac,
-                               cell_id);
+                               priv->mcc,
+                               priv->mnc,
+                               priv->lac,
+                               priv->cell_id);
         ret = soup_message_new ("GET", uri);
         g_debug ("Will send request '%s'", uri);
 
         g_free (uri);
 
         return ret;
+}
+
+static GClueAccuracyLevel
+gclue_3g_get_available_accuracy_level (GClueWebSource *web,
+                                       gboolean        network_available)
+{
+        if (gclue_modem_get_is_3g_available (GCLUE_3G (web)->priv->modem) &&
+            network_available)
+                return GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD;
+        else
+                return GCLUE_ACCURACY_LEVEL_NONE;
 }
 
 static void
@@ -373,25 +313,14 @@ on_fix_3g (GClueModem *modem,
            gulong      cell_id,
            gpointer    user_data)
 {
-        GClue3G *source = GCLUE_3G (user_data);
-        GClue3GPrivate *priv = source->priv;
-        GNetworkMonitor *monitor;
+        GClue3GPrivate *priv = GCLUE_3G (user_data)->priv;
 
-        cancel_pending_query (source);
+        priv->mcc = mcc;
+        priv->mnc = mnc;
+        priv->lac = lac;
+        priv->cell_id = cell_id;
 
-        priv->query = create_query (source, mcc, mnc, lac, cell_id);
-
-        monitor = g_network_monitor_get_default ();
-        if (!g_network_monitor_get_network_available (monitor)) {
-                g_debug ("No network, will send request later");
-
-                return;
-        }
-
-        soup_session_queue_message (priv->soup_session,
-                                    priv->query,
-                                    query_callback,
-                                    user_data);
+        gclue_web_source_refresh (GCLUE_WEB_SOURCE (user_data));
 }
 
 static gboolean
@@ -406,6 +335,11 @@ gclue_3g_start (GClueLocationSource *source)
         base_class = GCLUE_LOCATION_SOURCE_CLASS (gclue_3g_parent_class);
         if (!base_class->start (source))
                 return FALSE;
+
+        priv->mcc = 0;
+        priv->mnc = 0;
+        priv->lac = 0;
+        priv->cell_id = 0;
 
         g_signal_connect (priv->modem,
                           "fix-3g",

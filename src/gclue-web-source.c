@@ -88,7 +88,9 @@ query_callback (SoupSession *session,
                                                                      &error);
         g_free (contents);
         if (error != NULL) {
-                g_warning ("Failed to query location: %s", error->message);
+                g_warning ("Failed to parse following response: %s\n%s",
+                           error->message,
+                           contents);
                 return;
         }
 

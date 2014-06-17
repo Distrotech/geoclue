@@ -664,6 +664,7 @@ gclue_modem_disable_3g (GClueModem   *modem,
         g_return_val_if_fail (GCLUE_IS_MODEM (modem), FALSE);
         g_return_val_if_fail (gclue_modem_get_is_3g_available (modem), FALSE);
 
+        g_clear_object (&modem->priv->location_3gpp);
         g_debug ("Clearing 3GPP location caps from modem");
         return clear_caps (modem,
                            MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI,

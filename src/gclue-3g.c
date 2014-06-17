@@ -55,6 +55,10 @@ gclue_3g_stop (GClueLocationSource *source);
 static SoupMessage *
 gclue_3g_create_query (GClueWebSource *web,
                        GError        **error);
+static SoupMessage *
+gclue_3g_create_submit_query (GClueWebSource  *web,
+                              GeocodeLocation *location,
+                              GError         **error);
 static GClueAccuracyLevel
 gclue_3g_get_available_accuracy_level (GClueWebSource *web,
                                        gboolean available);
@@ -135,6 +139,7 @@ gclue_3g_class_init (GClue3GClass *klass)
         source_class->start = gclue_3g_start;
         source_class->stop = gclue_3g_stop;
         web_class->create_query = gclue_3g_create_query;
+        web_class->create_submit_query = gclue_3g_create_submit_query;
         web_class->parse_response = gclue_3g_parse_response;
         web_class->get_available_accuracy_level =
                 gclue_3g_get_available_accuracy_level;
@@ -208,6 +213,27 @@ gclue_3g_create_query (GClueWebSource *web,
         }
 
         return gclue_mozilla_create_query (NULL, priv->tower, error);
+}
+
+static SoupMessage *
+gclue_3g_create_submit_query (GClueWebSource  *web,
+                              GeocodeLocation *location,
+                              GError         **error)
+{
+        GClue3GPrivate *priv = GCLUE_3G (web)->priv;
+
+        if (priv->tower == NULL) {
+                g_set_error_literal (error,
+                                     G_IO_ERROR,
+                                     G_IO_ERROR_NOT_INITIALIZED,
+                                     "3GPP cell tower info unavailable");
+                return NULL; /* Not initialized yet */
+        }
+
+        return gclue_mozilla_create_submit_query (location,
+                                                  NULL,
+                                                  priv->tower,
+                                                  error);
 }
 
 static GClueAccuracyLevel

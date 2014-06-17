@@ -69,6 +69,7 @@ AM_CPPFLAGS = $(GEOCLUE_CFLAGS) 		     	  \
 
 libgeoclue_la_SOURCES =	 	 \
 	$(BUILT_SOURCES) 	 \
+	gclue-3g-tower.h 	 \
 	gclue-client-info.h 	 \
 	gclue-client-info.c 	 \
 	gclue-config.h 	 	 \

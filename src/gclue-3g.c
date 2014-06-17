@@ -30,6 +30,7 @@
 
 #define URL "http://www.opencellid.org/cell/get?mcc=%u&mnc=%u" \
             "&lac=%lu&cellid=%lu&key=4f2d9207-1339-4718-a412-9683f1461de6"
+#include "gclue-3g-tower.h"
 
 /**
  * SECTION:gclue-3g
@@ -48,10 +49,7 @@ struct _GClue3GPrivate {
 
         gulong threeg_notify_id;
 
-        guint   mcc;
-        guint   mnc;
-        gulong  lac;
-        gulong  cell_id;
+        GClue3GTower *tower;
 };
 
 G_DEFINE_TYPE (GClue3G, gclue_3g, GCLUE_TYPE_WEB_SOURCE)
@@ -273,7 +271,7 @@ gclue_3g_create_query (GClueWebSource *web,
         SoupMessage *ret = NULL;
         char *uri;
 
-        if (priv->mcc == 0) {
+        if (priv->tower == NULL) {
                 g_set_error_literal (error,
                                      G_IO_ERROR,
                                      G_IO_ERROR_NOT_INITIALIZED,
@@ -282,10 +280,10 @@ gclue_3g_create_query (GClueWebSource *web,
         }
 
         uri = g_strdup_printf (URL,
-                               priv->mcc,
-                               priv->mnc,
-                               priv->lac,
-                               priv->cell_id);
+                               priv->tower->mcc,
+                               priv->tower->mnc,
+                               priv->tower->lac,
+                               priv->tower->cell_id);
         ret = soup_message_new ("GET", uri);
         g_debug ("Will send request '%s'", uri);
 
@@ -315,10 +313,12 @@ on_fix_3g (GClueModem *modem,
 {
         GClue3GPrivate *priv = GCLUE_3G (user_data)->priv;
 
-        priv->mcc = mcc;
-        priv->mnc = mnc;
-        priv->lac = lac;
-        priv->cell_id = cell_id;
+        if (priv->tower == NULL)
+                priv->tower = g_slice_new0 (GClue3GTower);
+        priv->tower->mcc = mcc;
+        priv->tower->mnc = mnc;
+        priv->tower->lac = lac;
+        priv->tower->cell_id = cell_id;
 
         gclue_web_source_refresh (GCLUE_WEB_SOURCE (user_data));
 }
@@ -336,10 +336,10 @@ gclue_3g_start (GClueLocationSource *source)
         if (!base_class->start (source))
                 return FALSE;
 
-        priv->mcc = 0;
-        priv->mnc = 0;
-        priv->lac = 0;
-        priv->cell_id = 0;
+        if (priv->tower != NULL) {
+                g_slice_free (GClue3GTower, priv->tower);
+                priv->tower = NULL;
+        }
 
         g_signal_connect (priv->modem,
                           "fix-3g",

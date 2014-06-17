@@ -267,6 +267,7 @@ get_submit_config (const char **nick)
 SoupMessage *
 gclue_mozilla_create_submit_query (GeocodeLocation *location,
                                    GList           *bss_list, /* As in Access Points */
+                                   GClue3GTower    *tower,
                                    GError         **error)
 {
         SoupMessage *ret = NULL;
@@ -319,35 +320,63 @@ gclue_mozilla_create_submit_query (GeocodeLocation *location,
         json_builder_add_string_value (builder, timestamp);
         g_free (timestamp);
 
-        json_builder_set_member_name (builder, "wifi");
-        json_builder_begin_array (builder);
+        json_builder_set_member_name (builder, "radioType");
+        json_builder_add_string_value (builder, "gsm");
 
-        for (iter = bss_list; iter != NULL; iter = iter->next) {
-                WPABSS *bss = WPA_BSS (iter->data);
-                char *mac;
-                gint16 strength_dbm;
-                guint16 frequency;
+        if (bss_list != NULL) {
+                json_builder_set_member_name (builder, "wifi");
+                json_builder_begin_array (builder);
 
-                if (gclue_mozilla_should_ignore_bss (bss))
-                        continue;
+                for (iter = bss_list; iter != NULL; iter = iter->next) {
+                        WPABSS *bss = WPA_BSS (iter->data);
+                        char *mac;
+                        gint16 strength_dbm;
+                        guint16 frequency;
 
-                json_builder_begin_object (builder);
-                json_builder_set_member_name (builder, "key");
-                mac = get_bssid_from_bss (bss);
-                json_builder_add_string_value (builder, mac);
-                g_free (mac);
+                        if (gclue_mozilla_should_ignore_bss (bss))
+                                continue;
 
-                json_builder_set_member_name (builder, "signal");
-                strength_dbm = wpa_bss_get_signal (bss);
-                json_builder_add_int_value (builder, strength_dbm);
+                        json_builder_begin_object (builder);
+                        json_builder_set_member_name (builder, "key");
+                        mac = get_bssid_from_bss (bss);
+                        json_builder_add_string_value (builder, mac);
+                        g_free (mac);
 
-                json_builder_set_member_name (builder, "frequency");
-                frequency = wpa_bss_get_frequency (bss);
-                json_builder_add_int_value (builder, frequency);
-                json_builder_end_object (builder);
+                        json_builder_set_member_name (builder, "signal");
+                        strength_dbm = wpa_bss_get_signal (bss);
+                        json_builder_add_int_value (builder, strength_dbm);
+
+                        json_builder_set_member_name (builder, "frequency");
+                        frequency = wpa_bss_get_frequency (bss);
+                        json_builder_add_int_value (builder, frequency);
+                        json_builder_end_object (builder);
+                }
+
+                json_builder_end_array (builder); /* wifi */
         }
 
-        json_builder_end_array (builder); /* wifi */
+        if (tower != NULL) {
+                json_builder_set_member_name (builder, "cell");
+                json_builder_begin_array (builder);
+
+                json_builder_begin_object (builder);
+
+                json_builder_set_member_name (builder, "radio");
+                json_builder_add_string_value (builder, "gsm");
+                json_builder_set_member_name (builder, "cid");
+                json_builder_add_int_value (builder, tower->cell_id);
+                json_builder_set_member_name (builder, "mcc");
+                json_builder_add_int_value (builder, tower->mcc);
+                json_builder_set_member_name (builder, "mnc");
+                json_builder_add_int_value (builder, tower->mnc);
+                json_builder_set_member_name (builder, "lac");
+                json_builder_add_int_value (builder, tower->lac);
+
+                json_builder_end_object (builder);
+
+                json_builder_end_array (builder); /* cell */
+        }
+
         json_builder_end_object (builder);
         json_builder_end_array (builder); /* items */
         json_builder_end_object (builder);

@@ -40,6 +40,7 @@ gclue_mozilla_parse_response (const char *json,
 SoupMessage *
 gclue_mozilla_create_submit_query (GeocodeLocation *location,
                                    GList           *bss_list, /* As in Access Points */
+                                   GClue3GTower    *tower,
                                    GError         **error);
 gboolean
 gclue_mozilla_should_ignore_bss (WPABSS *bss);

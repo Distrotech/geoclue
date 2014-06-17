@@ -693,5 +693,6 @@ gclue_wifi_create_submit_query (GClueWebSource  *source,
 
         return gclue_mozilla_create_submit_query (location,
                                                   bss_list,
+                                                  NULL,
                                                   error);
 }

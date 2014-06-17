@@ -23,23 +23,17 @@
 #include <glib.h>
 #include <libsoup/soup.h>
 #include <string.h>
-#include <libxml/tree.h>
 #include "gclue-3g.h"
 #include "gclue-modem.h"
 #include "geocode-glib/geocode-location.h"
-
-#define URL "http://www.opencellid.org/cell/get?mcc=%u&mnc=%u" \
-            "&lac=%lu&cellid=%lu&key=4f2d9207-1339-4718-a412-9683f1461de6"
-#include "gclue-3g-tower.h"
+#include "gclue-mozilla.h"
 
 /**
  * SECTION:gclue-3g
  * @short_description: WiFi-based geolocation
  * @include: gclue-glib/gclue-3g.h
  *
- * Contains functions to get the geolocation based on 3G cell towers. It
- * uses <ulink url="http://www.opencellid.org">OpenCellID</ulink> to translate
- * cell tower info to a location.
+ * Contains functions to get the geolocation based on 3G cell towers.
  **/
 
 struct _GClue3GPrivate {
@@ -105,74 +99,10 @@ on_is_3g_available_notify (GObject    *gobject,
 
 static GeocodeLocation *
 gclue_3g_parse_response (GClueWebSource *web,
-                         const char     *xml,
+                         const char     *content,
                          GError        **error)
 {
-        xmlDocPtr doc;
-        xmlNodePtr node;
-        xmlChar *prop;
-        GeocodeLocation *location;
-        gdouble latitude, longitude;
-
-        doc = xmlParseDoc ((const xmlChar *) xml);
-        if (doc == NULL) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_INVALID_ARGUMENT,
-                                     "Bad XML");
-                return NULL;
-        }
-        node = xmlDocGetRootElement (doc);
-        if (node == NULL || strcmp ((const char *) node->name, "rsp") != 0) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_INVALID_ARGUMENT,
-                                     "Expected 'rsp' root node");
-                return NULL;
-        }
-
-        /* Find 'cell' node */
-        for (node = node->children; node != NULL; node = node->next) {
-                if (strcmp ((const char *) node->name, "cell") == 0)
-                        break;
-        }
-        if (node == NULL) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_INVALID_ARGUMENT,
-                                     "Failed to find node 'cell'");
-                return NULL;
-        }
-
-        /* Get latitude and longitude from 'cell' node */
-        prop = xmlGetProp (node, (xmlChar *) "lat");
-        if (prop == NULL) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_INVALID_ARGUMENT,
-                                     "No 'lat' property on node 'cell'");
-                return NULL;
-        }
-        latitude = g_ascii_strtod ((const char *) prop, NULL);
-        xmlFree (prop);
-
-        prop = xmlGetProp (node, (xmlChar *) "lon");
-        if (prop == NULL) {
-                g_set_error_literal (error,
-                                     G_IO_ERROR,
-                                     G_IO_ERROR_INVALID_ARGUMENT,
-                                     "No 'lon' property on node 'cell'");
-                return NULL;
-        }
-        longitude = g_ascii_strtod ((const char *) prop, NULL);
-        xmlFree (prop);
-
-        /* FIXME: Is 3km a good average coverage area for a cell tower */
-        location = geocode_location_new (latitude, longitude, 3000);
-
-        xmlFreeDoc (doc);
-
-        return location;
+        return gclue_mozilla_parse_response (content, error);
 }
 
 static void
@@ -268,8 +198,6 @@ gclue_3g_create_query (GClueWebSource *web,
                        GError        **error)
 {
         GClue3GPrivate *priv = GCLUE_3G (web)->priv;
-        SoupMessage *ret = NULL;
-        char *uri;
 
         if (priv->tower == NULL) {
                 g_set_error_literal (error,
@@ -279,17 +207,7 @@ gclue_3g_create_query (GClueWebSource *web,
                 return NULL; /* Not initialized yet */
         }
 
-        uri = g_strdup_printf (URL,
-                               priv->tower->mcc,
-                               priv->tower->mnc,
-                               priv->tower->lac,
-                               priv->tower->cell_id);
-        ret = soup_message_new ("GET", uri);
-        g_debug ("Will send request '%s'", uri);
-
-        g_free (uri);
-
-        return ret;
+        return gclue_mozilla_create_query (NULL, priv->tower, error);
 }
 
 static GClueAccuracyLevel

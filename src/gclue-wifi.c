@@ -669,7 +669,7 @@ gclue_wifi_create_query (GClueWebSource *source,
 
         bss_list = get_bss_list (GCLUE_WIFI (source), NULL);
 
-        return gclue_mozilla_create_query (bss_list, error);
+        return gclue_mozilla_create_query (bss_list, NULL, error);
 }
 
 static GeocodeLocation *

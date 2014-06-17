@@ -105,8 +105,9 @@ get_url (void)
 }
 
 SoupMessage *
-gclue_mozilla_create_query (GList   *bss_list, /* As in Access Points */
-                            GError **error)
+gclue_mozilla_create_query (GList        *bss_list, /* As in Access Points */
+                            GClue3GTower *tower,
+                            GError      **error)
 {
         SoupMessage *ret = NULL;
         JsonBuilder *builder;
@@ -119,7 +120,33 @@ gclue_mozilla_create_query (GList   *bss_list, /* As in Access Points */
         builder = json_builder_new ();
         json_builder_begin_object (builder);
 
-        /* We send pure geoip query using empty object if bss_list is NULL. */
+        /* We send pure geoip query using empty object if both bss_list and
+         * tower are NULL.
+         */
+
+        if (tower != NULL) {
+                json_builder_set_member_name (builder, "radioType");
+                json_builder_add_string_value (builder, "gsm");
+
+                json_builder_set_member_name (builder, "cellTowers");
+                json_builder_begin_array (builder);
+
+                json_builder_begin_object (builder);
+
+                json_builder_set_member_name (builder, "cellId");
+                json_builder_add_int_value (builder, tower->cell_id);
+                json_builder_set_member_name (builder, "mobileCountryCode");
+                json_builder_add_int_value (builder, tower->mcc);
+                json_builder_set_member_name (builder, "mobileNetworkCode");
+                json_builder_add_int_value (builder, tower->mnc);
+                json_builder_set_member_name (builder, "locationAreaCode");
+                json_builder_add_int_value (builder, tower->lac);
+
+                json_builder_end_object (builder);
+
+                json_builder_end_array (builder);
+        }
+
         if (bss_list != NULL) {
                 GList *iter;
 

@@ -267,7 +267,7 @@ on_get_gps_nmea_ready (GObject      *source_object,
                 goto out;
         }
 
-        g_debug ("New GPS location");
+        g_debug ("New GPGGA trace: %s", gga);
         g_signal_emit (GCLUE_MODEM (user_data), signals[FIX_GPS], 0, gga);
 out:
         g_object_unref (location_nmea);

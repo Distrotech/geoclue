@@ -361,6 +361,7 @@ gclue_service_client_handle_start (GClueClient           *client,
 
         /* No agent == No authorization needed */
         if (priv->agent_proxy == NULL ||
+            gclue_config_is_system_component (config, desktop_id) ||
             gclue_config_is_app_allowed (config,
                                          desktop_id,
                                          priv->client_info)) {

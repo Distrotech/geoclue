@@ -265,10 +265,6 @@ on_bss_signal_notify (GObject    *gobject,
                       path,
                       NULL,
                       user_data);
-
-        g_hash_table_replace (wifi->priv->bss_proxies,
-                              g_strdup (path),
-                              bss);
         g_hash_table_remove (wifi->priv->ignored_bss_proxies, path);
 }
 

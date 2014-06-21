@@ -24,7 +24,7 @@
 #include <libsoup/soup.h>
 #include <string.h>
 #include "gclue-3g.h"
-#include "gclue-modem.h"
+#include "gclue-modem-manager.h"
 #include "geocode-glib/geocode-location.h"
 #include "gclue-mozilla.h"
 
@@ -157,7 +157,7 @@ gclue_3g_init (GClue3G *source)
 
         priv->cancellable = g_cancellable_new ();
 
-        priv->modem = gclue_modem_get_singleton ();
+        priv->modem = gclue_modem_manager_get_singleton ();
         priv->threeg_notify_id =
                         g_signal_connect (priv->modem,
                                           "notify::is-3g-available",

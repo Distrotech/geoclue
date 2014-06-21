@@ -377,9 +377,9 @@ connect_bss_signals (GClueWifi *wifi)
         }
 
         priv->bss_added_id = g_signal_connect (priv->interface,
-                                              "bss-added",
-                                              G_CALLBACK (on_bss_added),
-                                              wifi);
+                                               "bss-added",
+                                               G_CALLBACK (on_bss_added),
+                                               wifi);
         priv->bss_removed_id = g_signal_connect (priv->interface,
                                                 "bss-removed",
                                                 G_CALLBACK (on_bss_removed),

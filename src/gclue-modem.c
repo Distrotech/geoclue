@@ -29,7 +29,6 @@
 /**
  * SECTION:gclue-modem
  * @short_description: Modem handler
- * @include: gclue-glib/gclue-modem.h
  *
  * This class is used by GClue3G and GClueModemGPS to deal with modem through
  * ModemManager.

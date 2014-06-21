@@ -239,6 +239,32 @@ get_bssid_from_bss (WPABSS *bss)
 }
 
 static void
+add_bss_proxy (GClueWifi *wifi,
+               WPABSS    *bss)
+{
+        const char *path;
+        char *ssid;
+
+        ssid = get_ssid_from_bss (bss);
+        g_debug ("WiFi AP '%s' added.", ssid);
+        g_free (ssid);
+
+        /* There could be multiple devices being added/removed at the same time
+         * so we don't immediately call refresh but rather wait 1 second.
+         */
+        if (wifi->priv->refresh_timeout != 0)
+                g_source_remove (wifi->priv->refresh_timeout);
+        wifi->priv->refresh_timeout = g_timeout_add_seconds (1,
+                                                             on_refresh_timeout,
+                                                             wifi);
+
+        path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
+        g_hash_table_replace (wifi->priv->bss_proxies,
+                              g_strdup (path),
+                              bss);
+}
+
+static void
 on_bss_signal_notify (GObject    *gobject,
                       GParamSpec *pspec,
                       gpointer    user_data)
@@ -256,15 +282,12 @@ on_bss_signal_notify (GObject    *gobject,
                 g_free (bssid);
                 return;
         }
-        path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
 
         g_signal_handlers_disconnect_by_func (G_OBJECT (bss),
                                               on_bss_signal_notify,
                                               user_data);
-        on_bss_added (WPA_INTERFACE (wifi->priv->interface),
-                      path,
-                      NULL,
-                      user_data);
+        add_bss_proxy (wifi, g_object_ref (bss));
+        path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
         g_hash_table_remove (wifi->priv->ignored_bss_proxies, path);
 }
 
@@ -276,7 +299,6 @@ on_bss_proxy_ready (GObject      *source_object,
         GClueWifi *wifi = GCLUE_WIFI (user_data);
         WPABSS *bss;
         GError *error = NULL;
-        const char *path;
         char *ssid;
 
         bss = wpa_bss_proxy_new_for_bus_finish (res, &error);
@@ -286,7 +308,6 @@ on_bss_proxy_ready (GObject      *source_object,
 
                 return;
         }
-        path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
 
         if (gclue_mozilla_should_ignore_bss (bss)) {
                 g_object_unref (bss);
@@ -298,8 +319,8 @@ on_bss_proxy_ready (GObject      *source_object,
         g_debug ("WiFi AP '%s' added.", ssid);
         g_free (ssid);
 
-        path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
         if (wpa_bss_get_signal (bss) <= -90) {
+                const char *path;
                 char *bssid = get_bssid_from_bss (bss);
                 g_debug ("WiFi AP '%s' has very low strength (%u dBm)"
                          ", ignoring for now..",
@@ -310,24 +331,14 @@ on_bss_proxy_ready (GObject      *source_object,
                                   "notify::signal",
                                   G_CALLBACK (on_bss_signal_notify),
                                   user_data);
+                path = g_dbus_proxy_get_object_path (G_DBUS_PROXY (bss));
                 g_hash_table_replace (wifi->priv->ignored_bss_proxies,
                                       g_strdup (path),
                                       bss);
                 return;
         }
 
-
-        /* There could be multiple devices being added/removed at the same time
-         * so we don't immediately call refresh but rather wait 1 second.
-         */
-        if (wifi->priv->refresh_timeout != 0)
-                g_source_remove (wifi->priv->refresh_timeout);
-        wifi->priv->refresh_timeout = g_timeout_add_seconds (1,
-                                                             on_refresh_timeout,
-                                                             wifi);
-        g_hash_table_replace (wifi->priv->bss_proxies,
-                              g_strdup (path),
-                              bss);
+        add_bss_proxy (wifi, bss);
 }
 
 static void

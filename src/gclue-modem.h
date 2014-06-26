@@ -40,52 +40,74 @@ struct _GClueModemInterface {
         /* <private> */
         GTypeInterface parent_iface;
 
-        gboolean (*get_is_3g_available)  (GClueModem         *modem);
-        gboolean (*get_is_gps_available) (GClueModem         *modem);
-        void     (*enable_3g)            (GClueModem         *modem,
-                                          GCancellable       *cancellable,
-                                          GAsyncReadyCallback callback,
-                                          gpointer            user_data);
-        gboolean (*enable_3g_finish)     (GClueModem         *modem,
-                                          GAsyncResult       *result,
-                                          GError            **error);
-        void     (*enable_gps)           (GClueModem         *modem,
-                                          GCancellable       *cancellable,
-                                          GAsyncReadyCallback callback,
-                                          gpointer            user_data);
-        gboolean (*enable_gps_finish)    (GClueModem         *modem,
-                                          GAsyncResult       *result,
-                                          GError            **error);
-        gboolean (*disable_3g)           (GClueModem         *modem,
-                                          GCancellable       *cancellable,
-                                          GError            **error);
-        gboolean (*disable_gps)          (GClueModem         *modem,
-                                          GCancellable       *cancellable,
-                                          GError            **error);
+        gboolean (*get_is_3g_available)   (GClueModem         *modem);
+        gboolean (*get_is_cdma_available) (GClueModem         *modem);
+        gboolean (*get_is_gps_available)  (GClueModem         *modem);
+        void     (*enable_3g)             (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GAsyncReadyCallback callback,
+                                           gpointer            user_data);
+        gboolean (*enable_3g_finish)      (GClueModem         *modem,
+                                           GAsyncResult       *result,
+                                           GError            **error);
+        void     (*enable_cdma)           (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GAsyncReadyCallback callback,
+                                           gpointer            user_data);
+        gboolean (*enable_cdma_finish)    (GClueModem         *modem,
+                                           GAsyncResult       *result,
+                                           GError            **error);
+        void     (*enable_gps)            (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GAsyncReadyCallback callback,
+                                           gpointer            user_data);
+        gboolean (*enable_gps_finish)     (GClueModem         *modem,
+                                           GAsyncResult       *result,
+                                           GError            **error);
+        gboolean (*disable_3g)            (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GError            **error);
+        gboolean (*disable_cdma)          (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GError            **error);
+        gboolean (*disable_gps)           (GClueModem         *modem,
+                                           GCancellable       *cancellable,
+                                           GError            **error);
 };
 
-gboolean     gclue_modem_get_is_3g_available  (GClueModem         *modem);
-gboolean     gclue_modem_get_is_gps_available (GClueModem         *modem);
-void         gclue_modem_enable_3g            (GClueModem         *modem,
-                                               GCancellable       *cancellable,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data);
-gboolean     gclue_modem_enable_3g_finish     (GClueModem         *modem,
-                                               GAsyncResult       *result,
-                                               GError            **error);
-void         gclue_modem_enable_gps           (GClueModem         *modem,
-                                               GCancellable       *cancellable,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data);
-gboolean     gclue_modem_enable_gps_finish    (GClueModem         *modem,
-                                               GAsyncResult       *result,
-                                               GError            **error);
-gboolean     gclue_modem_disable_3g           (GClueModem         *modem,
-                                               GCancellable       *cancellable,
-                                               GError            **error);
-gboolean     gclue_modem_disable_gps          (GClueModem         *modem,
-                                               GCancellable       *cancellable,
-                                               GError            **error);
+gboolean     gclue_modem_get_is_3g_available   (GClueModem         *modem);
+gboolean     gclue_modem_get_is_cdma_available (GClueModem         *modem);
+gboolean     gclue_modem_get_is_gps_available  (GClueModem         *modem);
+void         gclue_modem_enable_3g             (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+gboolean     gclue_modem_enable_3g_finish      (GClueModem         *modem,
+                                                GAsyncResult       *result,
+                                                GError            **error);
+void         gclue_modem_enable_cdma           (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+gboolean     gclue_modem_enable_cdma_finish    (GClueModem         *modem,
+                                                GAsyncResult       *result,
+                                                GError            **error);
+void         gclue_modem_enable_gps            (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+gboolean     gclue_modem_enable_gps_finish     (GClueModem         *modem,
+                                                GAsyncResult       *result,
+                                                GError            **error);
+gboolean     gclue_modem_disable_3g            (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GError            **error);
+gboolean     gclue_modem_disable_cdma          (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GError            **error);
+gboolean     gclue_modem_disable_gps           (GClueModem         *modem,
+                                                GCancellable       *cancellable,
+                                                GError            **error);
 
 G_END_DECLS
 

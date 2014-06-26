@@ -49,6 +49,13 @@ gclue_modem_default_init (GClueModemInterface *iface)
                                      G_PARAM_READABLE);
         g_object_interface_install_property (iface, spec);
 
+        spec = g_param_spec_boolean ("is-cdma-available",
+                                     "IsCDMAAvailable",
+                                     "Is CDMA Available?",
+                                     FALSE,
+                                     G_PARAM_READABLE);
+        g_object_interface_install_property (iface, spec);
+
         spec = g_param_spec_boolean ("is-gps-available",
                                      "IsGPSAvailable",
                                      "Is GPS Available?",
@@ -70,6 +77,18 @@ gclue_modem_default_init (GClueModemInterface *iface)
                       G_TYPE_ULONG,
                       G_TYPE_ULONG);
 
+        g_signal_new ("fix-cdma",
+                      GCLUE_TYPE_MODEM,
+                      G_SIGNAL_RUN_LAST,
+                      0,
+                      NULL,
+                      NULL,
+                      gclue_marshal_VOID__DOUBLE_DOUBLE,
+                      G_TYPE_NONE,
+                      2,
+                      G_TYPE_DOUBLE,
+                      G_TYPE_DOUBLE);
+
         g_signal_new ("fix-gps",
                       GCLUE_TYPE_MODEM,
                       G_SIGNAL_RUN_LAST,
@@ -88,6 +107,14 @@ gclue_modem_get_is_3g_available (GClueModem *modem)
         g_return_val_if_fail (GCLUE_IS_MODEM (modem), FALSE);
 
         return GCLUE_MODEM_GET_INTERFACE (modem)->get_is_3g_available (modem);
+}
+
+gboolean
+gclue_modem_get_is_cdma_available (GClueModem *modem)
+{
+        g_return_val_if_fail (GCLUE_IS_MODEM (modem), FALSE);
+
+        return GCLUE_MODEM_GET_INTERFACE (modem)->get_is_cdma_available (modem);
 }
 
 gboolean
@@ -123,6 +150,33 @@ gclue_modem_enable_3g_finish (GClueModem   *modem,
         return GCLUE_MODEM_GET_INTERFACE (modem)->enable_3g_finish (modem,
                                                                     result,
                                                                     error);
+}
+
+void
+gclue_modem_enable_cdma (GClueModem         *modem,
+                         GCancellable       *cancellable,
+                         GAsyncReadyCallback callback,
+                         gpointer            user_data)
+{
+        g_return_if_fail (GCLUE_IS_MODEM (modem));
+        g_return_if_fail (gclue_modem_get_is_cdma_available (modem));
+
+        GCLUE_MODEM_GET_INTERFACE (modem)->enable_cdma (modem,
+                                                        cancellable,
+                                                        callback,
+                                                        user_data);
+}
+
+gboolean
+gclue_modem_enable_cdma_finish (GClueModem   *modem,
+                                GAsyncResult *result,
+                                GError      **error)
+{
+        g_return_val_if_fail (GCLUE_IS_MODEM (modem), FALSE);
+
+        return GCLUE_MODEM_GET_INTERFACE (modem)->enable_cdma_finish (modem,
+                                                                      result,
+                                                                      error);
 }
 
 void
@@ -163,6 +217,19 @@ gclue_modem_disable_3g (GClueModem   *modem,
         return GCLUE_MODEM_GET_INTERFACE (modem)->disable_3g (modem,
                                                               cancellable,
                                                               error);
+}
+
+gboolean
+gclue_modem_disable_cdma (GClueModem   *modem,
+                          GCancellable *cancellable,
+                          GError      **error)
+{
+        g_return_val_if_fail (GCLUE_IS_MODEM (modem), FALSE);
+        g_return_val_if_fail (gclue_modem_get_is_cdma_available (modem), FALSE);
+
+        return GCLUE_MODEM_GET_INTERFACE (modem)->disable_cdma (modem,
+                                                                cancellable,
+                                                                error);
 }
 
 gboolean

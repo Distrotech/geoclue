@@ -57,6 +57,7 @@ enum
 {
         PROP_0,
         PROP_IS_3G_AVAILABLE,
+        PROP_IS_CDMA_AVAILABLE,
         PROP_IS_GPS_AVAILABLE,
         LAST_PROP
 };
@@ -65,6 +66,7 @@ static GParamSpec *gParamSpecs[LAST_PROP];
 
 enum {
         FIX_3G,
+        FIX_CDMA,
         FIX_GPS,
         SIGNAL_LAST
 };
@@ -73,6 +75,8 @@ static guint signals[SIGNAL_LAST];
 
 static gboolean
 gclue_modem_manager_get_is_3g_available (GClueModem *modem);
+static gboolean
+gclue_modem_manager_get_is_cdma_available (GClueModem *modem);
 static gboolean
 gclue_modem_manager_get_is_gps_available (GClueModem *modem);
 static void
@@ -84,6 +88,15 @@ static gboolean
 gclue_modem_manager_enable_3g_finish (GClueModem   *modem,
                                       GAsyncResult *result,
                                       GError      **error);
+static void
+gclue_modem_manager_enable_cdma (GClueModem         *modem,
+                                 GCancellable       *cancellable,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data);
+static gboolean
+gclue_modem_manager_enable_cdma_finish (GClueModem   *modem,
+                                        GAsyncResult *result,
+                                        GError      **error);
 static void
 gclue_modem_manager_enable_gps (GClueModem         *modem,
                                 GCancellable       *cancellable,
@@ -97,6 +110,10 @@ static gboolean
 gclue_modem_manager_disable_3g (GClueModem   *modem,
                                 GCancellable *cancellable,
                                 GError      **error);
+static gboolean
+gclue_modem_manager_disable_cdma (GClueModem   *modem,
+                                  GCancellable *cancellable,
+                                  GError      **error);
 static gboolean
 gclue_modem_manager_disable_gps (GClueModem   *modem,
                                  GCancellable *cancellable,
@@ -132,6 +149,11 @@ gclue_modem_manager_get_property (GObject    *object,
                                      gclue_modem_get_is_3g_available (modem));
                 break;
 
+        case PROP_IS_CDMA_AVAILABLE:
+                g_value_set_boolean (value,
+                                     gclue_modem_get_is_cdma_available (modem));
+                break;
+
         case PROP_IS_GPS_AVAILABLE:
                 g_value_set_boolean (value,
                                      gclue_modem_get_is_gps_available (modem));
@@ -163,6 +185,12 @@ gclue_modem_manager_class_init (GClueModemManagerClass *klass)
                         g_object_class_find_property (gmodem_class,
                                                       "is-3g-available");
         g_object_class_override_property (gmodem_class,
+                                          PROP_IS_CDMA_AVAILABLE,
+                                          "is-cdma-available");
+        gParamSpecs[PROP_IS_CDMA_AVAILABLE] =
+                        g_object_class_find_property (gmodem_class,
+                                                      "is-cdma-available");
+        g_object_class_override_property (gmodem_class,
                                           PROP_IS_GPS_AVAILABLE,
                                           "is-gps-available");
         gParamSpecs[PROP_IS_GPS_AVAILABLE] =
@@ -170,6 +198,7 @@ gclue_modem_manager_class_init (GClueModemManagerClass *klass)
                                                       "is-gps-available");
 
         signals[FIX_3G] = g_signal_lookup ("fix-3g", GCLUE_TYPE_MODEM);
+        signals[FIX_CDMA] = g_signal_lookup ("fix-cdma", GCLUE_TYPE_MODEM);
         signals[FIX_GPS] = g_signal_lookup ("fix-gps", GCLUE_TYPE_MODEM);
 }
 
@@ -177,12 +206,16 @@ static void
 gclue_modem_interface_init (GClueModemInterface *iface)
 {
         iface->get_is_3g_available = gclue_modem_manager_get_is_3g_available;
+        iface->get_is_cdma_available = gclue_modem_manager_get_is_cdma_available;
         iface->get_is_gps_available = gclue_modem_manager_get_is_gps_available;
         iface->enable_3g = gclue_modem_manager_enable_3g;
         iface->enable_3g_finish = gclue_modem_manager_enable_3g_finish;
+        iface->enable_cdma = gclue_modem_manager_enable_cdma;
+        iface->enable_cdma_finish = gclue_modem_manager_enable_cdma_finish;
         iface->enable_gps = gclue_modem_manager_enable_gps;
         iface->enable_gps_finish = gclue_modem_manager_enable_gps_finish;
         iface->disable_3g = gclue_modem_manager_disable_3g;
+        iface->disable_cdma = gclue_modem_manager_disable_cdma;
         iface->disable_gps = gclue_modem_manager_disable_gps;
 }
 
@@ -255,6 +288,38 @@ on_get_3gpp_ready (GObject      *source_object,
 }
 
 static void
+on_get_cdma_ready (GObject      *source_object,
+                   GAsyncResult *res,
+                   gpointer      user_data)
+{
+        GClueModemManager *manager = GCLUE_MODEM_MANAGER (user_data);
+        MMModemLocation *modem_location = MM_MODEM_LOCATION (source_object);
+        MMLocationCdmaBs *location_cdma;
+        GError *error = NULL;
+
+        location_cdma = mm_modem_location_get_cdma_bs_finish (modem_location,
+                                                              res,
+                                                              &error);
+        if (error != NULL) {
+                g_warning ("Failed to get location from 3GPP: %s",
+                           error->message);
+                g_error_free (error);
+                return;
+        }
+
+        if (location_cdma == NULL) {
+                g_debug ("No CDMA");
+                return;
+        }
+
+        g_signal_emit (manager,
+                       signals[FIX_CDMA],
+                       0,
+                       mm_location_cdma_bs_get_latitude (location_cdma),
+                       mm_location_cdma_bs_get_longitude (location_cdma));
+}
+
+static void
 on_get_gps_nmea_ready (GObject      *source_object,
                        GAsyncResult *res,
                        gpointer      user_data)
@@ -299,10 +364,16 @@ on_location_changed (GObject    *modem_object,
         MMModemLocation *modem_location = MM_MODEM_LOCATION (modem_object);
         GClueModemManager *manager = GCLUE_MODEM_MANAGER (user_data);
 
-        mm_modem_location_get_3gpp (modem_location,
-                                    manager->priv->cancellable,
-                                    on_get_3gpp_ready,
-                                    manager);
+        if ((manager->priv->caps & MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI) != 0)
+                mm_modem_location_get_3gpp (modem_location,
+                                            manager->priv->cancellable,
+                                            on_get_3gpp_ready,
+                                            manager);
+        if ((manager->priv->caps & MM_MODEM_LOCATION_SOURCE_CDMA_BS) != 0)
+                mm_modem_location_get_cdma_bs (modem_location,
+                                               manager->priv->cancellable,
+                                               on_get_cdma_ready,
+                                               manager);
         if ((manager->priv->caps & MM_MODEM_LOCATION_SOURCE_GPS_NMEA) != 0)
                 mm_modem_location_get_gps_nmea (modem_location,
                                                 manager->priv->cancellable,
@@ -467,6 +538,7 @@ on_mm_object_added (GDBusObjectManager *object_manager,
                           manager);
 
         g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_3G_AVAILABLE]);
+        g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_CDMA_AVAILABLE]);
         g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_GPS_AVAILABLE]);
 }
 
@@ -491,6 +563,7 @@ on_mm_object_removed (GDBusObjectManager *object_manager,
         g_clear_object (&priv->modem_location);
 
         g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_3G_AVAILABLE]);
+        g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_CDMA_AVAILABLE]);
         g_object_notify_by_pspec (G_OBJECT (manager), gParamSpecs[PROP_IS_GPS_AVAILABLE]);
 }
 
@@ -622,7 +695,16 @@ gclue_modem_manager_get_is_3g_available (GClueModem *modem)
         g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
 
         return modem_has_caps (GCLUE_MODEM_MANAGER (modem),
-                               MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI);
+                                MM_MODEM_LOCATION_SOURCE_3GPP_LAC_CI);
+}
+
+static gboolean
+gclue_modem_manager_get_is_cdma_available (GClueModem *modem)
+{
+        g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
+
+        return modem_has_caps (GCLUE_MODEM_MANAGER (modem),
+                               MM_MODEM_LOCATION_SOURCE_CDMA_BS);
 }
 
 static gboolean
@@ -654,6 +736,34 @@ static gboolean
 gclue_modem_manager_enable_3g_finish (GClueModem   *modem,
                                       GAsyncResult *result,
                                       GError      **error)
+{
+        g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
+
+        return enable_caps_finish (GCLUE_MODEM_MANAGER (modem),
+                                   result,
+                                   error);
+}
+
+static void
+gclue_modem_manager_enable_cdma (GClueModem         *modem,
+                                 GCancellable       *cancellable,
+                                 GAsyncReadyCallback callback,
+                                 gpointer            user_data)
+{
+        g_return_if_fail (GCLUE_IS_MODEM_MANAGER (modem));
+        g_return_if_fail (gclue_modem_manager_get_is_cdma_available (modem));
+
+        enable_caps (GCLUE_MODEM_MANAGER (modem),
+                     MM_MODEM_LOCATION_SOURCE_CDMA_BS,
+                     cancellable,
+                     callback,
+                     user_data);
+}
+
+static gboolean
+gclue_modem_manager_enable_cdma_finish (GClueModem   *modem,
+                                        GAsyncResult *result,
+                                        GError      **error)
 {
         g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
 
@@ -708,6 +818,26 @@ gclue_modem_manager_disable_3g (GClueModem   *modem,
                            cancellable,
                            error);
 }
+
+static gboolean
+gclue_modem_manager_disable_cdma (GClueModem   *modem,
+                                  GCancellable *cancellable,
+                                  GError      **error)
+{
+        GClueModemManager *manager;
+
+        g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
+        g_return_val_if_fail (gclue_modem_manager_get_is_cdma_available (modem), FALSE);
+        manager = GCLUE_MODEM_MANAGER (modem);
+
+        g_clear_object (&manager->priv->location_3gpp);
+        g_debug ("Clearing CDMA location caps from modem");
+        return clear_caps (manager,
+                           MM_MODEM_LOCATION_SOURCE_CDMA_BS,
+                           cancellable,
+                           error);
+}
+
 
 static gboolean
 gclue_modem_manager_disable_gps (GClueModem   *modem,

@@ -33,6 +33,10 @@
 #include "gclue-3g.h"
 #endif
 
+#if GCLUE_USE_CDMA_SOURCE
+#include "gclue-cdma.h"
+#endif
+
 #if GCLUE_USE_MODEM_GPS_SOURCE
 #include "gclue-modem-gps.h"
 #endif
@@ -265,6 +269,10 @@ gclue_locator_constructed (GObject *object)
 #if GCLUE_USE_3G_SOURCE
         GClue3G *source = gclue_3g_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, source);
+#endif
+#if GCLUE_USE_CDMA_SOURCE
+        GClueCDMA *cdma = gclue_cdma_get_singleton ();
+        locator->priv->sources = g_list_append (locator->priv->sources, cdma);
 #endif
         if (locator->priv->accuracy_level >= GCLUE_ACCURACY_LEVEL_CITY) {
                 GClueWifi *wifi = gclue_wifi_get_singleton

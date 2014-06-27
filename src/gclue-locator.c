@@ -274,12 +274,9 @@ gclue_locator_constructed (GObject *object)
         GClueCDMA *cdma = gclue_cdma_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, cdma);
 #endif
-        if (locator->priv->accuracy_level >= GCLUE_ACCURACY_LEVEL_CITY) {
-                GClueWifi *wifi = gclue_wifi_get_singleton
-                        (locator->priv->accuracy_level);
-                locator->priv->sources = g_list_append (locator->priv->sources,
-                                                        wifi);
-        }
+        GClueWifi *wifi = gclue_wifi_get_singleton (locator->priv->accuracy_level);
+        locator->priv->sources = g_list_append (locator->priv->sources,
+                                                wifi);
 #if GCLUE_USE_MODEM_GPS_SOURCE
         GClueModemGPS *gps = gclue_modem_gps_get_singleton ();
         locator->priv->sources = g_list_append (locator->priv->sources, gps);

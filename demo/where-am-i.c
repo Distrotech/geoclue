@@ -28,8 +28,16 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
+typedef enum {
+        GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
+        GCLUE_ACCURACY_LEVEL_CITY = 4,
+        GCLUE_ACCURACY_LEVEL_STREET = 6,
+        GCLUE_ACCURACY_LEVEL_EXACT = 8,
+} GClueAccuracyLevel;
+
 /* Commandline options */
 static gint timeout = 30; /* seconds */
+static GClueAccuracyLevel accuracy_level = GCLUE_ACCURACY_LEVEL_EXACT;
 
 static GOptionEntry entries[] =
 {
@@ -40,6 +48,18 @@ static GOptionEntry entries[] =
           &timeout,
           N_("Exit after T seconds. Default: 30"),
           "T" },
+        { "accuracy-level",
+          'a',
+          0,
+          G_OPTION_ARG_INT,
+          &accuracy_level,
+          N_("Request accuracy level A. "
+             "Country = 1, "
+             "City = 4, "
+             "Neighborhood = 5, "
+             "Street = 6, "
+             "Exact = 8."),
+          "A" },
         { NULL }
 };
 
@@ -233,13 +253,6 @@ on_set_accuracy_level_ready (GObject      *source_object,
                                   user_data);
 }
 
-typedef enum {
-        GCLUE_ACCURACY_LEVEL_COUNTRY = 1,
-        GCLUE_ACCURACY_LEVEL_CITY = 4,
-        GCLUE_ACCURACY_LEVEL_STREET = 6,
-        GCLUE_ACCURACY_LEVEL_EXACT = 8,
-} GClueAccuracyLevel;
-
 static void
 on_set_desktop_id_ready (GObject      *source_object,
                          GAsyncResult *res,
@@ -247,7 +260,7 @@ on_set_desktop_id_ready (GObject      *source_object,
 {
         GDBusProxy *client_props = G_DBUS_PROXY (source_object);
         GVariant *results;
-        GVariant *accuracy_level;
+        GVariant *level;
         GError *error = NULL;
 
         results = g_dbus_proxy_call_finish (client_props, res, &error);
@@ -258,14 +271,14 @@ on_set_desktop_id_ready (GObject      *source_object,
         }
         g_variant_unref (results);
 
-        accuracy_level = g_variant_new ("u", GCLUE_ACCURACY_LEVEL_EXACT);
+        level = g_variant_new ("u", accuracy_level);
 
         g_dbus_proxy_call (client_props,
                            "Set",
                            g_variant_new ("(ssv)",
                                           "org.freedesktop.GeoClue2.Client",
                                           "RequestedAccuracyLevel",
-                                          accuracy_level),
+                                          level),
                            G_DBUS_CALL_FLAGS_NONE,
                            -1,
                            NULL,

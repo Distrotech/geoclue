@@ -30,10 +30,9 @@
 
 /**
  * SECTION:gclue-3g
- * @short_description: WiFi-based geolocation
- * @include: gclue-glib/gclue-3g.h
+ * @short_description: 3GPP-based geolocation
  *
- * Contains functions to get the geolocation based on 3G cell towers.
+ * Contains functions to get the geolocation based on 3GPP cell towers.
  **/
 
 struct _GClue3GPrivate {

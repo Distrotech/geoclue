@@ -28,7 +28,20 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
-#define LOCATION_TIMEOUT 30 /* seconds */
+/* Commandline options */
+static gint timeout = 30; /* seconds */
+
+static GOptionEntry entries[] =
+{
+        { "timeout",
+          't',
+          0,
+          G_OPTION_ARG_INT,
+          &timeout,
+          N_("Exit after T seconds. Default: 30"),
+          "T" },
+        { NULL }
+};
 
 GDBusProxy *manager;
 GMainLoop *main_loop;
@@ -189,7 +202,7 @@ on_client_proxy_ready (GObject      *source_object,
                            on_start_ready,
                            user_data);
 
-        g_timeout_add_seconds (LOCATION_TIMEOUT, on_location_timeout, client);
+        g_timeout_add_seconds (timeout, on_location_timeout, client);
 }
 
 static void
@@ -351,10 +364,21 @@ on_manager_proxy_ready (GObject      *source_object,
 gint
 main (gint argc, gchar *argv[])
 {
+        GOptionContext *context;
+        GError *error = NULL;
+
         setlocale (LC_ALL, "");
         textdomain (GETTEXT_PACKAGE);
         bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+
+        context = g_option_context_new ("- Where am I?");
+        g_option_context_add_main_entries (context, entries, GETTEXT_PACKAGE);
+        if (!g_option_context_parse (context, &argc, &argv, &error)) {
+                g_critical ("option parsing failed: %s\n", error->message);
+                exit (-1);
+        }
+        g_option_context_free (context);
 
         g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                                   G_DBUS_PROXY_FLAGS_NONE,

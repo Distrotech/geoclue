@@ -400,8 +400,19 @@ gclue_locator_stop (GClueLocationSource *source)
 GClueLocator *
 gclue_locator_new (GClueAccuracyLevel level)
 {
+        GClueAccuracyLevel accuracy_level = level;
+
+        if (accuracy_level == GCLUE_ACCURACY_LEVEL_COUNTRY)
+                /* There is no source that provides country-level accuracy.
+                 * Since Wifi (as geoip) source is the best we can do, accuracy
+                 * really is country-level many times from this source and its
+                 * doubtful app (or user) will mind being given slighly more
+                 * accurate location, lets just map this to city-level accuracy.
+                 */
+                accuracy_level = GCLUE_ACCURACY_LEVEL_CITY;
+
         return g_object_new (GCLUE_TYPE_LOCATOR,
-                             "accuracy-level", level,
+                             "accuracy-level", accuracy_level,
                              NULL);
 }
 

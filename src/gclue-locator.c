@@ -353,8 +353,14 @@ gclue_locator_start (GClueLocationSource *source)
 
                 level = gclue_location_source_get_available_accuracy_level (src);
                 if (level > locator->priv->accuracy_level ||
-                    level == GCLUE_ACCURACY_LEVEL_NONE)
+                    level == GCLUE_ACCURACY_LEVEL_NONE) {
+                        g_debug ("Not starting %s (accuracy level: %u). "
+                                 "Requested accuracy level: %u.",
+                                 G_OBJECT_TYPE_NAME (src),
+                                 level,
+                                 locator->priv->accuracy_level);
                         continue;
+                }
 
                 locator->priv->active_sources = g_list_append (locator->priv->active_sources,
                                                                src);

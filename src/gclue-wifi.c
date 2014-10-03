@@ -629,6 +629,8 @@ gclue_wifi_get_singleton (GClueAccuracyLevel level)
         guint i;
 
         g_return_val_if_fail (level >= GCLUE_ACCURACY_LEVEL_CITY, NULL);
+        if (level == GCLUE_ACCURACY_LEVEL_NEIGHBORHOOD)
+                level = GCLUE_ACCURACY_LEVEL_CITY;
 
         i = (level == GCLUE_ACCURACY_LEVEL_CITY)? 0 : 1;
         if (wifi[i] == NULL) {

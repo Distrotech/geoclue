@@ -396,6 +396,9 @@ gclue_service_client_handle_start (GClueClient           *client,
                 start_data_free (data);
                 return TRUE;
         }
+        g_debug ("requested accuracy level: %u. "
+                 "Accuracy level allowed by agent: %u",
+                 accuracy_level, max_accuracy);
         accuracy_level = CLAMP (accuracy_level, 0, max_accuracy);
 
         gclue_agent_call_authorize_app (priv->agent_proxy,

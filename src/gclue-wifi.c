@@ -377,8 +377,7 @@ connect_bss_signals (GClueWifi *wifi)
         if (priv->bss_added_id != 0)
                 return;
         if (priv->interface == NULL) {
-                if (wifi->priv->accuracy_level == GCLUE_ACCURACY_LEVEL_CITY)
-                        gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
+                gclue_web_source_refresh (GCLUE_WEB_SOURCE (wifi));
 
                 return;
         }

@@ -495,10 +495,12 @@ gclue_service_client_set_property (GObject      *object,
 
         case PROP_AGENT_PROXY:
                 client->priv->agent_proxy = g_value_dup_object (value);
-                g_signal_connect (client->priv->agent_proxy,
-                                  "g-properties-changed",
-                                  G_CALLBACK (on_agent_props_changed),
-                                  object);
+                if (client->priv->agent_proxy != NULL) {
+                        g_signal_connect (client->priv->agent_proxy,
+                                          "g-properties-changed",
+                                          G_CALLBACK (on_agent_props_changed),
+                                          object);
+                }
                 break;
 
         default:

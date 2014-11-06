@@ -385,7 +385,11 @@ gclue_service_client_handle_start (GClueClient           *client,
                 return TRUE;
         }
 
-        max_accuracy = gclue_agent_get_max_accuracy_level (priv->agent_proxy);
+        if (priv->agent_proxy != NULL)
+                max_accuracy = gclue_agent_get_max_accuracy_level (priv->agent_proxy);
+        else
+                max_accuracy = GCLUE_ACCURACY_LEVEL_EXACT;
+
         if (max_accuracy == 0) {
                 g_dbus_method_invocation_return_error (invocation,
                                                        G_DBUS_ERROR,
@@ -429,9 +433,11 @@ gclue_service_client_finalize (GObject *object)
 
         g_clear_pointer (&priv->path, g_free);
         g_clear_object (&priv->connection);
-        g_signal_handlers_disconnect_by_func (priv->agent_proxy,
-                                              G_CALLBACK (on_agent_props_changed),
-                                              object);
+        if (priv->agent_proxy != NULL)
+                g_signal_handlers_disconnect_by_func
+                                (priv->agent_proxy,
+                                 G_CALLBACK (on_agent_props_changed),
+                                 object);
         g_clear_object (&priv->agent_proxy);
         g_clear_object (&priv->locator);
         g_clear_object (&priv->location);

@@ -375,6 +375,9 @@ gclue_service_client_handle_start (GClueClient           *client,
         data->invocation =  g_object_ref (invocation);
 
         accuracy_level = gclue_client_get_requested_accuracy_level (client);
+        accuracy_level = CLAMP (accuracy_level,
+                                GCLUE_ACCURACY_LEVEL_COUNTRY,
+                                GCLUE_ACCURACY_LEVEL_EXACT);
 
         /* No agent == No authorization needed */
         if (priv->agent_proxy == NULL ||

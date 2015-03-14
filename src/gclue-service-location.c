@@ -29,7 +29,7 @@ gclue_service_location_initable_iface_init (GInitableIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (GClueServiceLocation,
                          gclue_service_location,
-                         GCLUE_TYPE_LOCATION_SKELETON,
+                         GCLUE_DBUS_TYPE_LOCATION_SKELETON,
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 gclue_service_location_initable_iface_init));
 
@@ -72,7 +72,7 @@ gclue_service_location_get_property (GObject    *object,
                                      GParamSpec *pspec)
 {
         GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
-        GClueLocation *location = GCLUE_LOCATION (object);
+        GClueDBusLocation *location = GCLUE_DBUS_LOCATION (object);
 
         switch (prop_id) {
         case PROP_CLIENT_INFO:
@@ -93,11 +93,11 @@ gclue_service_location_get_property (GObject    *object,
                 gdouble altitude;
 
                 loc = geocode_location_new_with_description
-                        (gclue_location_get_latitude (location),
-                         gclue_location_get_longitude (location),
-                         gclue_location_get_accuracy (location),
-                         gclue_location_get_description (location));
-                altitude = gclue_location_get_altitude (location);
+                        (gclue_dbus_location_get_latitude (location),
+                         gclue_dbus_location_get_longitude (location),
+                         gclue_dbus_location_get_accuracy (location),
+                         gclue_dbus_location_get_description (location));
+                altitude = gclue_dbus_location_get_altitude (location);
                 if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
                         g_object_set (loc, "altitude", altitude, NULL);
 
@@ -117,7 +117,7 @@ gclue_service_location_set_property (GObject      *object,
                                      GParamSpec   *pspec)
 {
         GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
-        GClueLocation *location = GCLUE_LOCATION (object);
+        GClueDBusLocation *location = GCLUE_DBUS_LOCATION (object);
 
         switch (prop_id) {
         case PROP_CLIENT_INFO:
@@ -138,17 +138,17 @@ gclue_service_location_set_property (GObject      *object,
                 gdouble altitude;
 
                 loc = g_value_get_object (value);
-                gclue_location_set_latitude
+                gclue_dbus_location_set_latitude
                         (location, geocode_location_get_latitude (loc));
-                gclue_location_set_longitude
+                gclue_dbus_location_set_longitude
                         (location, geocode_location_get_longitude (loc));
-                gclue_location_set_accuracy
+                gclue_dbus_location_set_accuracy
                         (location, geocode_location_get_accuracy (loc));
-                gclue_location_set_description
+                gclue_dbus_location_set_description
                         (location, geocode_location_get_description (loc));
                 altitude = geocode_location_get_altitude (loc);
                 if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
-                        gclue_location_set_altitude (location, altitude);
+                        gclue_dbus_location_set_altitude (location, altitude);
                 break;
         }
 
@@ -333,8 +333,8 @@ gclue_service_location_init (GClueServiceLocation *location)
         location->priv = G_TYPE_INSTANCE_GET_PRIVATE (location,
                                                       GCLUE_TYPE_SERVICE_LOCATION,
                                                       GClueServiceLocationPrivate);
-        gclue_location_set_altitude (GCLUE_LOCATION (location),
-                                     GEOCODE_LOCATION_ALTITUDE_UNKNOWN);
+        gclue_dbus_location_set_altitude (GCLUE_DBUS_LOCATION (location),
+                                          GEOCODE_LOCATION_ALTITUDE_UNKNOWN);
 }
 
 static gboolean

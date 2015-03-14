@@ -44,7 +44,7 @@ typedef struct _GClueServiceLocationPrivate GClueServiceLocationPrivate;
 
 struct _GClueServiceLocation
 {
-        GClueLocationSkeleton parent;
+        GClueDBusLocationSkeleton parent;
 
         /*< private >*/
         GClueServiceLocationPrivate *priv;
@@ -52,7 +52,7 @@ struct _GClueServiceLocation
 
 struct _GClueServiceLocationClass
 {
-        GClueLocationSkeletonClass parent_class;
+        GClueDBusLocationSkeletonClass parent_class;
 };
 
 GType gclue_service_location_get_type (void) G_GNUC_CONST;

@@ -59,6 +59,13 @@ struct _GClueLocationClass
 GType gclue_location_get_type (void);
 
 /**
+ * GCLUE_LOCATION_HEADING_UNKNOWN:
+ *
+ * Constant representing unknown heading.
+ */
+#define GCLUE_LOCATION_HEADING_UNKNOWN -1.0
+
+/**
  * GCLUE_LOCATION_SPEED_UNKNOWN:
  *
  * Constant representing unknown speed.
@@ -83,5 +90,16 @@ void gclue_location_set_speed_from_prev_location
                                    GClueLocation *prev_location);
 
 gdouble gclue_location_get_speed  (GClueLocation *loc);
+
+void gclue_location_set_heading   (GClueLocation *loc,
+                                   gdouble        heading);
+
+void gclue_location_set_heading_from_prev_location
+                                  (GClueLocation *location,
+                                   GClueLocation *prev_location);
+
+
+gdouble gclue_location_get_heading
+                                  (GClueLocation *loc);
 
 #endif /* GCLUE_LOCATION_H */

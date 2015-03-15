@@ -97,6 +97,7 @@ set_location (GClueLocator  *locator,
         }
 
         gclue_location_set_speed_from_prev_location (location, cur_location);
+        gclue_location_set_heading_from_prev_location (location, cur_location);
 
         gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (locator),
                                             location);

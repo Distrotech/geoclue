@@ -24,15 +24,18 @@
  */
 
 #include "gclue-location.h"
+#include <math.h>
 
 struct _GClueLocationPrivate {
         gdouble speed;
+        gdouble heading;
 };
 
 enum {
         PROP_0,
 
         PROP_SPEED,
+        PROP_HEADING,
 };
 
 G_DEFINE_TYPE (GClueLocation, gclue_location, GEOCODE_TYPE_LOCATION);
@@ -49,6 +52,11 @@ gclue_location_get_property (GObject    *object,
         case PROP_SPEED:
                 g_value_set_double (value,
                                     gclue_location_get_speed (location));
+                break;
+
+        case PROP_HEADING:
+                g_value_set_double (value,
+                                    gclue_location_get_heading (location));
                 break;
 
         default:
@@ -70,6 +78,11 @@ gclue_location_set_property (GObject      *object,
         case PROP_SPEED:
                 gclue_location_set_speed (location,
                                           g_value_get_double (value));
+                break;
+
+        case PROP_HEADING:
+                gclue_location_set_heading (location,
+                                            g_value_get_double (value));
                 break;
 
         default:
@@ -111,6 +124,25 @@ gclue_location_class_init (GClueLocationClass *klass)
                                      G_PARAM_READWRITE |
                                      G_PARAM_STATIC_STRINGS);
         g_object_class_install_property (glocation_class, PROP_SPEED, pspec);
+
+        /**
+         * GClueLocation:heading
+         *
+         * The positive angle between the direction of movement and the North
+         * direction, in clockwise direction. The angle is measured in degrees.
+         */
+        pspec = g_param_spec_double ("heading",
+                                     "Heading",
+                                     "The positive Angle between the direction"
+                                     " of movement and the North direction, in"
+                                     " clockwise direction. The angle is "
+                                     "measured in degrees.",
+                                     GCLUE_LOCATION_HEADING_UNKNOWN,
+                                     G_MAXDOUBLE,
+                                     GCLUE_LOCATION_HEADING_UNKNOWN,
+                                     G_PARAM_READWRITE |
+                                     G_PARAM_STATIC_STRINGS);
+        g_object_class_install_property (glocation_class, PROP_HEADING, pspec);
 }
 
 static void
@@ -121,6 +153,7 @@ gclue_location_init (GClueLocation *location)
                                                       GClueLocationPrivate);
 
         location->priv->speed = GCLUE_LOCATION_SPEED_UNKNOWN;
+        location->priv->heading = GCLUE_LOCATION_HEADING_UNKNOWN;
 }
 
 /**
@@ -241,4 +274,105 @@ gclue_location_set_speed_from_prev_location (GClueLocation *location,
         location->priv->speed = speed;
 
         g_object_notify (G_OBJECT (location), "speed");
+}
+
+/**
+ * gclue_location_get_heading:
+ * @location: a #GClueLocation
+ *
+ * Gets the positive angle between direction of movement and North direction.
+ * The angle is measured in degrees.
+ *
+ * Returns: The heading, or %GCLUE_LOCATION_HEADING_UNKNOWN if heading is
+ *          unknown.
+ **/
+gdouble
+gclue_location_get_heading (GClueLocation *location)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATION (location),
+                              GCLUE_LOCATION_HEADING_UNKNOWN);
+
+        return location->priv->heading;
+}
+
+/**
+ * gclue_location_set_heading:
+ * @location: a #GClueLocation
+ * @heading: heading in degrees
+ *
+ * Sets the heading.
+ **/
+void
+gclue_location_set_heading (GClueLocation *location,
+                            gdouble        heading)
+{
+        location->priv->heading = heading;
+
+        g_object_notify (G_OBJECT (location), "heading");
+}
+
+/**
+ * gclue_location_set_heading_from_prev_location:
+ * @location: a #GClueLocation
+ * @prev_location: a #GClueLocation
+ *
+ * Calculates the heading direction in degrees with respect to North direction
+ * based on provided @prev_location and sets it on @location.
+ **/
+void
+gclue_location_set_heading_from_prev_location (GClueLocation *location,
+                                               GClueLocation *prev_location)
+{
+        gdouble dx, dy, angle, lat, lon, prev_lat, prev_lon;
+        GeocodeLocation *gloc, *prev_gloc;
+
+        g_return_if_fail (GCLUE_IS_LOCATION (location));
+        g_return_if_fail (prev_location == NULL ||
+                          GCLUE_IS_LOCATION (prev_location));
+
+        if (prev_location == NULL) {
+               location->priv->heading = GCLUE_LOCATION_HEADING_UNKNOWN;
+
+               return;
+        }
+
+        gloc = GEOCODE_LOCATION (location);
+        prev_gloc = GEOCODE_LOCATION (prev_location);
+
+        lat = geocode_location_get_latitude(gloc);
+        lon = geocode_location_get_longitude(gloc);
+        prev_lat = geocode_location_get_latitude(prev_gloc);
+        prev_lon = geocode_location_get_longitude(prev_gloc);
+
+        dx = (lat - prev_lat);
+        dy = (lon - prev_lon);
+
+        /* atan2 takes in coordinate values of a 2D space and returns the angle
+         * which the line from origin to that coordinate makes with the positive
+         * X-axis, in the range (-PI,+PI]. Converting it into degrees we get the
+         * angle in range (-180,180]. This means East = 0 degree,
+         * West = -180 degrees, North = 90 degrees, South = -90 degrees.
+         *
+         * Passing atan2 a negative value of dx will flip the angles about
+         * Y-axis. This means the angle now returned will be the angle with
+         * respect to negative X-axis. Which makes West = 0 degree,
+         * East = 180 degrees, North = 90 degrees, South = -90 degrees. */
+        angle = atan2(dy, -dx) * 180.0 / M_PI;
+
+        /* Now, North is supposed to be 0 degree. Lets subtract 90 degrees
+         * from angle. After this step West = -90 degrees, East = 90 degrees,
+         * North = 0 degree, South = -180 degrees. */
+        angle -= 90.0;
+
+        /* As we know, angle ~= angle + 360; using this on negative values would
+         * bring the the angle in range [0,360).
+         *
+         * After this step West = 270 degrees, East = 90 degrees,
+         * North = 0 degree, South = 180 degrees. */
+        if (angle < 0)
+                angle += 360.0;
+
+        location->priv->heading = angle;
+
+        g_object_notify (G_OBJECT (location), "heading");
 }

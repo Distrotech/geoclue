@@ -278,6 +278,7 @@ gclue_location_source_set_location (GClueLocationSource *source,
                       "accuracy", geocode_location_get_accuracy (gloc),
                       "description", geocode_location_get_description (gloc),
                       "speed", gclue_location_get_speed (location),
+                      "heading", gclue_location_get_heading (location),
                       NULL);
 
         g_object_notify (G_OBJECT (source), "location");

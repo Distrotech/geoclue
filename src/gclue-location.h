@@ -40,11 +40,14 @@ G_BEGIN_DECLS
 
 typedef struct _GClueLocation        GClueLocation;
 typedef struct _GClueLocationClass   GClueLocationClass;
+typedef struct _GClueLocationPrivate GClueLocationPrivate;
 
 struct _GClueLocation
 {
         /* Parent instance structure */
         GeocodeLocation parent_instance;
+
+        GClueLocationPrivate *priv;
 };
 
 struct _GClueLocationClass
@@ -55,6 +58,13 @@ struct _GClueLocationClass
 
 GType gclue_location_get_type (void);
 
+/**
+ * GCLUE_LOCATION_SPEED_UNKNOWN:
+ *
+ * Constant representing unknown speed.
+ */
+#define GCLUE_LOCATION_SPEED_UNKNOWN -1.0
+
 GClueLocation *gclue_location_new (gdouble latitude,
                                    gdouble longitude,
                                    gdouble accuracy);
@@ -64,5 +74,14 @@ GClueLocation *gclue_location_new_with_description
                                    gdouble     longitude,
                                    gdouble     accuracy,
                                    const char *description);
+
+void gclue_location_set_speed     (GClueLocation *loc,
+                                   gdouble        speed);
+
+void gclue_location_set_speed_from_prev_location
+                                  (GClueLocation *location,
+                                   GClueLocation *prev_location);
+
+gdouble gclue_location_get_speed  (GClueLocation *loc);
 
 #endif /* GCLUE_LOCATION_H */

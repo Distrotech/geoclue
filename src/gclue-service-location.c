@@ -97,6 +97,8 @@ gclue_service_location_get_property (GObject    *object,
                          gclue_dbus_location_get_longitude (location),
                          gclue_dbus_location_get_accuracy (location),
                          gclue_dbus_location_get_description (location));
+                gclue_location_set_speed
+                        (loc, gclue_dbus_location_get_speed (location));
                 altitude = gclue_dbus_location_get_altitude (location);
                 if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
                         g_object_set (loc, "altitude", altitude, NULL);
@@ -148,6 +150,8 @@ gclue_service_location_set_property (GObject      *object,
                         (location, geocode_location_get_accuracy (g_loc));
                 gclue_dbus_location_set_description
                         (location, geocode_location_get_description (g_loc));
+                gclue_dbus_location_set_speed
+                        (location, gclue_location_get_speed (loc));
                 altitude = geocode_location_get_altitude (g_loc);
                 if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
                         gclue_dbus_location_set_altitude (location, altitude);

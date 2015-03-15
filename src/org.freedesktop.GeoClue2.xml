@@ -185,6 +185,13 @@
     <property name="Altitude" type="d" access="read"/>
 
     <!--
+        Speed:
+
+        The speed in meters per second. When unknown, it's set to -1.0.
+    -->
+    <property name="Speed" type="d" access="read"/>
+
+    <!--
         Description:
 
         A human-readable description of the location, if available.

@@ -26,7 +26,7 @@
 #include <string.h>
 #include "gclue-web-source.h"
 #include "gclue-error.h"
-#include "geocode-glib/geocode-location.h"
+#include "gclue-location.h"
 
 /**
  * SECTION:gclue-web-source
@@ -62,7 +62,7 @@ query_callback (SoupSession *session,
         GError *error = NULL;
         char *contents;
         char *str;
-        GeocodeLocation *location;
+        GClueLocation *location;
         SoupURI *uri;
 
         if (query->status_code == SOUP_STATUS_CANCELLED)
@@ -293,19 +293,20 @@ on_submit_source_location_notify (GObject    *source_object,
         GClueLocationSource *source = GCLUE_LOCATION_SOURCE (source_object);
         GClueWebSource *web = GCLUE_WEB_SOURCE (user_data);
         GNetworkMonitor *monitor;
-        GeocodeLocation *location;
+        GClueLocation *location;
         SoupMessage *query;
         GError *error = NULL;
 
         location = gclue_location_source_get_location (source);
         if (location == NULL ||
-            geocode_location_get_accuracy (location) >
+            geocode_location_get_accuracy (GEOCODE_LOCATION (location)) >
             SUBMISSION_ACCURACY_THRESHOLD ||
-            geocode_location_get_timestamp (location) <
+            geocode_location_get_timestamp (GEOCODE_LOCATION (location)) <
             web->priv->last_submitted + SUBMISSION_TIME_THRESHOLD)
                 return;
 
-        web->priv->last_submitted = geocode_location_get_timestamp (location);
+        web->priv->last_submitted = geocode_location_get_timestamp
+                (GEOCODE_LOCATION (location));
 
         monitor = g_network_monitor_get_default ();
         if (!g_network_monitor_get_network_available (monitor))

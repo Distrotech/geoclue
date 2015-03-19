@@ -70,21 +70,24 @@ enum
 static GParamSpec *gParamSpecs[LAST_PROP];
 
 static void
-set_location (GClueLocator    *locator,
-              GeocodeLocation *location)
+set_location (GClueLocator  *locator,
+              GClueLocation *location)
 {
-        GeocodeLocation *cur_location;
+        GClueLocation *cur_location;
+        GeocodeLocation *gloc, *cur_gloc;
 
         cur_location = gclue_location_source_get_location
                         (GCLUE_LOCATION_SOURCE (locator));
+        gloc = GEOCODE_LOCATION (location);
+        cur_gloc = GEOCODE_LOCATION (cur_location);
 
         g_debug ("New location available");
 
         if (cur_location != NULL &&
-            geocode_location_get_distance_from (location, cur_location) <
-            geocode_location_get_accuracy (location) &&
-            geocode_location_get_accuracy (location) >
-            geocode_location_get_accuracy (cur_location)) {
+            geocode_location_get_distance_from (gloc, cur_gloc) <
+            geocode_location_get_accuracy (gloc) &&
+            geocode_location_get_accuracy (gloc) >
+            geocode_location_get_accuracy (cur_gloc)) {
                 /* We only take the new location if either the previous one
                  * lies outside its accuracy circle or its more or as
                  * accurate as previous one.
@@ -129,7 +132,7 @@ on_location_changed (GObject    *gobject,
 {
         GClueLocator *locator = GCLUE_LOCATOR (user_data);
         GClueLocationSource *source = GCLUE_LOCATION_SOURCE (gobject);
-        GeocodeLocation *location;
+        GClueLocation *location;
 
         location = gclue_location_source_get_location (source);
         set_location (locator, location);
@@ -146,7 +149,7 @@ static void
 start_source (GClueLocator        *locator,
               GClueLocationSource *src)
 {
-        GeocodeLocation *location;
+        GClueLocation *location;
 
         g_signal_connect (G_OBJECT (src),
                           "notify::location",

@@ -24,7 +24,7 @@
 #include <string.h>
 #include "gclue-modem-gps.h"
 #include "gclue-modem-manager.h"
-#include "geocode-glib/geocode-location.h"
+#include "gclue-location.h"
 
 /**
  * SECTION:gclue-modem-gps
@@ -268,7 +268,7 @@ on_fix_gps (GClueModem *modem,
             gpointer    user_data)
 {
         GClueModemGPS *source = GCLUE_MODEM_GPS (user_data);
-        GeocodeLocation *location;
+        GClueLocation *location;
         gdouble latitude, longitude, accuracy, altitude;
         gdouble hdop; /* Horizontal Dilution Of Precision */
         char **parts;
@@ -295,7 +295,7 @@ on_fix_gps (GClueModem *modem,
         hdop = g_ascii_strtod (parts[8], NULL);
         accuracy = get_accuracy_from_hdop (hdop);
 
-        location = geocode_location_new (latitude, longitude, accuracy);
+        location = gclue_location_new (latitude, longitude, accuracy);
         if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
                 g_object_set (location, "altitude", altitude, NULL);
         gclue_location_source_set_location (GCLUE_LOCATION_SOURCE (source),

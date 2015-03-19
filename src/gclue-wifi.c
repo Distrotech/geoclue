@@ -67,9 +67,9 @@ gclue_wifi_create_query (GClueWebSource *source,
                          GError        **error);
 static SoupMessage *
 gclue_wifi_create_submit_query (GClueWebSource  *source,
-                                GeocodeLocation *location,
+                                GClueLocation   *location,
                                 GError         **error);
-static GeocodeLocation *
+static GClueLocation *
 gclue_wifi_parse_response (GClueWebSource *source,
                            const char     *json,
                            GError        **error);
@@ -680,7 +680,7 @@ gclue_wifi_create_query (GClueWebSource *source,
         return gclue_mozilla_create_query (bss_list, NULL, error);
 }
 
-static GeocodeLocation *
+static GClueLocation *
 gclue_wifi_parse_response (GClueWebSource *source,
                            const char     *json,
                            GError        **error)
@@ -690,7 +690,7 @@ gclue_wifi_parse_response (GClueWebSource *source,
 
 static SoupMessage *
 gclue_wifi_create_submit_query (GClueWebSource  *source,
-                                GeocodeLocation *location,
+                                GClueLocation   *location,
                                 GError         **error)
 {
         GList *bss_list; /* As in Access Points */

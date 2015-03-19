@@ -89,10 +89,10 @@ gclue_service_location_get_property (GObject    *object,
 
         case PROP_LOCATION:
         {
-                GeocodeLocation *loc;
+                GClueLocation *loc;
                 gdouble altitude;
 
-                loc = geocode_location_new_with_description
+                loc = gclue_location_new_with_description
                         (gclue_dbus_location_get_latitude (location),
                          gclue_dbus_location_get_longitude (location),
                          gclue_dbus_location_get_accuracy (location),
@@ -134,19 +134,21 @@ gclue_service_location_set_property (GObject      *object,
 
         case PROP_LOCATION:
         {
-                GeocodeLocation *loc;
+                GClueLocation *loc;
                 gdouble altitude;
+                GeocodeLocation *g_loc;
 
                 loc = g_value_get_object (value);
+                g_loc = GEOCODE_LOCATION (loc);
                 gclue_dbus_location_set_latitude
-                        (location, geocode_location_get_latitude (loc));
+                        (location, geocode_location_get_latitude (g_loc));
                 gclue_dbus_location_set_longitude
-                        (location, geocode_location_get_longitude (loc));
+                        (location, geocode_location_get_longitude (g_loc));
                 gclue_dbus_location_set_accuracy
-                        (location, geocode_location_get_accuracy (loc));
+                        (location, geocode_location_get_accuracy (g_loc));
                 gclue_dbus_location_set_description
-                        (location, geocode_location_get_description (loc));
-                altitude = geocode_location_get_altitude (loc);
+                        (location, geocode_location_get_description (g_loc));
+                altitude = geocode_location_get_altitude (g_loc);
                 if (altitude != GEOCODE_LOCATION_ALTITUDE_UNKNOWN)
                         gclue_dbus_location_set_altitude (location, altitude);
                 break;
@@ -320,7 +322,7 @@ gclue_service_location_class_init (GClueServiceLocationClass *klass)
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
                                                           "Location",
                                                           "Location",
-                                                          GEOCODE_TYPE_LOCATION,
+                                                          GCLUE_TYPE_LOCATION,
                                                           G_PARAM_READWRITE);
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
@@ -359,7 +361,7 @@ GClueServiceLocation *
 gclue_service_location_new (GClueClientInfo *info,
                             const char      *path,
                             GDBusConnection *connection,
-                            GeocodeLocation *location,
+                            GClueLocation   *location,
                             GError         **error)
 {
         return g_initable_new (GCLUE_TYPE_SERVICE_LOCATION,

@@ -39,7 +39,7 @@ G_DEFINE_ABSTRACT_TYPE (GClueLocationSource, gclue_location_source, G_TYPE_OBJEC
 
 struct _GClueLocationSourcePrivate
 {
-        GeocodeLocation *location;
+        GClueLocation *location;
 
         guint active_counter;
 
@@ -95,7 +95,7 @@ gclue_location_source_set_property (GObject      *object,
         switch (prop_id) {
         case PROP_LOCATION:
         {
-                GeocodeLocation *location = g_value_get_object (value);
+                GClueLocation *location = g_value_get_object (value);
 
                 gclue_location_source_set_location (source, location);
                 break;
@@ -138,7 +138,7 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         gParamSpecs[PROP_LOCATION] = g_param_spec_object ("location",
                                                           "Location",
                                                           "Location",
-                                                          GEOCODE_TYPE_LOCATION,
+                                                          GCLUE_TYPE_LOCATION,
                                                           G_PARAM_READWRITE);
         g_object_class_install_property (object_class,
                                          PROP_LOCATION,
@@ -246,7 +246,7 @@ gclue_location_source_stop (GClueLocationSource *source)
  *
  * Returns: (transfer none): The location, or NULL if unknown.
  **/
-GeocodeLocation *
+GClueLocation *
 gclue_location_source_get_location (GClueLocationSource *source)
 {
         g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), NULL);
@@ -263,18 +263,20 @@ gclue_location_source_get_location (GClueLocationSource *source)
  **/
 void
 gclue_location_source_set_location (GClueLocationSource *source,
-                                    GeocodeLocation     *location)
+                                    GClueLocation       *location)
 {
         GClueLocationSourcePrivate *priv = source->priv;
+        GeocodeLocation *gloc;
 
         if (priv->location == NULL)
-                priv->location = g_object_new (GEOCODE_TYPE_LOCATION, NULL);
+                priv->location = g_object_new (GCLUE_TYPE_LOCATION, NULL);
 
+        gloc = GEOCODE_LOCATION (location);
         g_object_set (priv->location,
-                      "latitude", geocode_location_get_latitude (location),
-                      "longitude", geocode_location_get_longitude (location),
-                      "accuracy", geocode_location_get_accuracy (location),
-                      "description", geocode_location_get_description (location),
+                      "latitude", geocode_location_get_latitude (gloc),
+                      "longitude", geocode_location_get_longitude (gloc),
+                      "accuracy", geocode_location_get_accuracy (gloc),
+                      "description", geocode_location_get_description (gloc),
                       NULL);
 
         g_object_notify (G_OBJECT (source), "location");

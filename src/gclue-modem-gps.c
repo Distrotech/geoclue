@@ -215,6 +215,8 @@ parse_coordinate_string (const char *coordinate,
 {
         gdouble minutes, degrees, out;
         gchar *degrees_str;
+        gchar *dot_str;
+        gint dot_offset;
 
         if (coordinate[0] == '\0' ||
             direction[0] == '\0' ||
@@ -230,11 +232,16 @@ parse_coordinate_string (const char *coordinate,
                 return INVALID_COORDINATE;
         }
 
-        degrees_str = g_strndup (coordinate, 2);
+        dot_str = g_strstr_len (coordinate, 6, ".");
+        if (dot_str == NULL)
+                return INVALID_COORDINATE;
+        dot_offset = dot_str - coordinate;
+
+        degrees_str = g_strndup (coordinate, dot_offset - 2);
         degrees = g_ascii_strtod (degrees_str, NULL);
         g_free (degrees_str);
 
-        minutes = g_ascii_strtod (coordinate + 2, NULL);
+        minutes = g_ascii_strtod (coordinate + dot_offset - 2, NULL);
 
         /* Include the minutes as part of the degrees */
         out = degrees + (minutes / 60.0);

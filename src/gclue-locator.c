@@ -203,7 +203,7 @@ on_avail_accuracy_level_changed (GObject    *gobject,
             !is_source_active (locator, src)) {
                 start_source (locator, src);
         } else if ((level == GCLUE_ACCURACY_LEVEL_NONE ||
-                    priv->accuracy_level > level) &&
+                    priv->accuracy_level < level) &&
                    is_source_active (locator, src)) {
                 g_signal_handlers_disconnect_by_func (G_OBJECT (src),
                                                       G_CALLBACK (on_location_changed),

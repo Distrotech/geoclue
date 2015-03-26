@@ -349,10 +349,11 @@ gclue_web_source_set_submit_source (GClueWebSource      *web,
         if (GCLUE_WEB_SOURCE_GET_CLASS (web)->create_submit_query == NULL)
                 return;
 
-        g_signal_connect (G_OBJECT (submit_source),
-                          "notify::location", 
-                          G_CALLBACK (on_submit_source_location_notify),
-                          web);
+        g_signal_connect_object (G_OBJECT (submit_source),
+                                 "notify::location",
+                                 G_CALLBACK (on_submit_source_location_notify),
+                                 G_OBJECT (web),
+                                 0);
 
         on_submit_source_location_notify (G_OBJECT (submit_source), NULL, web);
 }

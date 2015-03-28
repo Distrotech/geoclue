@@ -72,7 +72,6 @@ gclue_service_location_get_property (GObject    *object,
                                      GParamSpec *pspec)
 {
         GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
-        GClueDBusLocation *location = GCLUE_DBUS_LOCATION (object);
 
         switch (prop_id) {
         case PROP_CLIENT_INFO:
@@ -89,9 +88,11 @@ gclue_service_location_get_property (GObject    *object,
 
         case PROP_LOCATION:
         {
+                GClueDBusLocation *location;
                 GClueLocation *loc;
                 gdouble altitude;
 
+                location = GCLUE_DBUS_LOCATION (object);
                 loc = gclue_location_new_with_description
                         (gclue_dbus_location_get_latitude (location),
                          gclue_dbus_location_get_longitude (location),
@@ -121,7 +122,6 @@ gclue_service_location_set_property (GObject      *object,
                                      GParamSpec   *pspec)
 {
         GClueServiceLocation *self = GCLUE_SERVICE_LOCATION (object);
-        GClueDBusLocation *location = GCLUE_DBUS_LOCATION (object);
 
         switch (prop_id) {
         case PROP_CLIENT_INFO:
@@ -138,10 +138,12 @@ gclue_service_location_set_property (GObject      *object,
 
         case PROP_LOCATION:
         {
+                GClueDBusLocation *location;
                 GClueLocation *loc;
                 gdouble altitude;
                 GeocodeLocation *g_loc;
 
+                location = GCLUE_DBUS_LOCATION (object);
                 loc = g_value_get_object (value);
                 g_loc = GEOCODE_LOCATION (loc);
                 gclue_dbus_location_set_latitude

@@ -103,22 +103,35 @@ set_location (GClueLocator  *locator,
                                             location);
 }
 
+static gint
+compare_accuracy_level (GClueLocationSource *src_a,
+                        GClueLocationSource *src_b)
+{
+        GClueAccuracyLevel level_a, level_b;
+
+        level_a = gclue_location_source_get_available_accuracy_level (src_a);
+        level_b = gclue_location_source_get_available_accuracy_level (src_b);
+
+        return (level_b - level_a);
+}
+
 static void
 refresh_available_accuracy_level (GClueLocator *locator)
 {
-        GList *node;
         GClueAccuracyLevel new, existing;
 
-        new = GCLUE_ACCURACY_LEVEL_NONE;
-        for (node = locator->priv->sources; node != NULL; node = node->next) {
-                GClueLocationSource *src;
-                GClueAccuracyLevel level;
+        /* Sort the sources according to their accuracy level so that the head
+         * of the list will have the highest level. The goal is to start the
+         * most accurate source first and when all sources are already active
+         * for an app, a second app to get the most accurate location only.
+         */
+        locator->priv->sources = g_list_sort
+                        (locator->priv->sources,
+                         (GCompareFunc) compare_accuracy_level);
 
-                src = GCLUE_LOCATION_SOURCE (node->data);
-                level = gclue_location_source_get_available_accuracy_level (src);
-                if (level > new)
-                        new = level;
-        }
+        new = gclue_location_source_get_available_accuracy_level
+                        (GCLUE_LOCATION_SOURCE (locator->priv->sources->data));
+
         existing = gclue_location_source_get_available_accuracy_level
                         (GCLUE_LOCATION_SOURCE (locator));
 

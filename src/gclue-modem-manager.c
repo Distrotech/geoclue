@@ -47,6 +47,7 @@ struct _GClueModemManagerPrivate {
         MMModem *modem;
         MMModemLocation *modem_location;
         MMLocation3gpp *location_3gpp;
+        MMLocationGpsNmea *location_nmea;
 
         GCancellable *cancellable;
 
@@ -319,11 +320,27 @@ on_get_cdma_ready (GObject      *source_object,
                        mm_location_cdma_bs_get_longitude (location_cdma));
 }
 
+static gboolean
+is_location_gga_same (GClueModemManager *manager,
+                       const char       *new_gga)
+{
+        GClueModemManagerPrivate *priv = manager->priv;
+        const char *gga;
+
+        if (priv->location_nmea == NULL)
+                return FALSE;
+
+        gga = mm_location_gps_nmea_get_trace (priv->location_nmea, "$GPGGA");
+        return (g_strcmp0 (gga, new_gga) == 0);
+}
+
 static void
 on_get_gps_nmea_ready (GObject      *source_object,
                        GAsyncResult *res,
                        gpointer      user_data)
 {
+        GClueModemManager *manager = GCLUE_MODEM_MANAGER (user_data);
+        GClueModemManagerPrivate *priv = manager->priv;
         MMModemLocation *modem_location = MM_MODEM_LOCATION (source_object);
         MMLocationGpsNmea *location_nmea;
         const char *gga;
@@ -347,13 +364,18 @@ on_get_gps_nmea_ready (GObject      *source_object,
         gga = mm_location_gps_nmea_get_trace (location_nmea, "$GPGGA");
         if (gga == NULL) {
                 g_debug ("No GGA trace");
-                goto out;
+                return;
         }
 
+        if (is_location_gga_same (manager, gga)) {
+                g_debug ("New GGA trace is same as last one");
+                return;
+        }
+        g_clear_object (&priv->location_nmea);
+        priv->location_nmea = location_nmea;
+
         g_debug ("New GPGGA trace: %s", gga);
-        g_signal_emit (GCLUE_MODEM_MANAGER (user_data), signals[FIX_GPS], 0, gga);
-out:
-        g_object_unref (location_nmea);
+        g_signal_emit (manager, signals[FIX_GPS], 0, gga);
 }
 
 static void
@@ -844,11 +866,15 @@ gclue_modem_manager_disable_gps (GClueModem   *modem,
                                  GCancellable *cancellable,
                                  GError      **error)
 {
+        GClueModemManager *manager;
+
         g_return_val_if_fail (GCLUE_IS_MODEM_MANAGER (modem), FALSE);
         g_return_val_if_fail (gclue_modem_manager_get_is_gps_available (modem), FALSE);
+        manager = GCLUE_MODEM_MANAGER (modem);
 
+        g_clear_object (&manager->priv->location_nmea);
         g_debug ("Clearing GPS NMEA caps from modem");
-        return clear_caps (GCLUE_MODEM_MANAGER (modem),
+        return clear_caps (manager,
                            MM_MODEM_LOCATION_SOURCE_GPS_NMEA,
                            cancellable,
                            error);

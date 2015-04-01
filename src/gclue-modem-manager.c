@@ -506,16 +506,72 @@ modem_has_caps (GClueModemManager    *manager,
 static void
 on_mm_object_added (GDBusObjectManager *object_manager,
                     GDBusObject        *object,
+                    gpointer            user_data);
+
+static void
+on_mm_modem_state_notify (GObject    *gobject,
+                          GParamSpec *pspec,
+                          gpointer    user_data)
+{
+        MMModem *mm_modem = MM_MODEM (gobject);
+        GClueModemManager *manager = GCLUE_MODEM_MANAGER (user_data);
+        GClueModemManagerPrivate *priv = manager->priv;
+        GDBusObjectManager *obj_manager = G_DBUS_OBJECT_MANAGER (priv->manager);
+        const char *path = mm_modem_get_path (mm_modem);
+        GDBusObject *object;
+
+        if (priv->mm_object != NULL) {
+                // In the meantime another modem with location caps was found.
+                g_signal_handlers_disconnect_by_func (mm_modem,
+                                                      on_mm_modem_state_notify,
+                                                      user_data);
+                g_object_unref (gobject);
+
+                return;
+        }
+
+        if (mm_modem_get_state (mm_modem) < MM_MODEM_STATE_ENABLED)
+                return;
+
+        g_debug ("Modem '%s' now enabled", path);
+
+        g_signal_handlers_disconnect_by_func (mm_modem,
+                                              on_mm_modem_state_notify,
+                                              user_data);
+
+        object = g_dbus_object_manager_get_object (obj_manager, path);
+        on_mm_object_added (obj_manager, object, user_data);
+        g_object_unref (mm_modem);
+}
+
+static void
+on_mm_object_added (GDBusObjectManager *object_manager,
+                    GDBusObject        *object,
                     gpointer            user_data)
 {
         MMObject *mm_object = MM_OBJECT (object);
         GClueModemManager *manager = GCLUE_MODEM_MANAGER (user_data);
+        MMModem *mm_modem;
         MMModemLocation *modem_location;
 
         if (manager->priv->mm_object != NULL)
                 return;
 
         g_debug ("New modem '%s'", mm_object_get_path (mm_object));
+        mm_modem = mm_object_get_modem (mm_object);
+        if (mm_modem_get_state (mm_modem) < MM_MODEM_STATE_ENABLED) {
+                g_debug ("Modem '%s' not enabled",
+                         mm_object_get_path (mm_object));
+
+                g_signal_connect_object (mm_modem,
+                                         "notify::state",
+                                         G_CALLBACK (on_mm_modem_state_notify),
+                                         manager,
+                                         0);
+
+                return;
+        }
+
         modem_location = mm_object_peek_modem_location (mm_object);
         if (modem_location == NULL)
                 return;
@@ -524,7 +580,7 @@ on_mm_object_added (GDBusObjectManager *object_manager,
                  mm_object_get_path (mm_object));
 
         manager->priv->mm_object = g_object_ref (mm_object);
-        manager->priv->modem = mm_object_get_modem (mm_object);
+        manager->priv->modem = mm_modem;
         manager->priv->modem_location = mm_object_get_modem_location (mm_object);
 
         g_signal_connect (G_OBJECT (manager->priv->modem_location),

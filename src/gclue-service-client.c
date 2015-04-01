@@ -138,6 +138,14 @@ below_threshold (GClueServiceClient *client,
         return FALSE;
 }
 
+static gboolean
+on_prev_location_timeout (gpointer user_data)
+{
+        g_object_unref (user_data);
+
+        return FALSE;
+}
+
 static void
 on_locator_location_changed (GObject    *gobject,
                              GParamSpec *pspec,
@@ -163,7 +171,10 @@ on_locator_location_changed (GObject    *gobject,
                 return;
         }
 
-        g_clear_object (&priv->prev_location);
+        if (priv->prev_location != NULL)
+                // Lets try to ensure that apps are not still accessing the
+                // last location before unrefing (and therefore destroying) it.
+                g_timeout_add_seconds (5, on_prev_location_timeout, priv->prev_location);
         priv->prev_location = priv->location;
 
         path = next_location_path (client);

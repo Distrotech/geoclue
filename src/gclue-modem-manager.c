@@ -432,38 +432,6 @@ out:
 }
 
 static void
-on_modem_enabled (GObject      *modem_object,
-                  GAsyncResult *res,
-                  gpointer      user_data)
-{
-        GTask *task = G_TASK (user_data);
-        GClueModemManagerPrivate *priv;
-        MMModemLocationSource caps;
-        GError *error = NULL;
-
-        if (!mm_modem_enable_finish (MM_MODEM (modem_object), res, &error)) {
-                if (error->code == MM_CORE_ERROR_IN_PROGRESS)
-                        /* Seems a previous async call hasn't returned yet. */
-                        g_task_return_boolean (task, TRUE);
-                else
-                        g_task_return_error (task, error);
-                g_object_unref (task);
-
-                return;
-        }
-        priv = GCLUE_MODEM_MANAGER (g_task_get_source_object (task))->priv;
-        g_debug ("manager '%s' enabled.", mm_object_get_path (priv->mm_object));
-
-        caps = mm_modem_location_get_enabled (priv->modem_location) | priv->caps;
-        mm_modem_location_setup (priv->modem_location,
-                                 caps,
-                                 TRUE,
-                                 g_task_get_cancellable (task),
-                                 on_modem_location_setup,
-                                 task);
-}
-
-static void
 enable_caps (GClueModemManager    *manager,
              MMModemLocationSource caps,
              GCancellable         *cancellable,
@@ -476,10 +444,15 @@ enable_caps (GClueModemManager    *manager,
         priv->caps |= caps;
         task = g_task_new (manager, cancellable, callback, user_data);
 
-        mm_modem_enable (priv->modem,
-                         cancellable,
-                         on_modem_enabled,
-                         task);
+        priv = GCLUE_MODEM_MANAGER (g_task_get_source_object (task))->priv;
+
+        caps = mm_modem_location_get_enabled (priv->modem_location) | priv->caps;
+        mm_modem_location_setup (priv->modem_location,
+                                 caps,
+                                 TRUE,
+                                 g_task_get_cancellable (task),
+                                 on_modem_location_setup,
+                                 task);
 }
 
 static gboolean

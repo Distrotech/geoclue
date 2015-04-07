@@ -266,22 +266,24 @@ gclue_location_source_set_location (GClueLocationSource *source,
                                     GClueLocation       *location)
 {
         GClueLocationSourcePrivate *priv = source->priv;
+        GClueLocation *cur_location;
         GeocodeLocation *gloc;
 
-        if (priv->location == NULL)
-                priv->location = g_object_new (GCLUE_TYPE_LOCATION, NULL);
-
         gloc = GEOCODE_LOCATION (location);
+        cur_location = priv->location;
+        priv->location = gclue_location_new
+                                (geocode_location_get_latitude (gloc),
+                                 geocode_location_get_longitude (gloc),
+                                 geocode_location_get_accuracy (gloc));
+
         g_object_set (priv->location,
-                      "latitude", geocode_location_get_latitude (gloc),
-                      "longitude", geocode_location_get_longitude (gloc),
-                      "accuracy", geocode_location_get_accuracy (gloc),
                       "description", geocode_location_get_description (gloc),
                       "speed", gclue_location_get_speed (location),
                       "heading", gclue_location_get_heading (location),
                       NULL);
 
         g_object_notify (G_OBJECT (source), "location");
+        g_clear_object (&cur_location);
 }
 
 /**

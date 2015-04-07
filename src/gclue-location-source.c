@@ -268,19 +268,33 @@ gclue_location_source_set_location (GClueLocationSource *source,
         GClueLocationSourcePrivate *priv = source->priv;
         GClueLocation *cur_location;
         GeocodeLocation *gloc;
+        gdouble speed, heading;
 
         gloc = GEOCODE_LOCATION (location);
         cur_location = priv->location;
-        priv->location = gclue_location_new
+        priv->location = gclue_location_new_with_description
                                 (geocode_location_get_latitude (gloc),
                                  geocode_location_get_longitude (gloc),
-                                 geocode_location_get_accuracy (gloc));
+                                 geocode_location_get_accuracy (gloc),
+                                 geocode_location_get_description (gloc));
 
-        g_object_set (priv->location,
-                      "description", geocode_location_get_description (gloc),
-                      "speed", gclue_location_get_speed (location),
-                      "heading", gclue_location_get_heading (location),
-                      NULL);
+        speed = gclue_location_get_speed (location);
+        if (speed == GCLUE_LOCATION_SPEED_UNKNOWN) {
+                if (cur_location != NULL)
+                        gclue_location_set_speed_from_prev_location
+                                (priv->location, cur_location);
+        } else {
+                gclue_location_set_speed (priv->location, speed);
+        }
+
+        heading = gclue_location_get_heading (location);
+        if (heading == GCLUE_LOCATION_HEADING_UNKNOWN) {
+                if (cur_location != NULL)
+                        gclue_location_set_heading_from_prev_location
+                                (priv->location, cur_location);
+        } else {
+                gclue_location_set_heading (priv->location, heading);
+        }
 
         g_object_notify (G_OBJECT (source), "location");
         g_clear_object (&cur_location);

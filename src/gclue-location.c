@@ -268,6 +268,8 @@ gclue_location_set_speed_from_prev_location (GClueLocation *location,
         timestamp = geocode_location_get_timestamp (gloc);
         prev_timestamp = geocode_location_get_timestamp (prev_gloc);
 
+        g_return_if_fail (timestamp != prev_timestamp);
+
         speed = geocode_location_get_distance_from (gloc, prev_gloc) *
                 1000.0 / (timestamp - prev_timestamp);
 

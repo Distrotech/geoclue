@@ -280,9 +280,17 @@ gclue_location_source_set_location (GClueLocationSource *source,
 
         speed = gclue_location_get_speed (location);
         if (speed == GCLUE_LOCATION_SPEED_UNKNOWN) {
-                if (cur_location != NULL)
-                        gclue_location_set_speed_from_prev_location
-                                (priv->location, cur_location);
+                if (cur_location != NULL) {
+                        guint64 cur_timestamp, timestamp;
+
+                        timestamp = geocode_location_get_timestamp (gloc);
+                        cur_timestamp = geocode_location_get_timestamp
+                                        (GEOCODE_LOCATION (cur_location));
+
+                        if (timestamp != cur_timestamp)
+                                gclue_location_set_speed_from_prev_location
+                                        (priv->location, cur_location);
+                }
         } else {
                 gclue_location_set_speed (priv->location, speed);
         }

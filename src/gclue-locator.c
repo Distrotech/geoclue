@@ -432,6 +432,7 @@ gclue_locator_new (GClueAccuracyLevel level)
 
         return g_object_new (GCLUE_TYPE_LOCATOR,
                              "accuracy-level", accuracy_level,
+                             "compute-movement", FALSE,
                              NULL);
 }
 

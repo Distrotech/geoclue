@@ -111,16 +111,16 @@ on_location_proxy_ready (GObject      *source_object,
         heading = g_variant_get_double (value);
 
         g_print ("\nNew location:\n");
-        g_print ("Latitude: %f°\nLongitude: %f°\nAccuracy: %f meters\n",
+        g_print ("Latitude:    %f°\nLongitude:   %f°\nAccuracy:    %f meters\n",
                  latitude,
                  longitude,
                  accuracy);
         if (altitude != -G_MAXDOUBLE)
-                g_print ("Altitude: %f meters\n", altitude);
+                g_print ("Altitude:    %f meters\n", altitude);
         if (speed >= 0)
-                g_print ("Speed: %f meters/second\n", speed);
+                g_print ("Speed:       %f meters/second\n", speed);
         if (heading >= 0)
-                g_print ("Heading: %f°\n", heading);
+                g_print ("Heading:     %f°\n", heading);
 
         value = g_dbus_proxy_get_cached_property (location, "Description");
         desc = g_variant_get_string (value, &desc_len);

@@ -44,6 +44,8 @@ struct _GClueLocationSourcePrivate
         guint active_counter;
 
         GClueAccuracyLevel avail_accuracy_level;
+
+        gboolean compute_movement;
 };
 
 enum
@@ -52,6 +54,7 @@ enum
         PROP_LOCATION,
         PROP_ACTIVE,
         PROP_AVAILABLE_ACCURACY_LEVEL,
+        PROP_COMPUTE_MOVEMENT,
         LAST_PROP
 };
 
@@ -79,6 +82,10 @@ gclue_location_source_get_property (GObject    *object,
                 g_value_set_enum (value, source->priv->avail_accuracy_level);
                 break;
 
+        case PROP_COMPUTE_MOVEMENT:
+                g_value_set_boolean (value, source->priv->compute_movement);
+                break;
+
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         }
@@ -103,6 +110,10 @@ gclue_location_source_set_property (GObject      *object,
 
         case PROP_AVAILABLE_ACCURACY_LEVEL:
                 source->priv->avail_accuracy_level = g_value_get_enum (value);
+                break;
+
+        case PROP_COMPUTE_MOVEMENT:
+                source->priv->compute_movement = g_value_get_boolean (value);
                 break;
 
         default:
@@ -163,6 +174,18 @@ gclue_location_source_class_init (GClueLocationSourceClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_AVAILABLE_ACCURACY_LEVEL,
                                          gParamSpecs[PROP_AVAILABLE_ACCURACY_LEVEL]);
+
+        gParamSpecs[PROP_COMPUTE_MOVEMENT] =
+                g_param_spec_boolean ("compute-movement",
+                                      "ComputeMovement",
+                                      "Whether or not, speed and heading should "
+                                      "be automatically computed and set on new "
+                                      "locations.",
+                                      TRUE,
+                                      G_PARAM_READWRITE);
+        g_object_class_install_property (object_class,
+                                         PROP_COMPUTE_MOVEMENT,
+                                         gParamSpecs[PROP_COMPUTE_MOVEMENT]);
 }
 
 static void
@@ -172,6 +195,7 @@ gclue_location_source_init (GClueLocationSource *source)
                 G_TYPE_INSTANCE_GET_PRIVATE (source,
                                              GCLUE_TYPE_LOCATION_SOURCE,
                                              GClueLocationSourcePrivate);
+        source->priv->compute_movement = TRUE;
 }
 
 static gboolean
@@ -280,7 +304,7 @@ gclue_location_source_set_location (GClueLocationSource *source,
 
         speed = gclue_location_get_speed (location);
         if (speed == GCLUE_LOCATION_SPEED_UNKNOWN) {
-                if (cur_location != NULL) {
+                if (cur_location != NULL && priv->compute_movement) {
                         guint64 cur_timestamp, timestamp;
 
                         timestamp = geocode_location_get_timestamp (gloc);
@@ -297,7 +321,7 @@ gclue_location_source_set_location (GClueLocationSource *source,
 
         heading = gclue_location_get_heading (location);
         if (heading == GCLUE_LOCATION_HEADING_UNKNOWN) {
-                if (cur_location != NULL)
+                if (cur_location != NULL && priv->compute_movement)
                         gclue_location_set_heading_from_prev_location
                                 (priv->location, cur_location);
         } else {
@@ -334,4 +358,36 @@ gclue_location_source_get_available_accuracy_level (GClueLocationSource *source)
         g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), 0);
 
         return source->priv->avail_accuracy_level;
+}
+
+/**
+ * gclue_location_source_get_compute_movement
+ * @source: a #GClueLocationSource
+ *
+ * Returns: %TRUE if speed and heading will be automatically computed and set
+ * on new locations, %FALSE otherwise.
+ **/
+gboolean
+gclue_location_source_get_compute_movement (GClueLocationSource *source)
+{
+        g_return_val_if_fail (GCLUE_IS_LOCATION_SOURCE (source), FALSE);
+
+        return source->priv->compute_movement;
+}
+
+/**
+ * gclue_location_source_set_compute_movement
+ * @source: a #GClueLocationSource
+ * @compute: a #gboolean
+ *
+ * Use this to specify whether or not you want @source to automatically compute
+ * and set speed and heading on new locations.
+ **/
+void
+gclue_location_source_set_compute_movement (GClueLocationSource *source,
+                                            gboolean             compute)
+{
+        g_return_if_fail (GCLUE_IS_LOCATION_SOURCE (source));
+
+        source->priv->compute_movement = compute;
 }

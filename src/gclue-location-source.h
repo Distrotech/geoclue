@@ -71,6 +71,11 @@ gboolean          gclue_location_source_get_active
 GClueAccuracyLevel
                   gclue_location_source_get_available_accuracy_level
                                               (GClueLocationSource *source);
+gboolean
+gclue_location_source_get_compute_movement (GClueLocationSource *source);
+void
+gclue_location_source_set_compute_movement (GClueLocationSource *source,
+                                            gboolean             compute);
 
 G_END_DECLS
 
